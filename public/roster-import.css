@@ -1,0 +1,6 @@
+#modal .roster-import-preview { display:block; max-width:100%; max-height:300px; object-fit:contain; margin:16px auto; }
+#modal .roster-import-card { margin:16px 0; }
+#modal .roster-import-card label + label { margin-top:14px; }
+#modal textarea { display:block; width:100%; box-sizing:border-box; padding:12px; margin:8px 0 14px; color:inherit; background:#171313; border:1px solid #514646; border-radius:10px; font:inherit; resize:vertical; }
+#modal #roster-import-sources { margin-top:16px; }
+#modal #roster-import-progress { width:100%; }
