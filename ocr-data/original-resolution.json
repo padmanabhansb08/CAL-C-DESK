@@ -1,0 +1,3652 @@
+[
+  {
+    "match": "match-1",
+    "split": "train",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.21.jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            273,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 238,
+          "rankBox": [
+            273,
+            205,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 308,
+          "rankBox": [
+            273,
+            275,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 377.5,
+          "rankBox": [
+            273,
+            345,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447.5,
+          "rankBox": [
+            273,
+            415,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 1,
+          "top": 137.5,
+          "bottom": 162.5,
+          "rankBox": [
+            755,
+            134,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 197.5,
+          "bottom": 222.5,
+          "rankBox": [
+            755,
+            194,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 257,
+          "bottom": 282.5,
+          "rankBox": [
+            755,
+            253,
+            42,
+            33
+          ]
+        },
+        {
+          "side": 1,
+          "top": 317.5,
+          "bottom": 342.5,
+          "rankBox": [
+            755,
+            314,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 377.5,
+          "bottom": 402.5,
+          "rankBox": [
+            755,
+            374,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 7,
+        "actual": 7
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 9,
+        "actual": 9
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 7,
+        "actual": 7
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 11,
+        "actual": 11
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 6,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 6,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 6,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 6,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 7,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 7,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 7,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 7,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      }
+    ]
+  },
+  {
+    "match": "match-1",
+    "split": "train",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.22.jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            273,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 238,
+          "rankBox": [
+            273,
+            205,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 308,
+          "rankBox": [
+            273,
+            275,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 377.5,
+          "rankBox": [
+            273,
+            345,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447.5,
+          "rankBox": [
+            273,
+            415,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 1,
+          "top": 178.5,
+          "bottom": 203.5,
+          "rankBox": [
+            756,
+            175,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 238.5,
+          "bottom": 263.5,
+          "rankBox": [
+            756,
+            235,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 298.5,
+          "bottom": 323.5,
+          "rankBox": [
+            756,
+            295,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 358,
+          "bottom": 383.5,
+          "rankBox": [
+            756,
+            354,
+            42,
+            33
+          ]
+        },
+        {
+          "side": 1,
+          "top": 419,
+          "bottom": 443.5,
+          "rankBox": [
+            756,
+            415,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 7,
+        "actual": 7
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 9,
+        "actual": 9
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 7,
+        "actual": 7
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 11,
+        "actual": 11
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 11,
+        "player": 3,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 12,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 12,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      }
+    ]
+  },
+  {
+    "match": "match-2",
+    "split": "train",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.30.jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            273,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 238,
+          "rankBox": [
+            273,
+            205,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 307.5,
+          "rankBox": [
+            273,
+            275,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 377.5,
+          "rankBox": [
+            273,
+            345,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447.5,
+          "rankBox": [
+            273,
+            415,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 1,
+          "top": 137.5,
+          "bottom": 162.5,
+          "rankBox": [
+            755,
+            134,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 197.5,
+          "bottom": 222.5,
+          "rankBox": [
+            755,
+            194,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 257.5,
+          "bottom": 282.5,
+          "rankBox": [
+            755,
+            254,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 317.5,
+          "bottom": 342.5,
+          "rankBox": [
+            755,
+            314,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 377.5,
+          "bottom": 402.5,
+          "rankBox": [
+            755,
+            374,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 11,
+        "actual": 11
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 6,
+        "actual": 6
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 6,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 6,
+        "player": 1,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 6,
+        "player": 2,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 6,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 7,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 7,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 7,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 7,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      }
+    ]
+  },
+  {
+    "match": "match-2",
+    "split": "train",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.30 (1).jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            273,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 238,
+          "rankBox": [
+            273,
+            205,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 307.5,
+          "rankBox": [
+            273,
+            275,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 377.5,
+          "rankBox": [
+            273,
+            345,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447.5,
+          "rankBox": [
+            273,
+            415,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 1,
+          "top": 178.5,
+          "bottom": 203.5,
+          "rankBox": [
+            755,
+            175,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 238.5,
+          "bottom": 263.5,
+          "rankBox": [
+            755,
+            235,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 298.5,
+          "bottom": 323.5,
+          "rankBox": [
+            755,
+            295,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 358.5,
+          "bottom": 383.5,
+          "rankBox": [
+            755,
+            355,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 418.5,
+          "bottom": 443.5,
+          "rankBox": [
+            755,
+            415,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 11,
+        "actual": 11
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 6,
+        "actual": 6
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 11,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 12,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 12,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      }
+    ]
+  },
+  {
+    "match": "match-3",
+    "split": "train",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.31.jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            272,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 238,
+          "rankBox": [
+            272,
+            205,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 307.5,
+          "rankBox": [
+            272,
+            275,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 377.5,
+          "rankBox": [
+            272,
+            345,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447,
+          "rankBox": [
+            272,
+            416,
+            42,
+            35
+          ]
+        },
+        {
+          "side": 1,
+          "top": 137,
+          "bottom": 163,
+          "rankBox": [
+            755,
+            133,
+            42,
+            34
+          ]
+        },
+        {
+          "side": 1,
+          "top": 197.5,
+          "bottom": 222.5,
+          "rankBox": [
+            755,
+            194,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 257.5,
+          "bottom": 282.5,
+          "rankBox": [
+            755,
+            254,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 317.5,
+          "bottom": 342.5,
+          "rankBox": [
+            755,
+            314,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 377,
+          "bottom": 402.5,
+          "rankBox": [
+            755,
+            373,
+            42,
+            33
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 8,
+        "actual": null
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 6,
+        "actual": 6
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 6,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 6,
+        "player": 1,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 6,
+        "player": 2,
+        "expected": 6,
+        "actual": 6
+      },
+      {
+        "placement": 6,
+        "player": 3,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 7,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 7,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 7,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 7,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      }
+    ]
+  },
+  {
+    "match": "match-3",
+    "split": "train",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.31 (1).jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            272,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 238,
+          "rankBox": [
+            272,
+            205,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 307.5,
+          "rankBox": [
+            272,
+            275,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 377.5,
+          "rankBox": [
+            272,
+            345,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447,
+          "rankBox": [
+            272,
+            416,
+            42,
+            35
+          ]
+        },
+        {
+          "side": 1,
+          "top": 178.5,
+          "bottom": 203.5,
+          "rankBox": [
+            755,
+            175,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 238.5,
+          "bottom": 263.5,
+          "rankBox": [
+            755,
+            235,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 298.5,
+          "bottom": 323.5,
+          "rankBox": [
+            755,
+            295,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 358.5,
+          "bottom": 383.5,
+          "rankBox": [
+            755,
+            355,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 418.5,
+          "bottom": 443.5,
+          "rankBox": [
+            755,
+            415,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 8,
+        "actual": null
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 6,
+        "actual": 6
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      }
+    ]
+  },
+  {
+    "match": "match-4",
+    "split": "held-out",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.39.jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 167.5,
+          "rankBox": [
+            273,
+            135,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 237.5,
+          "rankBox": [
+            273,
+            205,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 308,
+          "rankBox": [
+            273,
+            275,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 377.5,
+          "rankBox": [
+            273,
+            345,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447.5,
+          "rankBox": [
+            273,
+            415,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 1,
+          "top": 137.5,
+          "bottom": 162.5,
+          "rankBox": [
+            756,
+            134,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 197.5,
+          "bottom": 222.5,
+          "rankBox": [
+            756,
+            194,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 257.5,
+          "bottom": 282.5,
+          "rankBox": [
+            756,
+            254,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 317.5,
+          "bottom": 342,
+          "rankBox": [
+            756,
+            314,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 377.5,
+          "bottom": 402.5,
+          "rankBox": [
+            756,
+            374,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 7,
+        "actual": 7
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 7,
+        "actual": 7
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 6,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 6,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 6,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 6,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 7,
+        "player": 0,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 7,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 7,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 7,
+        "player": 3,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 0,
+        "actual": null
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      }
+    ]
+  },
+  {
+    "match": "match-4",
+    "split": "held-out",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.39 (1).jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            273,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 238,
+          "rankBox": [
+            273,
+            205,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 308,
+          "rankBox": [
+            273,
+            275,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 377.5,
+          "rankBox": [
+            273,
+            345,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447.5,
+          "rankBox": [
+            273,
+            415,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 1,
+          "top": 178,
+          "bottom": 203.5,
+          "rankBox": [
+            755,
+            174,
+            42,
+            33
+          ]
+        },
+        {
+          "side": 1,
+          "top": 238,
+          "bottom": 262.5,
+          "rankBox": [
+            755,
+            234,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 298,
+          "bottom": 323,
+          "rankBox": [
+            755,
+            294,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 358,
+          "bottom": 382.5,
+          "rankBox": [
+            755,
+            354,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 417.5,
+          "bottom": 442.5,
+          "rankBox": [
+            755,
+            414,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 7,
+        "actual": 7
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 7,
+        "actual": 7
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 5,
+        "actual": null
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 11,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 12,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      }
+    ]
+  },
+  {
+    "match": "match-5",
+    "split": "held-out",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.47.jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            272,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 237.5,
+          "rankBox": [
+            272,
+            205,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 308,
+          "rankBox": [
+            272,
+            275,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 378,
+          "rankBox": [
+            272,
+            345,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447.5,
+          "rankBox": [
+            272,
+            415,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 1,
+          "top": 137,
+          "bottom": 162.5,
+          "rankBox": [
+            755,
+            133,
+            42,
+            33
+          ]
+        },
+        {
+          "side": 1,
+          "top": 197.5,
+          "bottom": 222,
+          "rankBox": [
+            755,
+            194,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 257.5,
+          "bottom": 282.5,
+          "rankBox": [
+            755,
+            254,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 317,
+          "bottom": 342.5,
+          "rankBox": [
+            755,
+            313,
+            42,
+            33
+          ]
+        },
+        {
+          "side": 1,
+          "top": 377.5,
+          "bottom": 402.5,
+          "rankBox": [
+            755,
+            374,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 4,
+        "actual": 4
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 6,
+        "actual": 6
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 3,
+        "actual": null
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 6,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 6,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 6,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 6,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 7,
+        "player": 0,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 7,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 7,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 7,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      }
+    ]
+  },
+  {
+    "match": "match-5",
+    "split": "held-out",
+    "file": "WhatsApp Image 2026-10-18 at 20.02.48.jpeg",
+    "layout": {
+      "mode": "detected",
+      "comparison": false,
+      "panels": [
+        {
+          "side": 0,
+          "top": 139.5,
+          "bottom": 168,
+          "rankBox": [
+            272,
+            135,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 209.5,
+          "bottom": 237.5,
+          "rankBox": [
+            272,
+            205,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 0,
+          "top": 279.5,
+          "bottom": 308,
+          "rankBox": [
+            272,
+            275,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 349.5,
+          "bottom": 378,
+          "rankBox": [
+            272,
+            345,
+            42,
+            37
+          ]
+        },
+        {
+          "side": 0,
+          "top": 419.5,
+          "bottom": 447.5,
+          "rankBox": [
+            272,
+            415,
+            42,
+            36
+          ]
+        },
+        {
+          "side": 1,
+          "top": 167.5,
+          "bottom": 192.5,
+          "rankBox": [
+            754,
+            164,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 227,
+          "bottom": 252.5,
+          "rankBox": [
+            754,
+            223,
+            42,
+            33
+          ]
+        },
+        {
+          "side": 1,
+          "top": 287.5,
+          "bottom": 312.5,
+          "rankBox": [
+            754,
+            284,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 347.5,
+          "bottom": 372.5,
+          "rankBox": [
+            754,
+            344,
+            42,
+            32
+          ]
+        },
+        {
+          "side": 1,
+          "top": 407.5,
+          "bottom": 432.5,
+          "rankBox": [
+            754,
+            404,
+            42,
+            32
+          ]
+        }
+      ],
+      "width": 1392,
+      "height": 626
+    },
+    "fields": [
+      {
+        "placement": 1,
+        "player": 0,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 1,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 1,
+        "player": 2,
+        "expected": 4,
+        "actual": null
+      },
+      {
+        "placement": 1,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 2,
+        "player": 0,
+        "expected": 6,
+        "actual": 6
+      },
+      {
+        "placement": 2,
+        "player": 1,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 2,
+        "player": 2,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 2,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 0,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 3,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 3,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 4,
+        "player": 1,
+        "expected": 5,
+        "actual": 5
+      },
+      {
+        "placement": 4,
+        "player": 2,
+        "expected": 3,
+        "actual": null
+      },
+      {
+        "placement": 4,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 0,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 1,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 5,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 8,
+        "player": 1,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 8,
+        "player": 2,
+        "expected": 3,
+        "actual": 3
+      },
+      {
+        "placement": 8,
+        "player": 3,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 9,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 1,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 9,
+        "player": 2,
+        "expected": 2,
+        "actual": 2
+      },
+      {
+        "placement": 9,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 0,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 10,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 10,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 2,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 11,
+        "player": 3,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 12,
+        "player": 0,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 1,
+        "expected": 0,
+        "actual": 0
+      },
+      {
+        "placement": 12,
+        "player": 2,
+        "expected": 1,
+        "actual": 1
+      },
+      {
+        "placement": 12,
+        "player": 3,
+        "expected": 0,
+        "actual": 0
+      }
+    ]
+  }
+]

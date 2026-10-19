@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),graphs=require('../public/graphs.js');
+const match={name:'Match 1',rows:[{teamId:'a',teamName:'Alpha',placement:1,players:[{kills:3},{kills:2}]},{teamId:'b',teamName:'Beta',placement:12,players:[{kills:8}]}]},before=JSON.stringify(match);
+assert.deepEqual(graphs.kills(match).map(r=>[r.teamId,r.kills]),[['b',8],['a',5]]);
+assert.equal(graphs.kills({rows:[{overall:true,teamId:'a',teamName:'Alpha',kills:13,players:[]} ]})[0].kills,13);
+const positions=graphs.positions([match,{name:'Match 2',rows:[]},{name:'Match 3',rows:[{teamId:'a',placement:7}]}],'a');
+assert.deepEqual(positions.map(r=>r.placement),[1,null,7]);assert.equal((graphs.trend(positions,'Alpha').match(/<polyline/g)||[]).length,2);
+assert.ok(!graphs.trend([{match:'Only match',placement:1}],'Alpha').includes('NaN'));
+assert.ok(!graphs.bars([{name:'Zero',kills:0}],'kills','Kills').includes('NaN'));
+assert.ok(graphs.bars([{name:'<script>',kills:1}],'kills','Kills').includes('&lt;script&gt;'));
+assert.equal(JSON.stringify(match),before);
+console.log('PASS: team kill totals, overall kills, actual finishing positions, missing-match gaps, single-match/zero-kill charts, escaped names and immutable results.');

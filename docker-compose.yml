@@ -1,0 +1,15 @@
+services:
+  wardesk:
+    build: .
+    container_name: ffk-wardesk
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DB_PATH=/data/war.sqlite3
+    volumes:
+      - wardesk_data:/data
+
+volumes:
+  wardesk_data:

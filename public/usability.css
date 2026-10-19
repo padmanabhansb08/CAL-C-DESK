@@ -1,0 +1,85 @@
+/* Task-first spacing and readable controls shared by the four desks. */
+.add-template-preview{display:grid!important;place-items:center;font:300 64px sans-serif;color:#a8a3a3;border:1px dashed #69535d}.template-position{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}#template-editor>label{display:block;margin:14px 0}#template-editor input{width:100%;box-sizing:border-box}#template-preview{border:1px solid #493335;border-radius:8px}@media(max-width:540px){.template-position{grid-template-columns:repeat(2,minmax(0,1fr))}.add-template-preview{font-size:38px}}
+#export-results{display:inline-flex;align-items:center;gap:9px}#export-results svg{width:18px;height:18px}
+.export-templates{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}.export-template{display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:12px;border-radius:12px;gap:14px;background:#151213;white-space:normal}.export-template:hover{border-color:#e50914}.export-template img,.export-layout-preview{display:block;width:100%;aspect-ratio:1.98;object-fit:contain;background:#090909;border-radius:7px}.export-template strong{display:block;font-size:16px;color:#fff;margin-bottom:7px}.export-template small{display:block;font-size:13px;color:#a8a3a3;line-height:1.6}.export-template>span:last-child{align-self:flex-end}.export-layout-preview{padding:16px;box-sizing:border-box}.export-layout-preview b{display:block;font-size:16px;font-style:italic;color:#fff;margin-bottom:12px}.export-layout-preview i{display:block;height:9px;background:linear-gradient(90deg,#8e0a0f 10%,#252123 10%);margin:6px 0;border-radius:3px}.export-data{border-top:1px solid #44363d;padding-top:20px;display:flex;gap:16px;align-items:center;justify-content:space-between}.export-data p{font-size:13px;color:#a8a3a3;margin:7px 0}.export-data button{white-space:nowrap}
+@media(max-width:540px){.export-templates{grid-template-columns:1fr}.export-template{display:grid;grid-template-columns:100px 1fr;align-items:center;gap:12px}.export-template img,.export-layout-preview{width:100px}.export-layout-preview{padding:8px}.export-layout-preview b{font-size:9px;margin-bottom:5px}.export-layout-preview i{height:4px;margin:3px 0}.export-template>span:last-child{display:none}.export-data{align-items:flex-start;flex-direction:column}}
+.channel-shell .content{max-width:1600px;padding:24px 32px 48px}
+.channel-shell .heading{min-height:0;margin:0 0 22px;gap:16px}
+.channel-shell h1{font-size:clamp(34px,3.2vw,46px)}
+.channel-shell .eyebrow,.channel-shell .caption,.channel-shell details{font-size:13px}
+.channel-shell label{font-size:14px;line-height:1.5}
+.channel-shell input,.channel-shell select{font-size:15px;min-height:46px}
+.channel-shell button{min-height:42px;font-size:13px}
+.channel-shell button:focus-visible,.channel-shell a:focus-visible,.channel-shell summary:focus-visible{outline:2px solid #fff;outline-offset:4px}
+.channel-shell .channel-hero{height:208px;margin-bottom:20px}
+.channel-shell .hero-copy{padding-top:24px}
+.channel-shell .hero-copy h1{font-size:56px}
+.channel-shell .hero-copy p{font-size:13px;margin:8px 0 16px}
+.channel-shell .brand-kicker{font-size:10px;letter-spacing:1.5px}
+.channel-shell .stats{margin-bottom:22px}
+.channel-shell .stat{min-height:104px;padding:16px}
+.channel-shell .stat label{font-size:12px}
+.channel-shell .stat small{font-size:11px}
+.channel-shell .stat strong{font-size:36px;margin:5px 0}
+.channel-shell .section-label>span{font-size:10px}
+.channel-shell .latest-body{padding:20px 24px}
+.channel-shell .team-card li{font-size:14px;line-height:1.9}
+.channel-shell .team-card h2{font-size:26px!important}
+.channel-shell .team-grid{gap:16px}
+.channel-shell .team-menu summary{min-width:44px;min-height:44px;text-align:center}
+.channel-shell[data-page=results] .heading .actions{gap:8px}
+.channel-shell[data-page=results] .icon-button{width:auto;height:auto;display:inline-flex;gap:7px;padding:10px 13px;border-radius:24px}
+.channel-shell[data-page=results] .icon-button svg{width:17px;height:17px;flex-shrink:0}
+.channel-shell .results-controls{display:grid;grid-template-columns:minmax(220px,1fr) minmax(200px,1fr) auto;gap:16px;align-items:center;margin-bottom:18px}
+.channel-shell .results-controls .notice{padding:12px 16px;margin:0;font-size:13px;line-height:1.6}
+.channel-shell .match-finder{position:relative;align-self:end;margin-bottom:3px}
+.channel-shell .match-finder>summary{border:1px solid #4b4144;border-radius:24px;padding:12px 16px;white-space:nowrap;color:#fff}
+.channel-shell .match-finder[open] .match-search{position:absolute;right:0;top:48px;width:290px;padding:16px;margin:0;background:#151213;border:1px solid #4b4144;border-radius:12px;box-shadow:0 12px 30px #0009;z-index:15}
+.channel-shell .match-finder #match-search-count{position:absolute;right:16px;top:146px;z-index:16;background:#151213;margin:0}
+.channel-shell .tabs{margin:0 0 18px;gap:8px;display:flex;flex-wrap:wrap}
+.channel-shell .tabs button{font-size:13px;padding:10px 17px}
+.channel-shell .winner-hero{min-height:126px;padding:20px 24px 38px;margin-bottom:18px;gap:20px}
+.channel-shell .winner-copy h2{font-size:34px;margin:6px 0}
+.channel-shell .winner-copy>p{font-size:12px;margin:10px 0 0}
+.channel-shell .winner-total strong{font-size:64px;line-height:1}
+.channel-shell .winner-total>span{font-size:10px}
+.channel-shell .winner-details{bottom:10px;min-height:28px;font-size:12px}
+.channel-shell .table-wrap{padding:8px 16px;overflow:auto}
+.channel-shell .table-wrap th{font-size:12px;white-space:nowrap;padding:12px}
+.channel-shell .table-wrap td{font-size:14px;padding:12px}
+.channel-shell .table-wrap td button{font-size:12px;min-height:36px}
+.channel-shell .graph-panel{padding:20px}
+.channel-shell .workflow{margin-bottom:20px}
+.channel-shell .workflow li{font-size:14px}
+.channel-shell .dropzone{min-height:180px;padding:20px;margin:16px 0}
+.channel-shell .upload-picker{gap:10px}
+.channel-shell .upload-picker strong{font-size:32px}
+.channel-shell .upload-picker>span,.channel-shell .upload-picker small{font-size:13px;color:#c5bfc0}
+.channel-shell .upload-symbol{width:44px;height:44px}
+.channel-shell .selected-previews{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none}
+.channel-shell .selected-previews:has(>figure:only-child){max-width:540px}
+.channel-shell .selected-previews img{height:180px;max-height:230px}
+.channel-shell .selected-previews figcaption{font-size:12px;overflow-wrap:anywhere}
+.channel-shell .review-toolbar{margin:24px 0 12px}
+.channel-shell .review-grid{grid-template-columns:1fr}
+.channel-shell .review-player{grid-template-columns:minmax(150px,1fr) minmax(250px,1.3fr);gap:20px}
+.channel-shell .review-card{scroll-margin-top:85px}
+.review-jump{display:flex;gap:7px;flex-wrap:wrap;position:sticky;top:0;z-index:6;background:#0b0b0cf5;padding:12px 0;margin-bottom:12px}
+.review-jump a{display:grid;place-items:center;min-width:42px;height:40px;border:1px solid #59464b;border-radius:8px;color:#fff;text-decoration:none;font-size:13px}
+.review-jump a:hover{border-color:#e50914;background:#2c1518}
+.review-jump a.checked{color:#a8a3a3;border-style:dashed}
+@media(min-width:1400px){.channel-shell .team-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:1100px){.channel-shell .results-controls{grid-template-columns:1fr auto}.channel-shell .results-controls>.notice{grid-column:1/-1;grid-row:2}.channel-shell .heading .actions{justify-content:flex-start}.channel-shell .hero-copy h1{font-size:48px}}
+@media(max-width:760px){
+ .channel-shell .upload-symbol{display:none}.channel-shell .dropzone{min-height:150px;padding:18px}.channel-shell .intake-panel[open]>summary{margin-bottom:14px}
+ .channel-shell .content{padding:20px 18px 104px}.channel-shell .topbar{height:58px;padding:0 18px}.channel-shell .topbar-right .subscriber-count{display:none}.channel-shell .sync-button{font-size:11px}.channel-shell .watch-live{font-size:12px}.channel-shell .nav button{font-size:11px;min-height:65px}
+ .channel-shell .heading{margin-bottom:18px}.channel-shell .heading .actions{width:100%;gap:8px}.channel-shell .heading .actions button{font-size:12px;padding:10px 12px}
+ .channel-shell .channel-hero{height:200px}.channel-shell .hero-copy{padding-top:24px;margin-left:38%}.channel-shell .hero-copy h1{font-size:42px}.channel-shell .hero-copy p{font-size:12px}.channel-shell .hero-copy .brand-kicker{font-size:8px}
+ .channel-shell .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.channel-shell .stat{min-height:88px;padding:12px 16px}.channel-shell .stat strong{font-size:32px}.channel-shell .stat label{font-size:12px}
+ .channel-shell .team-card{padding:20px 16px}.channel-shell .team-card li{font-size:13px}.channel-shell .topbar-search input{font-size:14px;min-height:40px}
+ .channel-shell .winner-hero{min-height:120px;padding:18px 18px 42px}.channel-shell .winner-copy h2{font-size:30px}.channel-shell .winner-copy>p{font-size:12px}.channel-shell .winner-total strong{font-size:54px}.channel-shell .winner-total>span{font-size:9px}
+ .channel-shell .tabs button{padding:10px 13px;font-size:12px}.channel-shell .results-controls{gap:12px}.channel-shell .results-controls .notice{font-size:12px}.channel-shell .workflow li{font-size:12px}.channel-shell .workflow li:not(:last-child):after{margin:0 4px}
+ .channel-shell .selected-previews{grid-template-columns:repeat(2,minmax(0,1fr))}.channel-shell .selected-previews img{height:150px}.channel-shell .review-player{grid-template-columns:1fr;gap:8px}.channel-shell .save-bar{position:static}.channel-shell .upload-picker strong{font-size:28px}.channel-shell .upload-picker small{font-size:12px}
+}
+@media(max-width:430px){.channel-shell .team-grid{grid-template-columns:1fr}.channel-shell .selected-previews{grid-template-columns:1fr}.channel-shell .hero-copy .brand-kicker{display:none}.channel-shell .hero-copy h1{font-size:36px}.channel-shell .results-controls{grid-template-columns:1fr}.channel-shell .results-controls>.notice{grid-row:auto}.channel-shell .match-finder{justify-self:start}.channel-shell .match-finder[open] .match-search{right:auto;left:0;width:270px}.channel-shell .match-finder #match-search-count{right:auto;left:16px}.channel-shell .winner-copy h2{font-size:26px}}
+@media print{.match-finder,.review-jump{display:none!important}.channel-shell .content{padding:0}.channel-shell .table-wrap{overflow:visible}}

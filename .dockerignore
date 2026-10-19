@@ -1,0 +1,14 @@
+.git/
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ocr-cache/
+.ocr-runtime/
+war.sqlite3*
+*.png
+*.pdf
+tools/
+ocr-data/
+node_modules/
