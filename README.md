@@ -74,3 +74,7 @@ When you edit a kill count, confirm the team result and successfully save the ve
 Use **Export reviewed OCR examples** in match review to download the labeled crops for backup or future training. Examples belong to the current browser and site address; clearing site data removes them, and other devices do not receive them. Saving a verified match still succeeds if local example storage is unavailable. `node tools/check-ocr-learning.cjs` checks browser persistence, crop capture and match-save failure behavior using an isolated browser profile (Edge by default; override with `OCR_BROWSER_CHANNEL`).
 
 
+
+## Default team roster
+
+The two supplied Season 11 War List posters provide 24 editable default teams. Each team shows its original list and slot. Defaults are applied once per database; later edits, additions, and removals persist. Existing team/player identities and match history are preserved, and unrelated custom teams are kept. The roster image import has been removed; use Add team or Edit roster for changes. A database backup was taken before updating the current roster.

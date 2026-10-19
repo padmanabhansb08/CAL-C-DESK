@@ -13,7 +13,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY server.py local_ocr.py ./
+COPY server.py local_ocr.py default_rosters.py ./
 COPY public/ ./public/
 
 # Directory for SQLite database volume

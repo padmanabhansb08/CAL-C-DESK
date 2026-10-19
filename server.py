@@ -3,6 +3,7 @@ import hashlib, hmac, json, os, secrets, socket, sqlite3, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 import local_ocr
+import default_rosters
 
 ROOT = Path(__file__).parent
 DB = Path(os.environ.get('DB_PATH', ROOT / 'war.sqlite3'))
@@ -21,6 +22,8 @@ def connect():
     DB.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(DB)
     db.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
+    default_rosters.initialize(db)
+    db.commit()
     return db
 
 def get(key):
