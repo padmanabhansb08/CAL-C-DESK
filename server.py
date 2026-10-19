@@ -54,6 +54,13 @@ class Handler(SimpleHTTPRequestHandler):
         return sessions.get(cookies.get('ffk', ''), 0) > time.time()
 
     def do_GET(self):
+        if self.path == '/api/host/state':
+            key = self.headers.get('X-Host-Key', '')
+            expected = get('host_access_key')
+            if not self.authorized() and not (expected and key and hmac.compare_digest(key, expected)):
+                return self.reply(401, {'error': 'Open a current host link from your organizer.'})
+            current = json.loads(get('state') or '{"teams":[],"matches":[]}')
+            return self.reply(200, {'teams': current['teams'], 'matches': current['matches']})
         if self.path == '/api/session':
             return self.reply(200, {'setup': get('password') is None, 'authenticated': self.authorized()})
         if self.path == '/api/state':
@@ -96,6 +103,12 @@ class Handler(SimpleHTTPRequestHandler):
             sessions[token] = time.time() + 43200
             return self.reply(200, {'ok': True}, f'ffk={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200')
         if not self.authorized(): return self.reply(401, {'error': 'Please sign in.'})
+        if self.path == '/api/host/access':
+            key = get('host_access_key')
+            if data.get('rotate') or not key:
+                key = secrets.token_urlsafe(32)
+                put('host_access_key', key)
+            return self.reply(200, {'key': key})
         if self.path == '/api/matches/delete':
             match_id = data.get('id')
             if not isinstance(match_id, str) or not match_id:

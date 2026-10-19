@@ -18,7 +18,7 @@ function modal(html){$('#modal').style.width='';$('#modal').innerHTML=html;$('#m
 
 function closeModal(){$('#modal').close();}
 
-function go(next){if(busy){toast('Wait for screenshot reading to finish.');return;}if(page==='upload'&&draft&&next!=='upload'&&!confirm('Leave this unsaved match?'))return;page=next;render();}
+async function go(next){if(busy){toast('Wait for screenshot reading to finish.');return;}if(page==='upload'&&draft&&next!=='upload'&&!await confirmAction({title:'Leave this match?',message:'Your unsaved changes will be lost.',accept:'Leave match',cancel:'Stay here'}))return;page=next;render();}
 
 window.addEventListener('beforeunload',e=>{if(busy||(draft&&(!window.isMatchDraftSaved||!window.isMatchDraftSaved()))){e.preventDefault();e.returnValue='';}});
 
@@ -36,7 +36,7 @@ function roster(){return header('Before the first drop','Team roster',`<button c
 
 function teamForm(id){const t=state.teams.find(t=>t.id===id);modal(`<h2>${t?'Edit':'Register'} team</h2><form id="team-form"><label>Team name<input name="team" required maxlength="70" value="${esc(t?.name||'')}" placeholder="e.g. FFK Phoenix"></label><p class="caption">Copy exact in-game names where possible. Duplicate names are flagged during matching.</p>${Array.from({length:5},(_,i)=>`<label style="margin-top:12px">Player ${i+1} ${i===4?'· optional substitute':''}<input name="p${i}" ${i<4?'required':''} maxlength="90" value="${esc(t?.players[i]?.name||'')}"></label>`).join('')}<div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save team</button></div><p id="form-error" class="error"></p></form>`);$('#team-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),name=f.get('team').trim(),names=Array.from({length:5},(_,i)=>f.get('p'+i).trim()).filter(Boolean);if(!name||names.length<4||new Set(names).size!==names.length)return $('#form-error').textContent='Enter a team name and at least four distinct players.';if(state.teams.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase()))return $('#form-error').textContent='This team name is already registered.';const updated={...(t||{}),id:id||uid(),name,players:names.map(n=>({id:t?.players.find(p=>p.name===n)?.id||uid(),name:n}))};const prior=structuredClone(state);if(t)state.teams[state.teams.indexOf(t)]=updated;else state.teams.push(updated);try{await save();closeModal();render();toast('Roster saved');}catch(e){state=prior;$('#form-error').textContent=e.message;}};}
 
-async function deleteTeam(id){if(state.matches.some(m=>m.rows.some(r=>r.teamId===id)))return toast('This team has recorded results. Keep its roster for match history.');if(!confirm('Remove this team from the roster?'))return;const prior=structuredClone(state);state.teams=state.teams.filter(t=>t.id!==id);try{await save();render();}catch(e){state=prior;toast(e.message);}}
+async function deleteTeam(id){if(state.matches.some(m=>m.rows.some(r=>r.teamId===id)))return toast('This team has recorded results. Keep its roster for match history.');if(!await confirmAction({title:'Remove team?',message:'This team will be removed from your roster.',accept:'Remove team',cancel:'Keep team'}))return;const prior=structuredClone(state);state.teams=state.teams.filter(t=>t.id!==id);try{await save();render();}catch(e){state=prior;toast(e.message);}}
 
 function intake(){return header('Screenshot → standings','Match intake')+`<div class="notice">Two screenshots, one match. We locate Free Fire result panels and use registered names to suggest results. Use Adjust panels if the detected regions need correction. Unreadable or conflicting fields stay flagged. Review all results before saving.</div><div class="panel"><div class="form-grid"><label>Match name<input id="match-name" value="${esc(draft?.name||'Match '+(state.matches.length+1))}" maxlength="70"></label><label>Map<select id="match-map">${['Bermuda','Purgatory','Solara','Kalahari','NexTerra','Alpine'].map(x=>`<option ${draft?.map===x?'selected':''}>${x}</option>`).join('')}</select></label></div><div class="dropzone"><h2>Drop the final score.</h2><p>Select original PNG or JPG screenshots covering placements 1–12.</p><input id="screenshots" aria-label="Result screenshots" type="file" accept="image/png,image/jpeg,image/webp" multiple ${busy?'disabled':''}></div><div class="actions"><button class="primary" id="scan" ${busy?'disabled':''}>${busy?'Reading screenshots…':'Read screenshots ↗'}</button><button id="manual" ${busy?'disabled':''}>Enter results manually</button></div><p class="caption">Screenshots are read in your browser and compared on the organizer server when available. Full screenshots are not saved. Corrected kill crops are saved in this browser after you save a verified match.</p><p id="ocr-status" role="status"></p><progress id="ocr-progress" max="1" value="0" hidden></progress><div class="screenshot-list" id="sources"></div></div><div id="review">${draft?review():''}</div>`;}
 
@@ -76,17 +76,17 @@ async function exportOCRExamples(){try{const count=await WarOCRLearning.download
 
 function clearImages(){images.forEach(x=>URL.revokeObjectURL(x.url));images=[];}
 
-function discard(){if(confirm('Discard this unsaved match?')){draft=null;clearImages();render();}}
+async function discard(){if(await confirmAction({title:'Discard this match?',message:'The unsaved results will be removed.',accept:'Discard match',cancel:'Keep editing'})){draft=null;clearImages();render();}}
 
-function bind(){if(page==='upload'){$('#scan').onclick=()=>scan();$('#manual').onclick=()=>{if(draft&&!confirm('Replace this draft with blank results?'))return;clearImages();draft={id:uid(),name:$('#match-name').value,map:$('#match-map').value,rows:blankRows()};redrawReview();showSources();};bindReview();showSources();}if(page==='results'&&$('#match-select'))$('#match-select').onchange=e=>{selected=e.target.value;render();};}
+function bind(){if(page==='upload'){$('#scan').onclick=()=>scan();$('#manual').onclick=async()=>{if(draft&&!await confirmAction({title:'Start fresh?',message:'This will replace the current results with an empty match.',accept:'Start fresh',cancel:'Keep results'}))return;clearImages();draft={id:uid(),name:$('#match-name').value,map:$('#match-map').value,rows:blankRows()};redrawReview();showSources();};bindReview();showSources();}if(page==='results'&&$('#match-select'))$('#match-select').onchange=e=>{selected=e.target.value;render();};}
 
 function showSources(){if(!$('#sources'))return;$('#sources').innerHTML=images.map((im,i)=>`<div><button style="padding:0" onclick="openSource(${i})" aria-label="Open screenshot ${i+1}"><img src="${im.url}" alt="Source screenshot ${i+1}"></button><p class="caption">${im.layout?im.layout.panels.length+' panels located'+(im.layout.comparison?' · OCR cross-checked':im.layout.comparisonError?' · comparison unavailable':''):'Source screenshot'}</p><button onclick="editPanels(${i})" ${busy?'disabled':''}>Adjust panels</button></div>`).join('');}
 
 function openSource(i){window.open(images[i].url,'_blank','noopener');}
 
-async function scan(skipConfirm=false){if(state.teams.length<12)return toast('Register at least 12 teams before reading a full match.');const files=[...$('#screenshots').files];if(!files.length)return toast('Select your result screenshots first.');if(files.length>6)return toast('Use at most 6 screenshots per match.');if(files.some(f=>f.size>15*1024*1024))return toast('Each screenshot must be smaller than 15 MB.');if(!window.Tesseract)return toast('OCR could not load. Check your internet connection and reload.');if(draft&&skipConfirm!==true&&!confirm('Replace the current draft with a new scan?'))return;busy=true;$('#scan').disabled=true;$('#manual').disabled=true;$('#screenshots').disabled=true;$('#ocr-progress').hidden=false;const previousBounds=files.map(f=>images.find(im=>im.fileKey===f.name+':'+f.size)?.bounds);clearImages();draft={id:uid(),name:$('#match-name').value,map:$('#match-map').value,rows:blankRows()};let worker;try{await WarOCRLearning.load().catch(e=>console.warn('Reviewed OCR examples unavailable:',e));const localOCR=await api('ocr/status').catch(()=>({available:false}));worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status){$('#ocr-status').textContent=m.status==='recognizing text'?'Reading cropped player / kill region…':m.status;$('#ocr-progress').value=m.progress||0;}}});await worker.setParameters({tessedit_pageseg_mode:'11'});for(let fi=0;fi<files.length;fi++){const f=files[fi],url=URL.createObjectURL(f),im=new Image();im.src=url;await im.decode();images.push({url,image:im,bounds:previousBounds[fi],fileKey:f.name+':'+f.size});showSources();const rows=await WarOCR.extract(worker,im,state.teams,(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;},(text,progress)=>{$('#ocr-status').textContent=`Screenshot ${fi+1}/${files.length} · ${text}`;$('#ocr-progress').value=(fi+progress)/files.length;},{bounds:previousBounds[fi],compare:localOCR.available?async(image,boxes)=>(await api('ocr',{image,boxes})).readings:undefined});images[fi].layout=rows.layout;images[fi].rows=structuredClone(rows);showSources();rows.forEach(r=>WarOCR.merge(draft.rows[r.placement-1],r));}
+async function scan(skipConfirm=false){if(state.teams.length<12)return toast('Register at least 12 teams before reading a full match.');const files=[...$('#screenshots').files];if(!files.length)return toast('Select your result screenshots first.');if(files.length>6)return toast('Use at most 6 screenshots per match.');if(files.some(f=>f.size>15*1024*1024))return toast('Each screenshot must be smaller than 15 MB.');if(!window.Tesseract)return toast('Unable to prepare results. Check your internet connection and try again.');if(draft&&skipConfirm!==true&&!await confirmAction({title:'Replace current results?',message:'Your new screenshots will replace this unsaved match.',accept:'Replace results',cancel:'Keep results'}))return;busy=true;setMatchLoading(true);$('#scan').disabled=true;$('#manual').disabled=true;$('#screenshots').disabled=true;$('#ocr-progress').hidden=false;const previousBounds=files.map(f=>images.find(im=>im.fileKey===f.name+':'+f.size)?.bounds);clearImages();draft={id:uid(),name:$('#match-name').value,map:$('#match-map').value,rows:blankRows()};let worker;try{await WarOCRLearning.load().catch(e=>console.warn('Reviewed OCR examples unavailable:',e));const localOCR=await api('ocr/status').catch(()=>({available:false}));worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status){$('#ocr-status').textContent=m.status==='recognizing text'?'Reading cropped player / kill region…':m.status;$('#ocr-progress').value=m.progress||0;}}});await worker.setParameters({tessedit_pageseg_mode:'11'});for(let fi=0;fi<files.length;fi++){const f=files[fi],url=URL.createObjectURL(f),im=new Image();im.src=url;await im.decode();images.push({url,image:im,bounds:previousBounds[fi],fileKey:f.name+':'+f.size});showSources();const rows=await WarOCR.extract(worker,im,state.teams,(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;},(text,progress)=>{$('#ocr-status').textContent=`Screenshot ${fi+1}/${files.length} · ${text}`;$('#ocr-progress').value=(fi+progress)/files.length;},{bounds:previousBounds[fi],compare:localOCR.available?async(image,boxes)=>(await api('ocr',{image,boxes})).readings:undefined});images[fi].layout=rows.layout;images[fi].rows=structuredClone(rows);showSources();rows.forEach(r=>WarOCR.merge(draft.rows[r.placement-1],r));}
 
-draft.rows.forEach(r=>{applySubstitutes(r);if(!r.teamId)r.warnings.push('Team could not be matched confidently');if(r.players.some(p=>p.kills===null))r.warnings.push('Missing or uncertain kill counts');if(r.players.some(p=>!p.playerId))r.warnings.push('Some screenshot names do not match this registered roster');});$('#ocr-status').textContent='Reading complete. Review the proposed team matches and numbers below.';redrawReview();}catch(e){$('#ocr-status').textContent='Screenshot reading failed: '+e.message+'. You can enter the results manually.';toast('OCR incomplete. No results have been saved.');}finally{if(worker){try{await worker.terminate();}catch(e){console.warn(e);}}busy=false;$('#scan').disabled=false;$('#manual').disabled=false;$('#screenshots').disabled=false;showSources();}}
+draft.rows.forEach(r=>{applySubstitutes(r);if(!r.teamId)r.warnings.push('Team could not be matched confidently');if(r.players.some(p=>p.kills===null))r.warnings.push('Missing or uncertain kill counts');if(r.players.some(p=>!p.playerId))r.warnings.push('Some screenshot names do not match this registered roster');});$('#ocr-status').textContent='Results ready. Check the teams and kills, then save.';redrawReview();}catch(e){console.error('Screenshot processing failed',e);$('#ocr-status').textContent='Unable to prepare results. Try clearer screenshots or enter results manually.';toast('Unable to prepare results. Try again or enter results manually.');}finally{if(worker){try{await worker.terminate();}catch(e){console.warn(e);}}busy=false;setMatchLoading(false);$('#scan').disabled=false;$('#manual').disabled=false;$('#screenshots').disabled=false;showSources();}}
 
 function resultMatch(){return selected==="__overall__"?WarOverall.aggregate(state):state.matches.find(m=>m.id===selected);}
 function score(r){if(r.overall)return {kills:r.kills,placement:r.placementPoints,adjustment:r.adjustment,total:r.total};const kills=r.players.reduce((n,p)=>n+p.kills,0),placement=points[r.placement-1],adjustment=(r.adjustments||[]).reduce((n,a)=>n+a.value,0);return {kills,placement,adjustment,total:kills+placement+adjustment};}
@@ -98,7 +98,7 @@ function matchItem(m){return `<div class="match-item"><div><h3>${esc(m.name)}</h
 async function deleteMatch(){
   if(busy)return toast('Wait for the current operation to finish.');
   const match=state.matches.find(m=>m.id===selected);if(!match)return;
-  if(!confirm(`Delete "${match.name}" and its results? This cannot be undone. Registered teams will be kept.`))return;
+  if(!await confirmAction({title:'Delete match?',message:`“${match.name}” and its results will be permanently deleted. Your teams will stay saved.`,accept:'Delete match',cancel:'Keep match'}))return;
   busy=true;
   try{state=await api('matches/delete',{id:match.id});selected=state.matches.at(-1)?.id||null;render();toast('Match deleted');}
   catch(e){toast('Could not delete match: '+e.message);}
@@ -111,7 +111,63 @@ function details(teamId){const m=state.matches.find(m=>m.id===selected),r=m.rows
 
 function downloadCSV(){if(selected==="__overall__")return downloadOverallCSV();const m=state.matches.find(m=>m.id===selected);const records=tab==='teams'?[['Rank','Team','Finish','Kills','Placement points','Adjustment','Total'],...rankedRows(m).map((r,i)=>{const s=score(r);return [i+1,r.teamName,r.placement,s.kills,s.placement,s.adjustment,s.total];})]:[['Player','Team','Kills'],...m.rows.flatMap(r=>r.players.map(p=>[p.name,r.teamName,p.kills])).sort((a,b)=>b[2]-a[2])];const csv='\ufeff'+records.map(r=>r.map(v=>'"'+String(v).replace(/^[=+@\-]/,"'$&").replaceAll('"','""')+'"').join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=m.name.replace(/[^a-z0-9]/gi,'-')+'-'+tab+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 
-async function logout(){if(busy)return toast('Wait for reading to finish.');if(draft&&!confirm('Sign out and discard the unsaved match?'))return;try{await api('logout',{});draft=null;clearImages();await init();}catch(e){toast(e.message);}}
+async function logout(){if(busy)return toast('Wait for reading to finish.');if(draft&&!await confirmAction({title:'Sign out?',message:'Your unsaved match will be discarded.',accept:'Sign out',cancel:'Keep working'}))return;try{await api('logout',{});draft=null;clearImages();await init();}catch(e){toast(e.message);}}
 
 
 
+
+function setMatchLoading(active){
+  const overlay=document.querySelector('#match-loading');
+  if(overlay){overlay.hidden=!active;document.querySelector('#app').inert=active;}
+  document.querySelector('#review')?.setAttribute('aria-busy',String(active));
+}
+
+function openMatchManager(){
+  modal(`<div class="panel-head"><h2>Saved matches</h2><button type="button" onclick="closeModal()">Close</button></div><div id="saved-match-list"></div>`);
+  const list=document.querySelector('#saved-match-list');
+  state.matches.slice().reverse().forEach(match=>{
+    const row=document.createElement('div');row.className='saved-match-row';
+    const info=document.createElement('div'),name=document.createElement('strong'),meta=document.createElement('p');
+    name.textContent=match.name;meta.textContent=match.map;info.append(name,meta);
+    const actions=document.createElement('div');actions.className='actions';
+    const open=document.createElement('button');open.textContent='View';open.onclick=()=>{selected=match.id;closeModal();page='results';render();};
+    const remove=document.createElement('button');remove.className='danger';remove.textContent='Delete';remove.setAttribute('aria-label','Delete '+match.name);
+    remove.onclick=async()=>{
+      const prior=selected;closeModal();selected=match.id;await deleteMatch();
+      if(state.matches.some(m=>m.id===match.id)){selected=prior;render();openMatchManager();}
+    };
+    actions.append(open,remove);row.append(info,actions);list.append(row);
+  });
+}
+
+let pendingConfirmation = null;
+function confirmAction({title,message,accept='Continue',cancel='Cancel'}){
+  if(pendingConfirmation)return Promise.resolve(false);
+  return new Promise(resolve=>{
+    const previousFocus=document.activeElement;
+    const dialog=document.createElement('dialog');dialog.className='action-confirmation';
+    dialog.setAttribute('aria-labelledby','confirmation-title');dialog.setAttribute('aria-describedby','confirmation-message');
+    dialog.innerHTML=`<div class="confirmation-symbol" aria-hidden="true">!</div><h2 id="confirmation-title"></h2><p id="confirmation-message"></p><div class="confirmation-actions"><button type="button" data-cancel></button><button type="button" class="confirmation-accept" data-accept></button></div>`;
+    dialog.querySelector('h2').textContent=title;dialog.querySelector('p').textContent=message;
+    const keep=dialog.querySelector('[data-cancel]'),proceed=dialog.querySelector('[data-accept]');keep.textContent=cancel;proceed.textContent=accept;
+    let answer=false;
+    pendingConfirmation=dialog;
+    keep.onclick=()=>dialog.close();proceed.onclick=()=>{answer=true;dialog.close();};
+    dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();}});
+    dialog.addEventListener('close',()=>{pendingConfirmation=null;dialog.remove();if(previousFocus?.isConnected)previousFocus.focus();resolve(answer);},{once:true});
+    document.body.append(dialog);dialog.showModal();keep.focus();
+  });
+}
+
+async function openHostAccess(){
+  try{
+    const {key}=await api('host/access',{});
+    const hostURL=new URL('/host.html',location.origin);hostURL.hash=new URLSearchParams({key}).toString();
+    const broadcastURL=new URL(hostURL);broadcastURL.hash=new URLSearchParams({key,screen:'1'}).toString();
+    modal(`<h2>Host access</h2><p>Give the host this read-only link. They can present results and view talking points without changing teams or matches.</p><label>Host link<input id="host-link" readonly></label><div class="actions"><button id="copy-host-link">Copy host link</button><a id="open-host-link" target="_blank" rel="noopener">Open host desk ↗</a></div><p class="caption">For OBS, use the broadcast link as a Browser Source (1920 × 1080). Only standings appear on that screen. If more than 12 teams played, choose the desired page in the broadcast tab.</p><label>Broadcast link<input id="broadcast-link" readonly></label><div class="actions"><button id="copy-broadcast-link">Copy broadcast link</button><a id="open-broadcast-link" target="_blank" rel="noopener">Open broadcast ↗</a></div><p class="caption">Anyone with either link can read saved results. Localhost works on this computer; another device needs this computer's network address. Keep this computer running.</p><div class="actions"><button id="rotate-host-key" class="danger">Reset host links</button><button onclick="closeModal()">Close</button></div>`);
+    $('#host-link').value=hostURL;$('#broadcast-link').value=broadcastURL;$('#open-host-link').href=hostURL;$('#open-broadcast-link').href=broadcastURL;
+    const copy=async(value,input)=>{try{await navigator.clipboard.writeText(value);toast('Link copied');}catch{$(input).select();toast('Select and copy the link.');}};
+    $('#copy-host-link').onclick=()=>copy(hostURL.href,'#host-link');$('#copy-broadcast-link').onclick=()=>copy(broadcastURL.href,'#broadcast-link');
+    $('#rotate-host-key').onclick=async()=>{if(!await confirmAction({title:'Reset host links?',message:'Existing host and broadcast links will stop working. Share the new links with your host.',accept:'Reset links',cancel:'Keep links'}))return;try{await api('host/access',{rotate:true});await openHostAccess();}catch(e){toast(e.message);}};
+  }catch(e){toast('Could not open host access: '+e.message);}
+}

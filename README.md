@@ -78,3 +78,13 @@ Use **Export reviewed OCR examples** in match review to download the labeled cro
 ## Default team roster
 
 The two supplied Season 11 War List posters provide 24 editable default teams. Each team shows its original list and slot. Defaults are applied once per database; later edits, additions, and removals persist. Existing team/player identities and match history are preserved, and unrelated custom teams are kept. The roster image import has been removed; use Add team or Edit roster for changes. A database backup was taken before updating the current roster.
+
+## Host desk and broadcast view
+
+Open **Host desk** in the organizer sidebar to copy read-only host and broadcast links. Host links are stored as a secret fragment in the URL; the page sends the key in a request header. The host key cannot authorize organizer APIs. Reset host links to revoke both old links. Localhost links work on the server computer; use its LAN address for another device. The server must stay running.
+
+The host desk refreshes saved results every 10 seconds. Hold updates freezes the current figures for commentary, then Resume updates fetches the latest results. The broadcast link hides caster notes and organizer controls and fits 12 teams at 1920×1080. Additional teams are available via page buttons. OBS Browser Sources use the broadcast URL at 1920×1080.
+
+Caster figures reuse the existing overall scoring and tie rules. Gap means points behind the leader; Move compares current overall rank with the standings excluding the last saved match. New entrants display NEW. Per-match averages use only a team's appearances; win rate is wins divided by appearances. Form shows the latest three appearances. Rising-form commentary needs six appearances and compares the last three against the previous three. Player kills include substitutes; equal kill totals are reported as ties. Deaths, damage and assists are not recorded, so the desk does not invent K/D, damage or assist figures. Failed refreshes retain the last successful data and display an update warning.
+
+Core broadcast metrics align with the categories used in [Garena's esports statistics](https://esports.ff.garena.co.id/statistik); this app retains its own configured scoring rules.

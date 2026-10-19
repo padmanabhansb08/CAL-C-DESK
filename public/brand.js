@@ -1,6 +1,7 @@
 /* Appearance only: existing handlers, IDs, match data and OCR workflow remain in place. */
 (function(){
  const existing={render,overview,results,bind,roster,header,redrawReview};
+ let expandedMatch=null;
  const channel='https://www.youtube.com/@FFK_Prasanth';
  const paths={home:'M3 10 12 3l9 7v11h-6v-7H9v7H3z',teams:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3a4 4 0 0 1 0 8M22 21v-2a4 4 0 0 0-3-3.87M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0',upload:'M12 16V3m-5 5 5-5 5 5M3 16v5h18v-5',trophy:'M8 3h8v6a4 4 0 0 1-8 0V3m0 2H3v3a4 4 0 0 0 5 4m8-7h5v3a4 4 0 0 1-5 4M12 13v7m-5 1h10',search:'M21 21l-6-6M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',trash:'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7',image:'M3 3h18v18H3zM3 17l6-6 4 4 3-3 5 5M16 7h.01',download:'M12 3v12m-5-5 5 5 5-5M3 17v4h18v-4',logout:'M9 3H3v18h6m6-14 5 5-5 5m-7-5h12',instagram:'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0M17.5 6.5h.01',youtube:'M9 8l7 4-7 4zM3 5h18v14H3z',discord:'M8 5 4 6 2 17l5 3 1-3m8-12 4 1 2 11-5 3-1-3M7 16c3 2 7 2 10 0M8 11h.01M16 11h.01',bolt:'m13 2-9 12h7l-1 8 10-12h-8z'};
  const icon=(name)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.bolt}"/></svg>`;
@@ -9,7 +10,11 @@
  overview=function(){
   const original=section(existing.overview()),stats=original.querySelector('.stats')?.outerHTML||'',resume=original.querySelector('.resume-banner')?.outerHTML||'';
   const latest=state.matches.at(-1),winner=latest?.rows.find(r=>r.placement===1),leader=latest?rankedRows(latest)[0]:null;
-  return `<section class="channel-hero"><div class="hero-copy"><span class="brand-kicker">FFK PRASANTH / TOURNAMENT OPERATIONS</span><h1>MATCH DESK</h1><p>Every drop. Every elimination. Every point.</p><button class="primary" onclick="go('upload')">${icon('upload')} New match</button></div><span class="hero-edition">FREE FIRE · WAR DESK</span></section>${resume}${stats}<div class="section-label"><h2>Latest match</h2><span>THE FINAL ZONE, RECORDED</span></div>${latest?`<article class="latest-match panel"><div class="map-banner ${latest.map==='Bermuda'?'bermuda':''}"><span class="map-label">${esc(latest.map)}</span><span class="match-date">${new Date(latest.created).toLocaleDateString('en-IN')}</span></div><div class="latest-body"><div><span class="caption">LATEST VERIFIED RESULT</span><h2>${esc(latest.name)}</h2><p>${latest.rows.length} teams · ${latest.rows.reduce((n,r)=>n+score(r).kills,0)} eliminations</p></div><div class="winner-summary"><span class="booyah">${icon('trophy')} BOOYAH</span><strong>${esc(winner?.teamName||'Winner pending')}</strong>${leader?`<span class="caption">Points leader: ${esc(leader.teamName)} · ${score(leader).total} pts</span>`:''}</div><button onclick="selected='${latest.id}';page='results';render()">View results →</button></div></article>`:'<div class="panel empty"><h2>Your next war starts here</h2><p>Use New match to turn result screenshots into a verified scoreboard.</p><button onclick="go(\'roster\')">View team roster →</button></div>'}${state.matches.length>1?`<div class="panel recent-matches"><h2>Recent matches</h2>${state.matches.slice(0,-1).reverse().slice(0,3).map(matchItem).join('')}</div>`:''}<details class="desk-guide panel"><summary>How your match desk works</summary><p>Register teams → upload screenshots → review results → export standings.</p><p>Placement points + eliminations + host adjustments. Every change has a reason.</p></details>`;
+  return `<section class="channel-hero"><div class="hero-copy"><span class="brand-kicker">FFK PRASANTH / TOURNAMENT OPERATIONS</span><h1>MATCH DESK</h1><p>Every drop. Every elimination. Every point.</p><button class="primary" onclick="go('upload')">${icon('upload')} New match</button></div><span class="hero-edition">FREE FIRE · WAR DESK</span></section>${resume}${stats}<div class="section-label"><h2>Matches</h2><span>SELECT A MATCH TO EXPAND</span></div>${latest?`<div class="match-accordion">${state.matches.slice().reverse().map((match,index)=>{
+    const winner=match.rows.find(r=>r.placement===1),leader=rankedRows(match)[0];
+    const expanded=expandedMatch?expandedMatch===match.id:index===0;
+    return `<details class="match-expand panel" name="overview-matches" data-match-id="${esc(match.id)}" ${expanded?'open':''}><summary><span><strong>${esc(match.name)}</strong><small>${esc(match.map)} · ${match.rows.length} teams · ${new Date(match.created).toLocaleDateString('en-IN')}</small></span><span class="match-expand-hint">${winner?`<span class="match-booyah"><span class="match-booyah-label">BOOYAH</span><span class="match-booyah-name"><svg viewBox="0 0 32 26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20 2 7l9 7L16 2l5 12 9-9-5 15M5 24l20-.5"/></svg>${esc(state.teams.find(t=>t.id===winner.teamId)?.name||winner.teamName)}</span></span>`:''}</span></summary><div class="match-expanded-content"><div class="map-banner" data-map="${esc(match.map)}"><span class="map-label">${esc(match.map)}</span><span class="match-date">${new Date(match.created).toLocaleDateString('en-IN')}</span></div><div class="latest-body"><div><span class="caption">MATCH SUMMARY</span><h2>${esc(match.name)}</h2><p>${match.rows.length} teams · ${match.rows.reduce((n,r)=>n+score(r).kills,0)} eliminations</p></div><div class="winner-summary"><span class="booyah">${icon('trophy')} BOOYAH</span><strong>${esc(winner?.teamName||'Winner pending')}</strong>${leader?`<span class="caption">Points leader: ${esc(leader.teamName)} · ${score(leader).total} pts</span>`:''}</div><button onclick="selected='${match.id}';page='results';render()">View results →</button></div></div></details>`;
+   }).join('')}</div>`:'<div class="panel empty"><h2>Your next war starts here</h2><p>Add your first match to see it here.</p><button onclick="go(\'upload\')">New match →</button></div>'}<details class="desk-guide panel"><summary>How your match desk works</summary><p>Register teams → upload screenshots → review results → export standings.</p><p>Placement points + eliminations + host adjustments. Every change has a reason.</p></details>`;
  };
  results=function(){
   const html=existing.results();if(!state.matches.length||selected==="__overall__")return html;
@@ -19,7 +24,7 @@
    const total=score(first),hero=document.createElement('section');hero.className='winner-hero';
    hero.innerHTML=`<div class="winner-mark">${icon('trophy')}</div><div class="winner-copy"><span class="brand-kicker">#1 · TEAM STANDINGS</span><h2>${esc(first.teamName)}</h2>${first.placement===1?'<span class="booyah">BOOYAH</span>':'<span class="winner-label">POINTS LEADER</span>'}<p>Finish #${first.placement} <span>/</span> ${total.kills} eliminations <span>/</span> ${total.placement} placement points <span>/</span> ${total.adjustment} adjustment</p></div><div class="winner-total"><strong>${total.total}</strong><span>TOTAL POINTS</span></div><button onclick="details('${first.teamId}')" class="winner-details">Players / penalties →</button>`;
    const tabs=root.querySelector('.tabs');if(tabs)tabs.after(hero);else table.closest('section').before(hero);
-   table.querySelector('tbody tr')?.remove();
+   // Keep the leader in the complete standings table as well as the summary.
   }
   return root.innerHTML;
  };
@@ -29,12 +34,20 @@
   brand.className='brand channel-brand';brand.innerHTML=`${page==='overview'?'<span class="channel-monogram">FFK</span>':'<img class="channel-profile" src="assets/channel-avatar.jpg" alt="FFK Prasanth channel profile">'}<span class="channel-wordmark">FFK<br>PRASANTH<small>WAR DESK</small></span>`;
   sidebar.querySelector('.subbrand')?.remove();
   const icons=['home','teams','upload','trophy'];sidebar.querySelectorAll('.nav button').forEach((button,i)=>{const count=button.querySelector('small');if(count)count.className='nav-count';const span=document.createElement('span');span.className='nav-icon';span.innerHTML=icon(icons[i]);button.prepend(span);});
+  const hostButton=document.createElement('button');hostButton.className='host-access-button';hostButton.innerHTML=icon('trophy')+'<span>Host desk</span>';hostButton.onclick=openHostAccess;sidebar.querySelector('.nav').after(hostButton);
   const footer=sidebar.querySelector('.sidebar-footer'),signout=footer.querySelector('button');signout.classList.add('signout');signout.innerHTML=icon('logout')+'<span>Sign out</span>';
   footer.replaceChildren();const socials=document.createElement('div');socials.className='channel-socials';socials.innerHTML=`<a href="https://www.instagram.com/ffk_prasanth/" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on Instagram">${icon('instagram')}</a><a href="${channel}" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on YouTube">${icon('youtube')}</a><span aria-label="Discord" title="Discord community — invite not provided">${icon('discord')}</span>`;footer.append(socials,signout);
   const bar=document.querySelector('.topbar'),sync=bar.querySelector('.sync-button'),breadcrumbs=document.createElement('div');breadcrumbs.className='brand-breadcrumb';breadcrumbs.innerHTML=`<span>FFK WAR DESK</span><i>/</i><strong>${({overview:'Overview',roster:'Team roster',upload:'New match',results:'Match results'})[page]}</strong>`;
-  const right=document.createElement('div');right.className='topbar-right';right.innerHTML=`<span class="subscriber-count"><strong>915K</strong><small>SUBSCRIBERS</small></span><a class="watch-live" href="${channel}" target="_blank" rel="noopener noreferrer">${icon('youtube')} Watch live</a>`;if(sync)right.append(sync);const account=document.createElement('details');account.className='mobile-account';account.innerHTML='<summary aria-label="Channel and account menu">•••</summary>';const accountPanel=document.createElement('div');accountPanel.className='mobile-account-panel';accountPanel.append(socials.cloneNode(true),signout.cloneNode(true));account.append(accountPanel);right.append(account);bar.replaceChildren(breadcrumbs,right);
+  const right=document.createElement('div');right.className='topbar-right';right.innerHTML=`<span class="subscriber-count"><strong>915K</strong><small>SUBSCRIBERS</small></span><a class="watch-live" href="${channel}" target="_blank" rel="noopener noreferrer">${icon('youtube')} Watch live</a>`;if(sync)right.append(sync);const account=document.createElement('details');account.className='mobile-account';account.innerHTML='<summary aria-label="Channel and account menu">•••</summary>';const accountPanel=document.createElement('div');accountPanel.className='mobile-account-panel';accountPanel.append(socials.cloneNode(true),signout.cloneNode(true));account.append(accountPanel);right.append(account);bar.replaceChildren(right);right.querySelector('.subscriber-count')?.remove();right.querySelector('.watch-live')?.remove();WarInsights.mount(bar,state);
+  if(page==='overview'){
+   document.querySelectorAll('.match-expand').forEach(card=>card.addEventListener('toggle',()=>{
+    if(!card.open)return;
+    expandedMatch=card.dataset.matchId;
+    document.querySelectorAll('.match-expand').forEach(other=>{if(other!==card)other.open=false;});
+   }));
+  }
   if(page==='roster'){
-   const search=document.querySelector('.search-bar'),input=document.querySelector('#roster-search');if(search){search.classList.add('topbar-search');bar.insertBefore(search,right);input.placeholder='Search teams or players';const count=search.querySelector('#roster-count');if(count){count.classList.add('roster-result-count');document.querySelector('.heading h1').after(count);}}
+   const search=document.querySelector('.search-bar'),input=document.querySelector('#roster-search');if(search){search.classList.add('topbar-search');document.querySelector('.heading').after(search);input.placeholder='Search teams or players';const count=search.querySelector('#roster-count');if(count){count.classList.add('roster-result-count');document.querySelector('.heading h1').after(count);}}
    document.querySelectorAll('.team-card').forEach((card,i)=>{const heading=card.querySelector('h2'),badge=document.createElement('span');badge.className='team-initials';badge.textContent=initials(state.teams[i].name);heading.before(badge);const actions=card.querySelector('.actions'),menu=document.createElement('details');menu.className='team-menu';const summary=document.createElement('summary');summary.setAttribute('aria-label','Manage '+state.teams[i].name);summary.textContent='•••';menu.append(summary,actions);card.append(menu);});
   }
   if(page==='upload'){
@@ -57,12 +70,39 @@
     const controls=select.closest('.form-grid');controls?.classList.add('results-controls');
     const search=document.querySelector('.match-search'),count=document.querySelector('#match-search-count');
     if(search&&controls){const disclosure=document.createElement('details');disclosure.className='match-finder no-print';const summary=document.createElement('summary');summary.textContent='Find a match';disclosure.append(summary,search);if(count)disclosure.append(count);controls.append(disclosure);}
+    if(controls){
+     controls.classList.add('compact-results-controls');
+     controls.querySelector('.notice')?.remove();
+     controls.querySelector('.match-finder')?.remove();
+     const manage=document.createElement('button');manage.type='button';manage.className='manage-matches';manage.textContent='Manage matches';manage.onclick=openMatchManager;controls.append(manage);
+    }
     const tabs=content.querySelector('.tabs');if(tabs){tabs.setAttribute('aria-label','Result views');tabs.querySelectorAll('button').forEach(button=>{button.setAttribute('aria-pressed',String(button.classList.contains('active')));});}
    }
+   if(tab==='teams'){
+    const match=resultMatch(),ranked=match?.isOverall?match.rows:match?rankedRows(match):[];
+    const leaders=ranked.slice(0,3);
+    if(leaders.length){
+     const podium=document.createElement('section');podium.className='results-podium';podium.setAttribute('aria-label','Top three teams by points');
+     leaders.forEach((row,index)=>{
+      const rank=row.rank||index+1,total=score(row),card=document.createElement('button');card.type='button';card.className='podium-team podium-place-'+(index+1);
+      card.setAttribute('aria-label',`${row.teamName}, rank ${rank}, ${total.total} points. View details`);
+      card.innerHTML=`<span class="podium-medal" aria-hidden="true">${index===0?icon('trophy'):String(rank).padStart(2,'0')}</span><span class="podium-name">${esc(row.teamName)}</span><span class="podium-points">${total.total}<small>POINTS</small></span><span class="podium-meta">${total.kills} kills · ${match.isOverall?row.wins+' wins':'Finish #'+row.placement}</span><span class="podium-step">#${rank}</span>`;
+      card.onclick=()=>match.isOverall?overallBreakdown(row.teamId):details(row.teamId);podium.append(card);
+     });
+     const hero=content.querySelector('.winner-hero');if(hero)hero.replaceWith(podium);else content.querySelector('.tabs')?.after(podium);
+    }
+   }
+   const toolbar=document.createElement('div');toolbar.className='results-toolbar no-print';
+   const controls=content.querySelector('.results-controls'),views=content.querySelector('.tabs');
+   if(controls&&views){controls.before(toolbar);toolbar.append(controls,views);}
+   const labels={'Team standings':'Teams','Player kill leaderboard':'Players','Kill graph':'Kill graph','Position graph':'Position graph'};
+   views?.querySelectorAll('button').forEach(button=>{button.textContent=labels[button.textContent.trim()]||button.textContent;});
+   content.querySelectorAll('.table-wrap th').forEach(th=>{const text=th.textContent.trim();th.title=text;th.textContent=({'Placement pts':'Place pts','Total pts':'Points','Adjustment':'Adj.','Manage':'Details'})[text]||text;});
+   content.querySelectorAll('.table-wrap td button').forEach(button=>{button.title=button.textContent;button.textContent='Details';});
    content.querySelectorAll('.heading .icon-button').forEach(button=>{const label=document.createElement('span');label.textContent=button.getAttribute('aria-label');button.append(label);});
   }
   if(page==='upload'){
-   const summary=document.querySelector('.intake-panel>summary');if(summary)summary.textContent=draft?'Screenshots & match settings — expand to edit':'1. Add screenshots & match details';
+   const summary=document.querySelector('.intake-panel>summary');if(summary)summary.textContent=draft?'Match details':'Match details';
    addReviewNavigation();
   }
  }

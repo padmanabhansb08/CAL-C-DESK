@@ -8,7 +8,7 @@ VERSION = 'season11-poster-defaults-v1'
 LISTS = [
     [
         ['DEEPAK', 'NONAME', 'NARUTO', 'XEBEC'],
-        ['KO OBITO', 'TOM', 'ERDOR', 'BANKAI'],
+        ['KO OBITO', 'TOM', 'ERDOR', 'BANKAI', 'KO TOBI'],
         ['ARTLORD', 'ZEN', 'DEVIL', 'KAIPULLA'],
         ['SANJAY 1M', 'DINESH', 'SPEED', 'NIVASH'],
         ['AUTOBOTS', 'ITACHI', 'APPU', 'SURVESH'],

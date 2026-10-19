@@ -40,10 +40,40 @@
     const counts=new Map();votes.filter(v=>/^\d{1,2}$/.test(v.text.trim())&&v.confidence>=60).forEach(v=>counts.set(Number(v.text.trim()),(counts.get(Number(v.text.trim()))||0)+1));
     const winner=[...counts].sort((a,b)=>b[1]-a[1])[0];return winner&&winner[1]>=2?winner[0]:null;
   }
+  function smallDigitConsensus(votes){
+    const valid=votes.filter(v=>/^\d{1,2}$/.test(v.text.trim())&&v.confidence>=45);
+    const values=new Set(valid.map(v=>Number(v.text.trim())));
+    if(values.size!==1||valid.length<2)return null;
+    const value=Number(valid[0].text.trim());return value===0||value===1?value:null;
+  }
+  async function retrySmallDigit(worker,source,box,createCanvas,previous){
+    const votes=[...previous];
+    // A tighter, lower-threshold crop preserves thin 1s and faint zero outlines.
+    for(const segmentation of ['10','8']){
+      const crop=prepareOriginal(source,box,'digits',createCanvas,2);
+      if(crop.ink<3)return null;
+      await worker.setParameters({tessedit_pageseg_mode:segmentation,tessedit_char_whitelist:'0123456789'});
+      votes.push((await worker.recognize(crop.canvas.toDataURL())).data);
+    }
+    return smallDigitConsensus(votes);
+  }
   async function read(worker,source,box,mode,createCanvas,variant=0){const p=(mode==='name'&&source.ocrOriginal&&(source.ocrOriginal.naturalWidth||source.ocrOriginal.width)>source.width?prepareOriginal:prepare)(source,box,mode,createCanvas,variant);if(p.ink<3)return {text:'',confidence:0};await worker.setParameters({tessedit_pageseg_mode:mode==='rank'?'6':'7',tessedit_char_whitelist:mode==='digits'||mode==='rank'?'0123456789':''});const {data}=await worker.recognize(p.canvas.toDataURL(),{},mode==='rank'?{blocks:true,text:true}:undefined);if(!data.words&&data.blocks)data.words=data.blocks.flatMap(b=>(b.paragraphs||[]).flatMap(p=>(p.lines||[]).flatMap(l=>l.words||[])));return data;}
-  function assignment(players,team){let best={score:-1,indices:[]};function visit(i,used,sum,indices){if(i===4){if(sum>best.score)best={score:sum,indices:[...indices]};return;}team.players.forEach((p,j)=>{if(!used.has(j)){used.add(j);visit(i+1,used,sum+similarity(players[i].name,p.name),[...indices,j]);used.delete(j);}});}visit(0,new Set(),0,[]);return {...best,score:best.score/4,team};}
-  function matchTeam(players,teams){const ranked=teams.map(t=>assignment(players,t)).sort((a,b)=>b.score-a.score),best=ranked[0];if(!best)return {teamId:'',players};const scores=best.indices.map((j,i)=>similarity(players[i].name,best.team.players[j].name));const strong=scores.filter(x=>x>=.7).length;const valid=best.score>=.58&&strong>=2&&best.score-(ranked[1]?.score||0)>=.12;
-    if(valid)players.forEach((p,i)=>{const found=best.team.players[best.indices[i]];p.rawName=p.rawName||p.name;p.matchScore=scores[i];if(scores[i]>=.55){p.playerId=found.id;p.name=found.name;p.isSubstitute=false;}});
+  // Match distinctive roster words, ignoring clan tags and decorative OCR fragments.
+  function rosterSimilarity(observed,registered){
+    const identity=value=>normalize(value).replace(/^ko(?=[a-z]{3})/,'');
+    const a=identity(observed),b=identity(registered);
+    if(!a||!b||a==='ko'||a==='ffk')return 0;
+    if(a===b)return 1;
+    const words=String(observed||'').split(/[^\p{L}\p{N}]+/u).map(normalize).filter(Boolean);
+    if(b.length>=3&&words.includes(b))return .98;
+    if(b.length>=4&&a.includes(b))return .96;
+    // Short names need a complete word, or only a small clan-tag remnant.
+    if(b.length<=3)return b.length===3&&a.endsWith(b)&&a.length-b.length<=2?.94:0;
+    return Math.min(.89,similarity(a,b));
+  }
+  function assignment(players,team){let best={score:-1,indices:[]};function visit(i,used,sum,indices){if(i===4){if(sum>best.score)best={score:sum,indices:[...indices]};return;}team.players.forEach((p,j)=>{if(!used.has(j)){used.add(j);visit(i+1,used,sum+rosterSimilarity(players[i].rawName||players[i].name,p.name),[...indices,j]);used.delete(j);}});}visit(0,new Set(),0,[]);return {...best,score:best.score/4,team};}
+  function matchTeam(players,teams){const ranked=teams.map(t=>assignment(players,t)).sort((a,b)=>b.score-a.score),best=ranked[0];if(!best)return {teamId:'',players};const scores=best.indices.map((j,i)=>rosterSimilarity(players[i].rawName||players[i].name,best.team.players[j].name));const strong=scores.filter(x=>x>=.7).length;const anchors=scores.filter(x=>x>=.94).length;const valid=(best.score>=.58&&strong>=2||best.score>=.45&&anchors>=2)&&best.score-(ranked[1]?.score||0)>=.12;
+    if(valid)players.forEach((p,i)=>{const found=best.team.players[best.indices[i]];p.rawName=p.rawName||p.name;p.matchScore=scores[i];const alternatives=best.team.players.filter((_,j)=>j!==best.indices[i]).map(other=>rosterSimilarity(p.rawName||p.name,other.name));if(scores[i]>=.7&&scores[i]-Math.max(0,...alternatives)>=.12){p.playerId=found.id;p.name=found.name;p.isSubstitute=false;}});
     return {teamId:valid?best.team.id:'',players,matchConfidence:best.score};
   }
   function playerRegion(panel,i){const left=panel.side===0,column=i%2?panel.second:panel.first,cy=i<2?panel.top:panel.bottom,gap=panel.second.x-panel.first.x,killX=Math.floor(column.x0-4),nameX=Math.round(column.x-gap*(left?.52:.67)),height=Math.round(Math.max(25,(panel.bottom-panel.top)*.75));const line=column.lines.find(l=>Math.abs(l.y-cy)<8);const digits=line?[line.x0-2,line.y0-2,line.x1-line.x0+5,line.y1-line.y0+5]:[Math.floor(column.x0-2),Math.round(cy-height/2),Math.ceil(column.x1-column.x0+5),height];return {name:[nameX,Math.round(cy-height/2),killX-nameX-3,height],digits};}
@@ -74,6 +104,7 @@
         let kills=shape&&ocrValue!==null&&shape.value!==ocrValue?null:ocrValue??shape?.value??null;
         // Original pixels may resolve abstentions, but cannot override conflicting evidence.
         if(kills===null&&!shape&&ocrValue===null){const original=await originalDigit(worker,source,digitBox,createCanvas);if(original!==null&&!votes.some(v=>/^\d{1,2}$/.test(v.text.trim())&&v.confidence>=45&&Number(v.text.trim())!==original))kills=original;}
+        if(kills===null&&!shape&&ocrValue===null)kills=await retrySmallDigit(worker,source,digitBox,createCanvas,votes);
         const second=comparison[(ai*4+i)*2+1];if(second?.confidence>=.9&&/^\d{1,2}$/.test(second.text.trim())){const alternative=Number(second.text.trim());kills=kills!==null&&kills!==alternative?null:alternative;}
         players.push({name:name.text.replace(/\s+/g,' ').trim(),playerId:'',kills,killConfidence:Math.max(...votes.map(v=>v.confidence)),ocrRegion:{name:nameBox,digits:digitBox,width:source.width,height:source.height}});
       }
@@ -114,7 +145,8 @@
         for(const segmentation of ['8','10']){await worker.setParameters({tessedit_pageseg_mode:segmentation,tessedit_char_whitelist:'0123456789'});votes.push((await worker.recognize(prepare(source,digitBox,'digits',createCanvas,segmentation==='10'?1:0).canvas.toDataURL())).data);}
         const candidates=votes.filter(v=>/^\d{1,2}$/.test(v.text.trim())),counts=new Map();candidates.forEach(v=>counts.set(v.text.trim(),(counts.get(v.text.trim())||0)+1));const winner=[...counts].sort((a,b)=>b[1]-a[1])[0];
         const shape=templateDigit(prepare(source,digitBox,'digits',createCanvas,1).canvas,root.WarDigitTemplates)||(!a.left?templateDigit(prepare(source,digitBox,'digits',createCanvas,2).canvas,root.WarDigitTemplates):null);
-        const kills=shape?shape.value:winner&&winner[1]>=2&&candidates.some(v=>v.text.trim()===winner[0]&&v.confidence>=45)?Number(winner[0]):null;
+        let kills=shape?shape.value:winner&&winner[1]>=2&&candidates.some(v=>v.text.trim()===winner[0]&&v.confidence>=45)?Number(winner[0]):null;
+        if(kills===null&&!shape)kills=await retrySmallDigit(worker,source,digitBox,createCanvas,votes);
         players.push({name:name.text.replace(/\s+/g,' ').trim(),playerId:'',kills,killConfidence:number.confidence,ocrRegion:{name:nameBox,digits:digitBox,width:source.width,height:source.height}});
       }
       rows.push({placement:a.rank,...matchTeam(players,teams)});
@@ -131,6 +163,6 @@
       if(p.playerId&&(!old.playerId||(p.matchScore||0)>(old.matchScore||0))){old.playerId=p.playerId;old.name=p.name;old.matchScore=p.matchScore;}
     });
   }
-  const api={prepare,prepareOriginal,originalRegion,extract,matchTeam,merge,similarity,digitFeature,templateDigit,playerRegion};if(typeof module!=='undefined')module.exports=api;else root.WarOCR=api;
+  const api={prepare,prepareOriginal,originalRegion,extract,matchTeam,merge,similarity,rosterSimilarity,smallDigitConsensus,digitFeature,templateDigit,playerRegion};if(typeof module!=='undefined')module.exports=api;else root.WarOCR=api;
 })(typeof window!=='undefined'?window:globalThis);
 
