@@ -119,6 +119,9 @@ class Handler(SimpleHTTPRequestHandler):
                 db.execute('BEGIN IMMEDIATE')
                 row = db.execute('SELECT value FROM settings WHERE key=?', ('state',)).fetchone()
                 current = json.loads(row[0]) if row else {'teams': [], 'matches': []}
+                target = next((m for m in current['matches'] if m.get('id') == match_id), None)
+                if target and current.get('war', {}).get('qualified', {}).get(target.get('stage')):
+                    return self.reply(409, {'error': 'Reopen this set in War manager before deleting its results.'})
                 remaining = [m for m in current['matches'] if m.get('id') != match_id]
                 if len(remaining) == len(current['matches']):
                     return self.reply(404, {'error': 'This match has already been removed. Refresh the page.'})
@@ -138,7 +141,26 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == '/api/state':
             if not isinstance(data.get('teams'), list) or not isinstance(data.get('matches'), list):
                 return self.reply(400, {'error': 'Invalid war data'})
-            put('state', json.dumps(data))
+            with connect() as db:
+                db.execute('BEGIN IMMEDIATE')
+                row = db.execute('SELECT value FROM settings WHERE key=?', ('state',)).fetchone()
+                previous = json.loads(row[0]) if row else {}
+                old_war, new_war = previous.get('war') or {}, data.get('war') or {}
+                for stage in ('A', 'B', 'C'):
+                    if not old_war.get('qualified', {}).get(stage):
+                        continue
+                    if not new_war.get('qualified', {}).get(stage):
+                        # Reopening an upstream set must invalidate dependent results.
+                        if (stage != 'C' and new_war.get('qualified', {}).get('C')) or new_war.get('cs'):
+                            return self.reply(409, {'error': 'Reopening a set must clear downstream qualification and CS results.'})
+                        continue
+                    old_matches = [m for m in previous.get('matches', []) if m.get('stage') == stage]
+                    new_matches = [m for m in data['matches'] if m.get('stage') == stage]
+                    old_members = old_war.get('groups', {}).get(stage) if stage != 'C' else sum((old_war.get('qualified', {}).get(s, []) for s in ('A', 'B')), [])
+                    new_members = new_war.get('groups', {}).get(stage) if stage != 'C' else sum((new_war.get('qualified', {}).get(s, []) for s in ('A', 'B')), [])
+                    if old_matches != new_matches or old_members != new_members or old_war['qualified'][stage] != new_war['qualified'][stage]:
+                        return self.reply(409, {'error': 'Reopen Set ' + stage + ' in War manager before changing its results or qualifiers.'})
+                db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('state', json.dumps(data)))
             return self.reply(200, {'ok': True})
         self.reply(404, {'error': 'Not found'})
 

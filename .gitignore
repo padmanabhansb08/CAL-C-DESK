@@ -3,3 +3,4 @@ war.sqlite3-*
 __pycache__/
 .ocr-cache/
 .ocr-runtime/
+.backups/

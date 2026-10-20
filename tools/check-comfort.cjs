@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),guide=require('../public/comfort.js'),tournament=require('../public/tournament.js');
+const state={teams:Array.from({length:24},(_,i)=>({id:'team'+i})),matches:[]};
+assert.deepEqual(Array.from({length:7},(_,i)=>guide.mapForMatch(i+1)),['Bermuda','NexTerra','Purgatory','Kalahari','Solara','Bermuda','NexTerra']);
+assert.equal(guide.next(state),'A');state.war=tournament.initial();assert.equal(guide.next(state),'A');
+assert.deepEqual(state.war.targets,{A:6,B:6,C:6});assert.equal(guide.progress(state,'B').target,6);
+state.matches=[{stage:'A'},{stage:'A'},{stage:'B'},{stage:undefined}];state.war.targets.A=3;
+assert.deepEqual(guide.progress(state,'A'),{played:2,target:3,locked:false});
+state.war.qualified.A=state.teams.slice(0,6).map(t=>t.id);assert.equal(guide.next(state),'B');
+state.war.qualified.B=state.teams.slice(12,18).map(t=>t.id);assert.equal(guide.next(state),'C');
+state.war.qualified.C=state.teams.slice(0,4).map(t=>t.id);assert.equal(guide.next(state),'finals');
+console.log('PASS: result-first routing without allocation, stage progress and qualification transitions.');

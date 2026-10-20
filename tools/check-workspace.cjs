@@ -2,6 +2,7 @@
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict'),path=require('node:path');
 const storage=new Map(),listeners={};let remote={teams:[{id:'t',name:'Original',players:[]}],matches:[]},writes=0,quota=false;
 const context=vm.createContext({console,structuredClone,crypto:require('node:crypto').webcrypto,setTimeout,clearTimeout,setInterval:()=>0,URL,Blob,
+ fetch:async()=>({ok:true,json:async()=>structuredClone(remote)}),
  document:{querySelector:()=>null,addEventListener(){},createElement(){return {};},querySelectorAll:()=>[]},
  window:{addEventListener(name,fn){listeners[name]=fn;}},
  localStorage:{getItem:key=>storage.get(key)||null,setItem(key,value){if(quota&&value.includes('evidenceCrop'))throw Error('Quota');storage.set(key,value);},removeItem:key=>storage.delete(key)},
@@ -10,6 +11,7 @@ vm.runInContext(fs.readFileSync(path.join(__dirname,'../public/app.js'),'utf8'),
 context.mockAPI=async(route,data)=>{if(data===undefined)return structuredClone(remote);remote=JSON.parse(JSON.stringify(data));writes++;return {ok:true};};
 vm.runInContext('api=mockAPI;init=async()=>{};',context);
 vm.runInContext(fs.readFileSync(path.join(__dirname,'../public/workspace.js'),'utf8'),context);
+vm.runInContext(fs.readFileSync(path.join(__dirname,'../public/tournament.js'),'utf8'),context);
 (async()=>{
  await vm.runInContext("(async()=>{state=await api('state');state.teams[0].name='Local edit';})()",context);
  remote.teams.push({id:'new',name:'Added elsewhere',players:[]});

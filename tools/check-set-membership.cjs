@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict'),war=require('../public/tournament.js');
+const s={teams:Array.from({length:25},(_,i)=>({id:'t'+i,players:[]})),matches:[]};
+const make=(set,ids)=>({id:set+s.matches.length,stage:set,rows:ids.map(teamId=>({teamId}))});
+const a=['t20','t14','t2','t5','t9','t1','t17','t22','t13','t3','t12','t7'];
+assert.equal(war.availableTeams(s,'A').length,25);
+const first=make('A',a);war.registerResult(s,first);assert.deepEqual(s.war.groups.A,a);s.matches.push(first);
+assert.equal(war.availableTeams(s,'B').length,13);assert.equal(war.availableTeams(s,'B').some(t=>a.includes(t.id)),false);
+war.registerResult(s,make('A',a.slice().reverse()));assert.deepEqual(s.war.groups.A,a,'Later match placements cannot change membership order');
+assert.throws(()=>war.registerResult(s,make('A',[...a.slice(0,11),'t24'])),/same 12/);
+assert.throws(()=>war.registerResult(s,make('B',a)),/both/);
+assert.throws(()=>war.registerResult(s,make('B',Array(12).fill('t0'))),/different/);
+const b=war.availableTeams(s,'B').slice(0,12).map(t=>t.id),second=make('B',b);war.registerResult(s,second);s.matches.push(second);assert.deepEqual(s.war.groups.B,b);
+assert.throws(()=>war.registerResult(s,make('C',a)),/qualified|semi-final/);
+s.war.qualified.A=a.slice(0,6);s.war.qualified.B=b.slice(0,6);
+war.registerResult(s,make('C',[...s.war.qualified.A,...s.war.qualified.B]));
+assert.throws(()=>war.registerResult(s,first),/Reopen/);
+const legacy={teams:s.teams,matches:[],war:war.initial()};legacy.war.groups={A:b,B:a};war.registerResult(legacy,make('A',a));assert.deepEqual(legacy.war.groups.A,a,'First verified result replaces unsaved legacy allocation');
+console.log('PASS: PT-derived sets, arbitrary roster order, stable later matches, disjoint A/B, duplicate rejection, qualified C and legacy allocation replacement.');

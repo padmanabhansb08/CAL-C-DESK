@@ -68,13 +68,35 @@
     if(b.length>=3&&words.includes(b))return .98;
     if(b.length>=4&&a.includes(b))return .96;
     // Short names need a complete word, or only a small clan-tag remnant.
-    if(b.length<=3)return b.length===3&&a.endsWith(b)&&a.length-b.length<=2?.94:0;
+    if(b.length<=3){
+      // A single trailing OCR digit is common on decorated short names (Ram0?).
+      // Require an isolated token; RAMBO and meaningful IDs such as RAM123 stay distinct.
+      if(b.length===3&&words.some(word=>word.length===4&&word.startsWith(b)&&/\d$/.test(word)))return .94;
+      return b.length===3&&a.endsWith(b)&&a.length-b.length<=2?.94:0;
+    }
     return Math.min(.89,similarity(a,b));
   }
-  function assignment(players,team){let best={score:-1,indices:[]};function visit(i,used,sum,indices){if(i===4){if(sum>best.score)best={score:sum,indices:[...indices]};return;}team.players.forEach((p,j)=>{if(!used.has(j)){used.add(j);visit(i+1,used,sum+rosterSimilarity(players[i].rawName||players[i].name,p.name),[...indices,j]);used.delete(j);}});}visit(0,new Set(),0,[]);return {...best,score:best.score/4,team};}
-  function matchTeam(players,teams){const ranked=teams.map(t=>assignment(players,t)).sort((a,b)=>b.score-a.score),best=ranked[0];if(!best)return {teamId:'',players};const scores=best.indices.map((j,i)=>rosterSimilarity(players[i].rawName||players[i].name,best.team.players[j].name));const strong=scores.filter(x=>x>=.7).length;const anchors=scores.filter(x=>x>=.94).length;const valid=(best.score>=.58&&strong>=2||best.score>=.45&&anchors>=2)&&best.score-(ranked[1]?.score||0)>=.12;
-    if(valid)players.forEach((p,i)=>{const found=best.team.players[best.indices[i]];p.rawName=p.rawName||p.name;p.matchScore=scores[i];const alternatives=best.team.players.filter((_,j)=>j!==best.indices[i]).map(other=>rosterSimilarity(p.rawName||p.name,other.name));if(scores[i]>=.7&&scores[i]-Math.max(0,...alternatives)>=.12){p.playerId=found.id;p.name=found.name;p.isSubstitute=false;}});
+  function playerSimilarity(observed,player){const key=normalize(observed);return key.length>=4&&(player.ocrAliases||[]).some(alias=>normalize(alias)===key)?1:rosterSimilarity(observed,player.name);}
+  function rowSimilarity(row,player){return row.identityEdited?(row.isSubstitute?0:row.playerId===player.id?1:-1):playerSimilarity(row.rawName||row.name,player);}
+  function assignment(players,team){let best={score:-1,indices:[]};function visit(i,used,sum,indices){if(i===4){if(sum>best.score)best={score:sum,indices:[...indices]};return;}team.players.forEach((p,j)=>{if(!used.has(j)){used.add(j);visit(i+1,used,sum+rowSimilarity(players[i],p),[...indices,j]);used.delete(j);}});}visit(0,new Set(),0,[]);return {...best,score:best.score/4,team};}
+  function matchTeam(players,teams,options={}){const ranked=teams.map(t=>assignment(players,t)).filter(t=>t.indices.length===4).sort((a,b)=>b.score-a.score),best=ranked[0];if(!best)return {teamId:'',players};const scores=best.indices.map((j,i)=>rowSimilarity(players[i],best.team.players[j]));const strong=scores.filter(x=>x>=.7).length;const anchors=scores.filter(x=>x>=.94).length;const trusted=teams.length===1&&options.trustedTeamId===best.team.id;const valid=trusted||((best.score>=.58&&strong>=2||best.score>=.45&&anchors>=2)&&best.score-(ranked[1]?.score||0)>=.12);
+    if(valid)players.forEach((p,i)=>{if(p.identityEdited)return;const found=best.team.players[best.indices[i]];p.rawName=p.rawName||p.name;p.matchScore=scores[i];const alternatives=best.team.players.filter((_,j)=>j!==best.indices[i]).map(other=>playerSimilarity(p.rawName||p.name,other));if(scores[i]>=.7&&scores[i]-Math.max(0,...alternatives)>=.12){p.playerId=found.id;p.name=found.name;p.isSubstitute=false;}});
     return {teamId:valid?best.team.id:'',players,matchConfidence:best.score};
+  }
+  function rememberAliases(teams,rows){
+    let count=0;
+    for(const row of rows){if(!row.confirmed)continue;const team=teams.find(t=>t.id===row.teamId);if(!team)continue;
+      for(const p of row.players){
+        if(!p.identityEdited||p.isSubstitute||!p.rawName)continue;
+        const player=team.players.find(x=>x.id===p.playerId),raw=p.rawName.trim().slice(0,90),key=normalize(raw);
+        if(!player||key.length<4||key===normalize(player.name))continue;
+        // Keep conflicting corrections unresolved rather than teaching the wrong identity.
+        if(team.players.some(other=>other.id!==player.id&&(normalize(other.name)===key||(other.ocrAliases||[]).some(a=>normalize(a)===key))))continue;
+        const aliases=player.ocrAliases||[];if(aliases.some(a=>normalize(a)===key))continue;
+        player.ocrAliases=[...aliases,raw].slice(-12);count++;
+      }
+    }
+    return count;
   }
   function playerRegion(panel,i){const left=panel.side===0,column=i%2?panel.second:panel.first,cy=i<2?panel.top:panel.bottom,gap=panel.second.x-panel.first.x,killX=Math.floor(column.x0-4),nameX=Math.round(column.x-gap*(left?.52:.67)),height=Math.round(Math.max(25,(panel.bottom-panel.top)*.75));const line=column.lines.find(l=>Math.abs(l.y-cy)<8);const digits=line?[line.x0-2,line.y0-2,line.x1-line.x0+5,line.y1-line.y0+5]:[Math.floor(column.x0-2),Math.round(cy-height/2),Math.ceil(column.x1-column.x0+5),height];return {name:[nameX,Math.round(cy-height/2),killX-nameX-3,height],digits};}
   async function adaptiveExtract(worker,source,teams,createCanvas,onProgress,layout,options){
@@ -163,6 +185,6 @@
       if(p.playerId&&(!old.playerId||(p.matchScore||0)>(old.matchScore||0))){old.playerId=p.playerId;old.name=p.name;old.matchScore=p.matchScore;}
     });
   }
-  const api={prepare,prepareOriginal,originalRegion,extract,matchTeam,merge,similarity,rosterSimilarity,smallDigitConsensus,digitFeature,templateDigit,playerRegion};if(typeof module!=='undefined')module.exports=api;else root.WarOCR=api;
+  const api={prepare,prepareOriginal,originalRegion,extract,matchTeam,merge,similarity,rosterSimilarity,playerSimilarity,rememberAliases,smallDigitConsensus,digitFeature,templateDigit,playerRegion};if(typeof module!=='undefined')module.exports=api;else root.WarOCR=api;
 })(typeof window!=='undefined'?window:globalThis);
 
