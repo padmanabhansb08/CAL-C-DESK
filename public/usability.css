@@ -1,85 +1,261 @@
-/* Task-first spacing and readable controls shared by the four desks. */
-.add-template-preview{display:grid!important;place-items:center;font:300 64px sans-serif;color:#a8a3a3;border:1px dashed #69535d}.template-position{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}#template-editor>label{display:block;margin:14px 0}#template-editor input{width:100%;box-sizing:border-box}#template-preview{border:1px solid #493335;border-radius:8px}@media(max-width:540px){.template-position{grid-template-columns:repeat(2,minmax(0,1fr))}.add-template-preview{font-size:38px}}
-#export-results{display:inline-flex;align-items:center;gap:9px}#export-results svg{width:18px;height:18px}
-.export-templates{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}.export-template{display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:12px;border-radius:12px;gap:14px;background:#151213;white-space:normal}.export-template:hover{border-color:#e50914}.export-template img,.export-layout-preview{display:block;width:100%;aspect-ratio:1.98;object-fit:contain;background:#090909;border-radius:7px}.export-template strong{display:block;font-size:16px;color:#fff;margin-bottom:7px}.export-template small{display:block;font-size:13px;color:#a8a3a3;line-height:1.6}.export-template>span:last-child{align-self:flex-end}.export-layout-preview{padding:16px;box-sizing:border-box}.export-layout-preview b{display:block;font-size:16px;font-style:italic;color:#fff;margin-bottom:12px}.export-layout-preview i{display:block;height:9px;background:linear-gradient(90deg,#8e0a0f 10%,#252123 10%);margin:6px 0;border-radius:3px}.export-data{border-top:1px solid #44363d;padding-top:20px;display:flex;gap:16px;align-items:center;justify-content:space-between}.export-data p{font-size:13px;color:#a8a3a3;margin:7px 0}.export-data button{white-space:nowrap}
-@media(max-width:540px){.export-templates{grid-template-columns:1fr}.export-template{display:grid;grid-template-columns:100px 1fr;align-items:center;gap:12px}.export-template img,.export-layout-preview{width:100px}.export-layout-preview{padding:8px}.export-layout-preview b{font-size:9px;margin-bottom:5px}.export-layout-preview i{height:4px;margin:3px 0}.export-template>span:last-child{display:none}.export-data{align-items:flex-start;flex-direction:column}}
-.channel-shell .content{max-width:1600px;padding:24px 32px 48px}
-.channel-shell .heading{min-height:0;margin:0 0 22px;gap:16px}
-.channel-shell h1{font-size:clamp(34px,3.2vw,46px)}
-.channel-shell .eyebrow,.channel-shell .caption,.channel-shell details{font-size:13px}
-.channel-shell label{font-size:14px;line-height:1.5}
-.channel-shell input,.channel-shell select{font-size:15px;min-height:46px}
-.channel-shell button{min-height:42px;font-size:13px}
-.channel-shell button:focus-visible,.channel-shell a:focus-visible,.channel-shell summary:focus-visible{outline:2px solid #fff;outline-offset:4px}
-.channel-shell .channel-hero{height:208px;margin-bottom:20px}
-.channel-shell .hero-copy{padding-top:24px}
-.channel-shell .hero-copy h1{font-size:56px}
-.channel-shell .hero-copy p{font-size:13px;margin:8px 0 16px}
-.channel-shell .brand-kicker{font-size:10px;letter-spacing:1.5px}
-.channel-shell .stats{margin-bottom:22px}
-.channel-shell .stat{min-height:104px;padding:16px}
-.channel-shell .stat label{font-size:12px}
-.channel-shell .stat small{font-size:11px}
-.channel-shell .stat strong{font-size:36px;margin:5px 0}
-.channel-shell .section-label>span{font-size:10px}
-.channel-shell .latest-body{padding:20px 24px}
-.channel-shell .team-card li{font-size:14px;line-height:1.9}
-.channel-shell .team-card h2{font-size:26px!important}
-.channel-shell .team-grid{gap:16px}
-.channel-shell .team-menu summary{min-width:44px;min-height:44px;text-align:center}
-.channel-shell[data-page=results] .heading .actions{gap:8px}
-.channel-shell[data-page=results] .icon-button{width:auto;height:auto;display:inline-flex;gap:7px;padding:10px 13px;border-radius:24px}
-.channel-shell[data-page=results] .icon-button svg{width:17px;height:17px;flex-shrink:0}
-.channel-shell .results-controls{display:grid;grid-template-columns:minmax(220px,1fr) minmax(200px,1fr) auto;gap:16px;align-items:center;margin-bottom:18px}
-.channel-shell .results-controls .notice{padding:12px 16px;margin:0;font-size:13px;line-height:1.6}
-.channel-shell .match-finder{position:relative;align-self:end;margin-bottom:3px}
-.channel-shell .match-finder>summary{border:1px solid #4b4144;border-radius:24px;padding:12px 16px;white-space:nowrap;color:#fff}
-.channel-shell .match-finder[open] .match-search{position:absolute;right:0;top:48px;width:290px;padding:16px;margin:0;background:#151213;border:1px solid #4b4144;border-radius:12px;box-shadow:0 12px 30px #0009;z-index:15}
-.channel-shell .match-finder #match-search-count{position:absolute;right:16px;top:146px;z-index:16;background:#151213;margin:0}
-.channel-shell .tabs{margin:0 0 18px;gap:8px;display:flex;flex-wrap:wrap}
-.channel-shell .tabs button{font-size:13px;padding:10px 17px}
-.channel-shell .winner-hero{min-height:126px;padding:20px 24px 38px;margin-bottom:18px;gap:20px}
-.channel-shell .winner-copy h2{font-size:34px;margin:6px 0}
-.channel-shell .winner-copy>p{font-size:12px;margin:10px 0 0}
-.channel-shell .winner-total strong{font-size:64px;line-height:1}
-.channel-shell .winner-total>span{font-size:10px}
-.channel-shell .winner-details{bottom:10px;min-height:28px;font-size:12px}
-.channel-shell .table-wrap{padding:8px 16px;overflow:auto}
-.channel-shell .table-wrap th{font-size:12px;white-space:nowrap;padding:12px}
-.channel-shell .table-wrap td{font-size:14px;padding:12px}
-.channel-shell .table-wrap td button{font-size:12px;min-height:36px}
-.channel-shell .graph-panel{padding:20px}
-.channel-shell .workflow{margin-bottom:20px}
-.channel-shell .workflow li{font-size:14px}
-.channel-shell .dropzone{min-height:180px;padding:20px;margin:16px 0}
-.channel-shell .upload-picker{gap:10px}
-.channel-shell .upload-picker strong{font-size:32px}
-.channel-shell .upload-picker>span,.channel-shell .upload-picker small{font-size:13px;color:#c5bfc0}
-.channel-shell .upload-symbol{width:44px;height:44px}
-.channel-shell .selected-previews{grid-template-columns:repeat(3,minmax(0,1fr));max-width:none}
-.channel-shell .selected-previews:has(>figure:only-child){max-width:540px}
-.channel-shell .selected-previews img{height:180px;max-height:230px}
-.channel-shell .selected-previews figcaption{font-size:12px;overflow-wrap:anywhere}
-.channel-shell .review-toolbar{margin:24px 0 12px}
-.channel-shell .review-grid{grid-template-columns:1fr}
-.channel-shell .review-player{grid-template-columns:minmax(150px,1fr) minmax(250px,1.3fr);gap:20px}
-.channel-shell .review-card{scroll-margin-top:85px}
-.review-jump{display:flex;gap:7px;flex-wrap:wrap;position:sticky;top:0;z-index:6;background:#0b0b0cf5;padding:12px 0;margin-bottom:12px}
-.review-jump a{display:grid;place-items:center;min-width:42px;height:40px;border:1px solid #59464b;border-radius:8px;color:#fff;text-decoration:none;font-size:13px}
-.review-jump a:hover{border-color:#e50914;background:#2c1518}
-.review-jump a.checked{color:#a8a3a3;border-style:dashed}
-@media(min-width:1400px){.channel-shell .team-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:1100px){.channel-shell .results-controls{grid-template-columns:1fr auto}.channel-shell .results-controls>.notice{grid-column:1/-1;grid-row:2}.channel-shell .heading .actions{justify-content:flex-start}.channel-shell .hero-copy h1{font-size:48px}}
-@media(max-width:760px){
- .channel-shell .upload-symbol{display:none}.channel-shell .dropzone{min-height:150px;padding:18px}.channel-shell .intake-panel[open]>summary{margin-bottom:14px}
- .channel-shell .content{padding:20px 18px 104px}.channel-shell .topbar{height:58px;padding:0 18px}.channel-shell .topbar-right .subscriber-count{display:none}.channel-shell .sync-button{font-size:11px}.channel-shell .watch-live{font-size:12px}.channel-shell .nav button{font-size:11px;min-height:65px}
- .channel-shell .heading{margin-bottom:18px}.channel-shell .heading .actions{width:100%;gap:8px}.channel-shell .heading .actions button{font-size:12px;padding:10px 12px}
- .channel-shell .channel-hero{height:200px}.channel-shell .hero-copy{padding-top:24px;margin-left:38%}.channel-shell .hero-copy h1{font-size:42px}.channel-shell .hero-copy p{font-size:12px}.channel-shell .hero-copy .brand-kicker{font-size:8px}
- .channel-shell .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.channel-shell .stat{min-height:88px;padding:12px 16px}.channel-shell .stat strong{font-size:32px}.channel-shell .stat label{font-size:12px}
- .channel-shell .team-card{padding:20px 16px}.channel-shell .team-card li{font-size:13px}.channel-shell .topbar-search input{font-size:14px;min-height:40px}
- .channel-shell .winner-hero{min-height:120px;padding:18px 18px 42px}.channel-shell .winner-copy h2{font-size:30px}.channel-shell .winner-copy>p{font-size:12px}.channel-shell .winner-total strong{font-size:54px}.channel-shell .winner-total>span{font-size:9px}
- .channel-shell .tabs button{padding:10px 13px;font-size:12px}.channel-shell .results-controls{gap:12px}.channel-shell .results-controls .notice{font-size:12px}.channel-shell .workflow li{font-size:12px}.channel-shell .workflow li:not(:last-child):after{margin:0 4px}
- .channel-shell .selected-previews{grid-template-columns:repeat(2,minmax(0,1fr))}.channel-shell .selected-previews img{height:150px}.channel-shell .review-player{grid-template-columns:1fr;gap:8px}.channel-shell .save-bar{position:static}.channel-shell .upload-picker strong{font-size:28px}.channel-shell .upload-picker small{font-size:12px}
+/* ═══════════════════════════════════════════════════════════
+   FFK War Desk — usability.css (v5)
+   Channel-shell contextual density: results page, upload,
+   workspace grid, graph panels, export, and more.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Workspace channel overrides (scoped density) ─────────── */
+.channel-shell .content > .topbar-search {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 0 18px;
 }
-@media(max-width:430px){.channel-shell .team-grid{grid-template-columns:1fr}.channel-shell .selected-previews{grid-template-columns:1fr}.channel-shell .hero-copy .brand-kicker{display:none}.channel-shell .hero-copy h1{font-size:36px}.channel-shell .results-controls{grid-template-columns:1fr}.channel-shell .results-controls>.notice{grid-row:auto}.channel-shell .match-finder{justify-self:start}.channel-shell .match-finder[open] .match-search{right:auto;left:0;width:270px}.channel-shell .match-finder #match-search-count{right:auto;left:16px}.channel-shell .winner-copy h2{font-size:26px}}
-@media print{.match-finder,.review-jump{display:none!important}.channel-shell .content{padding:0}.channel-shell .table-wrap{overflow:visible}}
+
+/* ── Results page compact layout ───────────────────────────── */
+.channel-shell[data-page="results"] .content { padding: 22px 28px 52px; }
+.channel-shell[data-page="results"] .content > .eyebrow { font-size: 9.5px; margin-bottom: 3px; }
+.channel-shell[data-page="results"] .heading { margin-bottom: 16px; gap: 14px; }
+.channel-shell[data-page="results"] .heading h1 { font-size: 32px; margin: 0; line-height: 1.1; }
+.channel-shell[data-page="results"] .heading button { min-height: 36px; padding: 8px 14px; font-size: 12px; }
+
+/* Compact match controls */
+.channel-shell[data-page="results"] .compact-results-controls { flex: 1 1 340px; margin: 0; gap: 9px; align-items: center; }
+.channel-shell[data-page="results"] .compact-results-controls > label { flex: 1; font-size: 0; max-width: 340px; }
+.channel-shell[data-page="results"] .compact-results-controls select { margin: 0; padding: 9px 30px 9px 11px; min-height: 38px; font-size: 12px; border-radius: var(--r-sm); }
+.channel-shell[data-page="results"] .compact-results-controls .manage-matches { min-height: 36px; font-size: 12px; padding: 8px 12px; border-radius: var(--r-sm); }
+
+/* Winner hero in results */
+.channel-shell[data-page="results"] .winner-hero { min-height: 0; gap: 14px; padding: 13px 17px; margin: 0 0 14px; border-radius: var(--r-sm); background: linear-gradient(100deg, #271316, #131011); }
+.channel-shell[data-page="results"] .winner-mark { width: 34px; height: 34px; min-width: 34px; border: 0; }
+.channel-shell[data-page="results"] .winner-mark svg { width: 21px; height: 21px; }
+.channel-shell[data-page="results"] .winner-copy { flex: 1; }
+.channel-shell[data-page="results"] .winner-copy .brand-kicker { font-size: 8px; letter-spacing: 1px; }
+.channel-shell[data-page="results"] .winner-copy h2 { font-size: 23px; margin: 2px 0; line-height: 1; }
+.channel-shell[data-page="results"] .winner-copy .winner-label,
+.channel-shell[data-page="results"] .winner-copy .booyah { display: none; }
+.channel-shell[data-page="results"] .winner-copy p { margin: 5px 0 0; font-size: 11px; line-height: 1.4; }
+.channel-shell[data-page="results"] .winner-total { position: static; background: none; padding: 0; min-width: 62px; text-align: right; }
+.channel-shell[data-page="results"] .winner-total::before,
+.channel-shell[data-page="results"] .winner-total::after { display: none; }
+.channel-shell[data-page="results"] .winner-total strong { font-size: 33px; line-height: 1; }
+.channel-shell[data-page="results"] .winner-total span { font-size: 7.5px; letter-spacing: 1px; }
+.channel-shell[data-page="results"] .winner-details { position: static; min-height: 30px; font-size: 11px; padding: 6px 10px; border: 1px solid var(--line-soft); border-radius: var(--r-sm); }
+
+/* Compact table */
+.channel-shell[data-page="results"] .table-wrap { padding: 0 13px 5px; border: 1px solid var(--line-soft); border-radius: var(--r-sm); }
+.channel-shell[data-page="results"] .table-wrap table { width: 100%; border-collapse: collapse; border-spacing: 0; font-size: 12px; }
+.channel-shell[data-page="results"] .table-wrap th { padding: 12px 9px; font-size: 8.5px; letter-spacing: 1px; white-space: nowrap; background: transparent; position: static; border-bottom: 1px solid var(--line); }
+.channel-shell[data-page="results"] .table-wrap td { height: auto; padding: 9px; border-radius: 0; border-bottom: 1px solid rgba(34,43,61,0.5); background: transparent; font-size: 12px; }
+.channel-shell[data-page="results"] .table-wrap tbody tr { background: transparent; }
+.channel-shell[data-page="results"] .table-wrap tbody tr:hover td { background: rgba(30,40,64,0.6); }
+.channel-shell[data-page="results"] .table-wrap tbody tr:first-child td { background: rgba(42,18,26,0.5); }
+.channel-shell[data-page="results"] .table-wrap .rank { font-size: 16px; width: 42px; }
+.channel-shell[data-page="results"] .table-wrap td.total { font-size: 17px; }
+.channel-shell[data-page="results"] .table-wrap td button { min-height: 26px; padding: 4px 9px; border-radius: 5px; font-size: 10px; }
+.channel-shell[data-page="results"] .table-wrap td .badge { font-size: 7.5px; padding: 2px 5px; }
+
+/* ── Topbar ticker slot ────────────────────────────────────── */
+.channel-shell .topbar { height: 60px; min-height: 60px; padding: 0 22px; }
+.channel-shell .topbar .topbar-right { margin-left: 0; flex: none; }
+.channel-shell .topbar .sync-button { font-size: 9.5px; }
+
+/* ── Hero sizing ───────────────────────────────────────────── */
+.channel-shell .channel-hero { margin-bottom: 20px; }
+.channel-shell .hero-copy { padding-top: 22px; }
+.channel-shell .hero-copy h1 { font-size: 52px; }
+.channel-shell .hero-copy p { font-size: 12.5px; margin: 7px 0 14px; }
+.channel-shell .brand-kicker { font-size: 9px; letter-spacing: 1.4px; }
+
+/* ── Stats row ─────────────────────────────────────────────── */
+.channel-shell .stats { margin-bottom: 20px; }
+.channel-shell .stat { min-height: 102px; padding: 15px 17px; }
+.channel-shell .stat label { font-size: 11px; }
+.channel-shell .stat small { font-size: 10px; }
+.channel-shell .stat strong { font-size: 34px; margin: 5px 0; }
+
+/* ── General table ─────────────────────────────────────────── */
+.channel-shell .table-wrap { overflow: auto; }
+.channel-shell .table-wrap th { white-space: nowrap; padding: 11px; font-size: 10.5px; }
+.channel-shell .table-wrap td { font-size: 13px; padding: 11px; }
+.channel-shell .table-wrap td button { font-size: 11px; min-height: 34px; }
+
+/* ── Graph panel ───────────────────────────────────────────── */
+.channel-shell .graph-panel { padding: 18px; }
+
+/* ── Workflow ──────────────────────────────────────────────── */
+.channel-shell .workflow { margin-bottom: 18px; }
+.channel-shell .workflow li { font-size: 13px; }
+
+/* ── Dropzone ──────────────────────────────────────────────── */
+.channel-shell .dropzone { min-height: 175px; padding: 18px; margin: 14px 0; }
+.channel-shell .upload-picker { gap: 9px; }
+.channel-shell .upload-picker strong { font-size: 30px; }
+.channel-shell .upload-picker > span,
+.channel-shell .upload-picker small { font-size: 12.5px; color: var(--ink-dim); }
+.channel-shell .upload-symbol { width: 44px; height: 44px; }
+.channel-shell .selected-previews { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: none; }
+.channel-shell .selected-previews:has(> figure:only-child) { max-width: 500px; }
+.channel-shell .selected-previews img { height: 175px; max-height: 220px; }
+.channel-shell .selected-previews figcaption { font-size: 11.5px; }
+
+/* ── Review ─────────────────────────────────────────────────── */
+.channel-shell .review-toolbar { margin: 22px 0 11px; }
+.channel-shell .review-grid { grid-template-columns: 1fr; }
+.channel-shell .review-player { grid-template-columns: minmax(145px, 1fr) minmax(245px, 1.3fr); gap: 18px; }
+.channel-shell .review-card { scroll-margin-top: 82px; }
+.channel-shell .intake-panel { padding: 20px; }
+.channel-shell .intake-panel[open] > summary { margin-bottom: 16px; }
+
+/* ── Save bar (mobile) ─────────────────────────────────────── */
+.channel-shell .save-bar { padding: 12px 16px; }
+.channel-shell .save-bar .primary { font-size: 13px; }
+
+/* ── Winner hero sizing ────────────────────────────────────── */
+.channel-shell .winner-hero { min-height: 120px; padding: 18px 24px 36px; margin-bottom: 16px; gap: 18px; }
+.channel-shell .winner-copy h2 { font-size: 32px; margin: 6px 0; }
+.channel-shell .winner-copy > p { font-size: 11px; margin: 9px 0 0; }
+.channel-shell .winner-total strong { font-size: 62px; line-height: 1; }
+.channel-shell .winner-total > span { font-size: 9px; }
+.channel-shell .winner-details { bottom: 9px; min-height: 26px; font-size: 11px; }
+
+/* ── Tabs ───────────────────────────────────────────────────── */
+.channel-shell .tabs { margin: 0 0 16px; gap: 6px; display: flex; flex-wrap: wrap; }
+.channel-shell .tabs button { font-size: 12px; padding: 9px 16px; }
+
+/* ── Team grid density ──────────────────────────────────────── */
+.channel-shell .team-grid { gap: 14px; }
+.channel-shell .team-menu summary { min-width: 44px; min-height: 44px; text-align: center; }
+
+/* ── Results actions ────────────────────────────────────────── */
+.channel-shell[data-page=results] .heading .actions { gap: 7px; }
+.channel-shell[data-page=results] .icon-button { width: auto; height: auto; display: inline-flex; gap: 6px; padding: 9px 13px; border-radius: 22px; }
+.channel-shell[data-page=results] .icon-button svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ── Results controls grid ──────────────────────────────────── */
+.channel-shell .results-controls { display: grid; grid-template-columns: minmax(210px, 1fr) minmax(195px, 1fr) auto; gap: 14px; align-items: center; margin-bottom: 16px; }
+.channel-shell .results-controls .notice { padding: 11px 15px; margin: 0; font-size: 12px; line-height: 1.6; }
+.channel-shell .match-search { max-width: 520px; margin-bottom: 10px; }
+
+/* ── Topbar has search ──────────────────────────────────────── */
+.channel-shell .topbar:has(.topbar-search) .subscriber-count { display: flex; }
+
+/* ─────────────────────────────────────────────────────────────
+   RESPONSIVE OVERRIDES
+   ───────────────────────────────────────────────────────────── */
+
+@media (min-width: 1400px) {
+  .channel-shell .team-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 1100px) {
+  .channel-shell .results-controls { grid-template-columns: 1fr auto; }
+  .channel-shell .results-controls > .notice { grid-column: 1 / -1; grid-row: 2; }
+  .channel-shell .heading .actions { justify-content: flex-start; }
+  .channel-shell .hero-copy h1 { font-size: 46px; }
+}
+
+@media (max-width: 768px) {
+  .channel-shell .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .channel-shell .table-wrap table { min-width: 500px; }
+
+  .channel-shell .table-wrap th:first-child,
+  .channel-shell .table-wrap td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #0D1219;
+    box-shadow: 1px 0 0 var(--line);
+  }
+
+  .channel-shell .table-wrap th:nth-child(2),
+  .channel-shell .table-wrap td:nth-child(2) {
+    position: sticky;
+    left: 42px;
+    z-index: 2;
+    background: #0D1219;
+    box-shadow: 2px 0 8px rgba(0,0,0,0.5);
+  }
+}
+
+@media (max-width: 760px) {
+  .channel-shell .upload-symbol { display: none; }
+  .channel-shell .dropzone { min-height: 145px; padding: 16px; }
+  .channel-shell .intake-panel[open] > summary { margin-bottom: 13px; }
+  .channel-shell .content { padding: 16px 13px calc(78px + env(safe-area-inset-bottom, 0px)); }
+  .channel-shell .topbar { height: 56px; padding: 0 13px; gap: 7px; }
+  .channel-shell .topbar-right .subscriber-count { display: none; }
+  .channel-shell .sync-button { font-size: 10px; min-height: 34px; }
+  .channel-shell .watch-live { font-size: 10.5px; min-height: 34px; padding: 7px 11px; }
+  .channel-shell .nav button { font-size: 9.5px; min-height: 54px; }
+  .channel-shell .heading { margin-bottom: 16px; }
+  .channel-shell .heading .actions { width: 100%; gap: 7px; justify-content: flex-start; }
+  .channel-shell .heading .actions button { font-size: 12px; padding: 9px 13px; min-height: 40px; }
+  .channel-shell .channel-hero { min-height: 200px; border-radius: var(--r-md); }
+  .channel-shell .hero-copy { padding: 20px 16px 18px; margin-left: 0; max-width: none; }
+  .channel-shell .hero-copy h1 { font-size: clamp(28px, 7vw, 40px); margin: 7px 0; }
+  .channel-shell .hero-copy p { font-size: 11.5px; margin: 5px 0 14px; max-width: none; }
+  .channel-shell .hero-copy .brand-kicker { font-size: 8px; }
+  .channel-shell .hero-edition { display: none; }
+  .channel-shell .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .channel-shell .stat { min-height: 85px; padding: 11px 13px; }
+  .channel-shell .stat strong { font-size: clamp(24px, 6vw, 32px); }
+  .channel-shell .stat label { font-size: 10px; }
+  .channel-shell .team-grid { grid-template-columns: 1fr; gap: 11px; }
+  .channel-shell .team-card { padding: 16px 13px; }
+  .channel-shell .team-card li { font-size: 13px; }
+  .channel-shell .topbar-search input { font-size: 16px; min-height: 42px; }
+  .channel-shell .winner-hero { min-height: 115px; padding: 16px 15px 34px; }
+  .channel-shell .winner-copy h2 { font-size: clamp(22px, 5.5vw, 30px); }
+  .channel-shell .winner-copy > p { font-size: 11px; }
+  .channel-shell .winner-total strong { font-size: clamp(44px, 10vw, 56px); }
+  .channel-shell .winner-total > span { font-size: 8px; }
+  .channel-shell .tabs button { padding: 9px 13px; font-size: 11.5px; min-height: 38px; }
+  .channel-shell .results-controls { gap: 10px; }
+  .channel-shell .results-controls .notice { font-size: 11.5px; }
+  .channel-shell .workflow li { font-size: 11px; }
+  .channel-shell .workflow li:not(:last-child)::after { margin: 0 4px; }
+  .channel-shell .selected-previews { grid-template-columns: 1fr; gap: 9px; }
+  .channel-shell .selected-previews img { height: 155px; }
+  .channel-shell .review-player { grid-template-columns: 1fr; gap: 9px; }
+  .channel-shell .review-player input,
+  .channel-shell .review-player select { font-size: 16px; min-height: 44px; }
+  .channel-shell .save-bar {
+    position: sticky;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
+    z-index: 45;
+    background: rgba(19,25,32,0.96);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid #3A2328;
+    border-radius: var(--r-md);
+    padding: 11px 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.65);
+  }
+  .channel-shell .upload-picker strong { font-size: clamp(22px, 6vw, 28px); }
+  .channel-shell .upload-picker small { font-size: 11.5px; }
+  .channel-shell input,
+  .channel-shell select { font-size: 16px; min-height: 44px; }
+  dialog .actions button, dialog .actions a { min-height: 44px; font-size: 12.5px; }
+}
+
+@media (max-width: 430px) {
+  .channel-shell .content { padding: 12px 10px calc(78px + env(safe-area-inset-bottom, 0px)); }
+  .channel-shell .team-grid { grid-template-columns: 1fr; }
+  .channel-shell .selected-previews { grid-template-columns: 1fr; }
+  .channel-shell .hero-copy .brand-kicker { display: none; }
+  .channel-shell .hero-copy h1 { font-size: clamp(26px, 8.5vw, 34px); }
+  .channel-shell .results-controls { grid-template-columns: 1fr; }
+  .channel-shell .results-controls > .notice { grid-row: auto; }
+  .channel-shell .match-finder { justify-self: start; }
+  .channel-shell .match-finder[open] .match-search { right: auto; left: 0; width: calc(100vw - 28px); max-width: 270px; }
+  .channel-shell .match-finder #match-search-count { right: auto; left: 14px; }
+  .channel-shell .winner-copy h2 { font-size: 22px; }
+  .channel-shell .table-wrap { padding: 0 2px 4px; }
+}
+
+/* Print */
+@media print {
+  .match-finder, .review-jump { display: none !important; }
+  .channel-shell .content { padding: 0; }
+  .channel-shell .table-wrap { overflow: visible; }
+}

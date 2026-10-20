@@ -1,10 +1,335 @@
-/* Compact tournament operations: warm charcoal, signal red, evidence-led review. */
-:root{--muted:#c2b8ba;--line:#3e3437;--success:#79d7ad;--warning:#efc173}
-.shell{grid-template-columns:184px minmax(0,1fr)}.sidebar{padding:26px 16px}.brand{font-size:35px}.nav{margin-top:32px}.nav button{display:flex;justify-content:space-between;gap:8px;padding:12px}.nav small{float:none}.topbar{height:60px;padding:0 28px;gap:12px}.topbar>.sync-button{margin-left:auto}.sync-button{padding:7px 10px;font-size:11px;background:transparent}.content{padding:27px;max-width:1450px}h1{font-size:clamp(30px,3.2vw,44px);letter-spacing:0;line-height:1.12}h2{font-size:25px}h3{font-size:22px}.heading{margin:9px 0 24px;align-items:center}.heading .actions{justify-content:flex-end}.stat{padding:16px}.stat strong{font-size:32px;margin:6px 0}.stats{gap:12px;margin-bottom:24px}.panel{padding:21px}.eyebrow{font-size:11px;letter-spacing:1.5px}.caption{font-size:12px}.badge{font-size:11px;letter-spacing:.2px}.team-card{padding:19px}.team-card h2{font-size:26px}.team-card ol{margin:12px 0}.sidebar-footer{font-size:11px}.sidebar-footer button{font-size:12px}.workflow{list-style:none;display:flex;padding:0;margin:0 0 23px;border-bottom:1px solid var(--line);gap:28px}.workflow li{display:flex;align-items:center;gap:9px;color:var(--muted);padding:0 0 14px;font-size:13px;border-bottom:2px solid transparent}.workflow li.current{color:var(--ink);border-color:var(--accent)}.workflow b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1px solid var(--line);font-size:12px}.workflow .current b{background:var(--accent);border-color:var(--accent)}.workflow .done b{background:#193b2b;color:var(--success)}.intake-panel{border-top:2px solid var(--accent)}.dropzone{padding:23px 16px;margin:18px 0;border-color:#88605f;background:#241a1d}.dropzone p{margin:8px 0}.dropzone h2{font-size:27px}.dropzone input{max-width:440px;font-size:12px}.drag-active{background:#422323;outline:2px solid var(--accent);outline-offset:3px}.search-bar{display:flex;gap:16px;justify-content:space-between;align-items:center;margin-bottom:22px}.search-bar label{flex:1;max-width:540px}.resume-banner{display:flex;gap:18px;align-items:center;justify-content:space-between;padding:17px 20px;border:1px solid #665638;background:#292319;border-radius:7px;margin:0 0 22px}.resume-banner p{margin:3px 0 0;font-size:12px}.review-toolbar{display:flex;gap:18px;justify-content:space-between;align-items:center;margin:30px 0 18px}.review-toolbar p{margin:5px 0;font-size:12px}.review-toolbar .actions{justify-content:flex-end}.review-toolbar button{font-size:12px;padding:9px 12px}button[aria-pressed=true]{border-color:var(--accent);background:#38201f}.review-grid{grid-template-columns:1fr;gap:18px}.review-card{padding:19px;border-color:var(--line)}.review-card.unresolved{border-color:#796242}.review-card .panel-head{gap:12px;margin-bottom:14px}.review-card .panel-head h3{display:flex;align-items:center;gap:12px}.placement-number{font-size:27px;color:var(--accent)}.review-card>label{display:inline-block;vertical-align:top;width:calc(50% - 7px);margin-bottom:15px}.review-card>label+label{margin-left:10px}.review-player{display:grid;grid-template-columns:minmax(160px,.95fr) minmax(240px,1.25fr);gap:20px;align-items:center;border-top:1px solid var(--line);padding:11px 0}.review-player .player-row{margin:0;grid-template-columns:minmax(0,1fr) 78px}.review-player input,.review-player select{margin-top:5px}.evidence{min-width:0;display:grid;gap:7px}.evidence-crop{width:100%;max-width:360px;height:46px;object-fit:contain;object-position:left;background:#0b0a0a;border:1px solid #4f4447;border-radius:3px;image-rendering:auto}.crop-empty{font-size:12px;color:var(--muted);line-height:1.5}.field-uncertain input[type=number]{border-color:var(--warning);background:#30271a}.badge-success{background:#18382a;color:var(--success)}.review-card>button{margin-top:12px}.save-bar{position:sticky;bottom:12px;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 19px;background:#242022f5;border:1px solid #6b5053;box-shadow:0 6px 28px #0007;border-radius:7px;margin:20px 0}.save-bar .caption{display:block;margin-top:4px}.save-bar .danger{background:transparent}.review-tools{margin:20px 0 26px}details{color:var(--muted);font-size:12px}details summary{cursor:pointer;padding:10px 0}details .actions{margin:12px 0}#toast{align-items:center;gap:14px;border:1px solid;box-shadow:0 10px 30px #0006;line-height:1.5;font-size:13px;max-width:min(520px,92vw)}#toast.toast-success{background:#17392b;border-color:#418867;color:#d9f6e5}#toast.toast-error{background:#47221f;border-color:#d87768;color:#fff0ec}#toast button{padding:1px 7px;border:0;background:transparent;color:inherit;font-size:22px}.screenshot-list img{width:165px}.screenshot-list button{font-size:12px}.screenshot-list>div{min-width:165px}.team-card[hidden]{display:none}.auth h1{font-size:44px}
-@media(min-width:1400px){.review-grid{grid-template-columns:1fr 1fr}.review-player{grid-template-columns:1fr;gap:8px}.evidence-crop{max-width:none}.review-player .player-row{grid-template-columns:minmax(0,1fr) 80px}}
-@media(max-width:900px){.topbar>span:nth-child(2){display:none}.review-toolbar{align-items:flex-start;flex-direction:column}.review-toolbar .actions{justify-content:flex-start}.heading{align-items:flex-start;flex-wrap:wrap}.heading .actions{justify-content:flex-start}.grid{grid-template-columns:1fr}}
-@media(max-width:720px){.shell{grid-template-columns:140px minmax(0,1fr)}.sidebar{padding:24px 10px}.content{padding:22px 16px}.topbar{padding:0 16px}.nav button{font-size:12px;padding:11px 8px}.review-player{grid-template-columns:1fr;gap:8px}.review-card>label{width:100%}.review-card>label+label{margin-left:0}.save-bar{align-items:flex-start;flex-direction:column}.save-bar .actions{width:100%}.save-bar .primary{flex:1}.workflow{gap:15px}.workflow li{font-size:12px;gap:6px}.search-bar{align-items:flex-start;flex-direction:column}.search-bar label{width:100%}}
-@media(max-width:520px){.shell{display:block}.sidebar{position:static;height:auto;padding:14px 16px}.brand{font-size:27px}.subbrand,.sidebar-footer{display:none}.nav{margin-top:13px;display:flex;gap:4px}.nav button{font-size:11px;white-space:nowrap;padding:10px 8px}.nav small{display:none}.topbar{height:48px}.content{padding:20px 14px}.workflow{gap:10px}.workflow b{width:21px;height:21px}.workflow li{font-size:11px}.resume-banner{align-items:flex-start;flex-direction:column}.review-card{padding:15px}.review-card .panel-head{align-items:flex-start}.badge{font-size:10px}.stats{grid-template-columns:1fr 1fr}.heading .actions button{font-size:12px;padding:9px 12px}h1{font-size:32px}}
-.intake-panel>summary{font-size:14px;color:var(--ink);font-weight:600;padding:0;cursor:pointer}.intake-panel[open]>summary{margin-bottom:20px}.match-search{max-width:540px;margin-bottom:12px}#review{scroll-margin-top:18px}.evidence:not(:has(img)){display:none}.review-player:not(:has(.evidence-crop)){grid-template-columns:1fr}
-@media(prefers-reduced-motion:no-preference){button,.dropzone{transition:background .15s,border-color .15s}}
-@media print{.workflow,.save-bar,.review-toolbar,.sync-button,.review-tools{display:none!important}}
+/* ═══════════════════════════════════════════════════════════
+   FFK War Desk — workspace.css (v3)
+   Classic shell overrides: warm charcoal, signal red,
+   evidence-led OCR review, match intake workflow.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Warm-charcoal theme tokens (non-channel classic shell) */
+:root {
+  --muted:   #C2B8BA;
+  --line:    #3E3437;
+  --success: #79D7AD;
+  --warning: #EFC173;
+}
+
+/* ── Shell sizing ───────────────────────────────────────────── */
+.shell { grid-template-columns: 182px minmax(0, 1fr); }
+.sidebar { padding: 24px 15px; }
+
+.brand { font-size: 33px; }
+.subbrand { font-size: 9px; letter-spacing: 2.5px; }
+
+.nav { margin-top: 30px; }
+.nav button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px;
+}
+
+.topbar { height: 58px; padding: 0 26px; gap: 11px; }
+.topbar > .sync-button { margin-left: auto; }
+.sync-button { padding: 6px 9px; font-size: 11px; background: transparent; }
+
+.content { padding: 25px; max-width: 1440px; }
+
+/* ── Typography ─────────────────────────────────────────────── */
+h1 { font-size: clamp(28px, 3.2vw, 42px); letter-spacing: 0; line-height: 1.12; }
+h2 { font-size: 24px; }
+h3 { font-size: 21px; }
+
+/* ── Heading ────────────────────────────────────────────────── */
+.heading { margin: 8px 0 22px; align-items: center; }
+.heading .actions { justify-content: flex-end; }
+
+/* ── Stats ──────────────────────────────────────────────────── */
+.stat { padding: 15px 17px; }
+.stat strong { font-size: 30px; margin: 5px 0; }
+.stats { gap: 11px; margin-bottom: 22px; }
+
+/* ── Panel ──────────────────────────────────────────────────── */
+.panel { padding: 20px; }
+
+/* ── Typography details ─────────────────────────────────────── */
+.eyebrow { font-size: 10px; letter-spacing: 1.5px; }
+.caption { font-size: 11.5px; }
+.badge { font-size: 10px; letter-spacing: 0.2px; }
+
+/* ── Team cards ─────────────────────────────────────────────── */
+.team-card { padding: 18px; }
+.team-card h2 { font-size: 24px; }
+.team-card ol { margin: 11px 0; }
+
+/* ── Sidebar footer ─────────────────────────────────────────── */
+.sidebar-footer { font-size: 11px; }
+.sidebar-footer button { font-size: 11.5px; }
+
+/* ── Workflow steps ─────────────────────────────────────────── */
+.workflow {
+  list-style: none;
+  display: flex;
+  padding: 0;
+  margin: 0 0 22px;
+  border-bottom: 1px solid var(--line);
+  gap: 26px;
+}
+
+.workflow li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  padding: 0 0 13px;
+  font-size: 13px;
+  border-bottom: 2px solid transparent;
+}
+
+.workflow li.current { color: var(--ink); border-color: var(--accent); }
+
+.workflow b {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font-size: 11.5px;
+}
+
+.workflow .current b { background: var(--accent); border-color: var(--accent); color: #fff; }
+.workflow .done b    { background: #193b2b; color: var(--success); border-color: transparent; }
+
+/* ── Intake ─────────────────────────────────────────────────── */
+.intake-panel { border-top: 2px solid var(--accent); }
+
+.dropzone {
+  padding: 22px 15px;
+  margin: 16px 0;
+  border-color: #88605F;
+  background: #241A1D;
+}
+.dropzone p { margin: 7px 0; }
+.dropzone h2 { font-size: 25px; }
+.dropzone input { max-width: 420px; font-size: 12px; }
+.drag-active { background: #422323; outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ── Search bar ─────────────────────────────────────────────── */
+.search-bar {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.search-bar label { flex: 1; max-width: 520px; }
+
+/* ── Resume banner ──────────────────────────────────────────── */
+.resume-banner {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px;
+  border: 1px solid #665638;
+  background: #292319;
+  border-radius: var(--r-sm);
+  margin: 0 0 20px;
+}
+.resume-banner p { margin: 2px 0 0; font-size: 12px; }
+
+/* ── Review toolbar ─────────────────────────────────────────── */
+.review-toolbar {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  margin: 28px 0 16px;
+}
+.review-toolbar p { margin: 4px 0; font-size: 12px; }
+.review-toolbar .actions { justify-content: flex-end; }
+.review-toolbar button { font-size: 12px; padding: 8px 12px; }
+
+button[aria-pressed=true] {
+  border-color: var(--accent);
+  background: #38201F;
+}
+
+/* ── Review grid ────────────────────────────────────────────── */
+.review-grid { grid-template-columns: 1fr; gap: 16px; }
+
+.review-card { padding: 18px; border-color: var(--line); }
+.review-card.unresolved { border-color: #796242; }
+.review-card .panel-head { gap: 11px; margin-bottom: 13px; }
+.review-card .panel-head h3 { display: flex; align-items: center; gap: 11px; }
+
+.placement-number { font-size: 25px; color: var(--accent); }
+
+/* ── Player row ─────────────────────────────────────────────── */
+.review-card > label {
+  display: inline-block;
+  vertical-align: top;
+  width: calc(50% - 7px);
+  margin-bottom: 14px;
+}
+.review-card > label + label { margin-left: 10px; }
+
+.review-player {
+  display: grid;
+  grid-template-columns: minmax(158px, 0.95fr) minmax(235px, 1.25fr);
+  gap: 18px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding: 10px 0;
+}
+.review-player .player-row { margin: 0; grid-template-columns: minmax(0, 1fr) 76px; }
+.review-player input,
+.review-player select { margin-top: 4px; }
+
+/* ── Evidence crops ─────────────────────────────────────────── */
+.evidence { min-width: 0; display: grid; gap: 6px; }
+.evidence-crop {
+  width: 100%;
+  max-width: 340px;
+  height: 44px;
+  object-fit: contain;
+  object-position: left;
+  background: #0B0A0A;
+  border: 1px solid #4F4447;
+  border-radius: 3px;
+}
+.crop-empty { font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+.evidence:not(:has(img)) { display: none; }
+.review-player:not(:has(.evidence-crop)) { grid-template-columns: 1fr; }
+
+/* ── Uncertain kill field ───────────────────────────────────── */
+.field-uncertain input[type=number] {
+  border-color: var(--warning);
+  background: #30271A;
+}
+
+/* ── Save bar ───────────────────────────────────────────────── */
+.save-bar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 18px;
+  background: rgba(36,32,34,0.97);
+  border: 1px solid #6B5053;
+  box-shadow: 0 6px 28px rgba(0,0,0,0.44);
+  border-radius: var(--r-sm);
+  margin: 18px 0;
+}
+.save-bar .caption { display: block; margin-top: 3px; }
+.save-bar .danger { background: transparent; }
+
+/* ── Review tools ───────────────────────────────────────────── */
+.review-tools { margin: 18px 0 24px; }
+
+details { color: var(--muted); font-size: 12px; }
+details summary { cursor: pointer; padding: 9px 0; }
+details .actions { margin: 11px 0; }
+
+/* ── Toast ──────────────────────────────────────────────────── */
+#toast {
+  align-items: center;
+  gap: 12px;
+  border: 1px solid;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.44);
+  line-height: 1.5;
+  font-size: 13px;
+  max-width: min(500px, 92vw);
+}
+#toast.toast-success { background: #17392B; border-color: #418867; color: #D9F6E5; }
+#toast.toast-error   { background: #47221F; border-color: #D87768; color: #FFF0EC; }
+#toast button { padding: 1px 6px; border: 0; background: transparent; color: inherit; font-size: 20px; }
+
+/* ── Screenshots ────────────────────────────────────────────── */
+.screenshot-list img { width: 155px; }
+.screenshot-list button { font-size: 11.5px; }
+.screenshot-list > div { min-width: 155px; }
+
+/* ── Auth ───────────────────────────────────────────────────── */
+.auth h1 { font-size: 42px; }
+
+/* ── Team card hidden state ─────────────────────────────────── */
+.team-card[hidden] { display: none; }
+
+/* ── Intake-panel open state ────────────────────────────────── */
+.intake-panel > summary { font-size: 13.5px; color: var(--ink); font-weight: 600; padding: 0; cursor: pointer; }
+.intake-panel[open] > summary { margin-bottom: 18px; }
+
+/* ── Match search ───────────────────────────────────────────── */
+.match-search { max-width: 520px; margin-bottom: 11px; }
+#review { scroll-margin-top: 16px; }
+
+/* ── Large desktop review split ──────────────────────────────── */
+@media (min-width: 1400px) {
+  .review-grid { grid-template-columns: 1fr 1fr; }
+  .review-player { grid-template-columns: 1fr; gap: 7px; }
+  .evidence-crop { max-width: none; }
+  .review-player .player-row { grid-template-columns: minmax(0, 1fr) 78px; }
+}
+
+/* ── Tablet ─────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .topbar > span:nth-child(2) { display: none; }
+  .review-toolbar { align-items: flex-start; flex-direction: column; }
+  .review-toolbar .actions { justify-content: flex-start; }
+  .heading { align-items: flex-start; flex-wrap: wrap; }
+  .heading .actions { justify-content: flex-start; }
+  .grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .shell { grid-template-columns: 138px minmax(0, 1fr); }
+  .sidebar { padding: 22px 9px; }
+  .content { padding: 20px 15px; }
+  .topbar { padding: 0 15px; }
+  .nav button { font-size: 11.5px; padding: 10px 7px; }
+  .review-player { grid-template-columns: 1fr; gap: 7px; }
+  .review-card > label { width: 100%; }
+  .review-card > label + label { margin-left: 0; }
+  .save-bar { align-items: flex-start; flex-direction: column; }
+  .save-bar .actions { width: 100%; }
+  .save-bar .primary { flex: 1; }
+  .workflow { gap: 13px; }
+  .workflow li { font-size: 11.5px; gap: 5px; }
+  .search-bar { align-items: flex-start; flex-direction: column; }
+  .search-bar label { width: 100%; }
+}
+
+@media (max-width: 520px) {
+  .shell { display: block; }
+  .sidebar { position: static; height: auto; padding: 12px 15px; }
+  .brand { font-size: 26px; }
+  .subbrand, .sidebar-footer { display: none; }
+  .nav { margin-top: 11px; display: flex; gap: 3px; }
+  .nav button { font-size: 10.5px; white-space: nowrap; padding: 9px 7px; }
+  .nav button small { display: none; }
+  .topbar { height: 46px; }
+  .content { padding: 18px 13px; }
+  .workflow { gap: 8px; }
+  .workflow b { width: 20px; height: 20px; }
+  .workflow li { font-size: 10.5px; }
+  .resume-banner { align-items: flex-start; flex-direction: column; }
+  .review-card { padding: 14px; }
+  .review-card .panel-head { align-items: flex-start; }
+  .badge { font-size: 9.5px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .heading .actions button { font-size: 11.5px; padding: 8px 11px; }
+  h1 { font-size: 30px; }
+}
+
+/* ── Motion ─────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  button, .dropzone { transition: background var(--dur-fast), border-color var(--dur-fast); }
+}
+
+/* ── Print ──────────────────────────────────────────────────── */
+@media print {
+  .workflow, .save-bar, .review-toolbar, .sync-button, .review-tools { display: none !important; }
+}
