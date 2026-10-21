@@ -32,3 +32,730 @@ dialog:has(.guide-dialog-heading){background:#1d1920;border:1px solid #655267;bo
 @media(max-width:540px){.comfort-shell .team-grid{grid-template-columns:1fr;gap:14px}.comfort-shell .team-card{padding:23px}.comfort-shell .team-card h2{font-size:25px!important}.comfort-shell .team-card li{font-size:13px}.comfort-shell[data-page=roster] .heading h1{font-size:34px}.comfort-shell[data-page=roster] .heading .primary{font-size:12px;min-height:44px}}
 body:has(.comfort-auth){background:radial-gradient(ellipse at 50% 20%,#39252d66,transparent 60%),#111114;min-height:100vh}.auth.comfort-auth{max-width:465px;margin:9vh auto;padding:35px}.comfort-auth .brand{font-size:43px}.comfort-auth .subbrand{color:#ad9da9;letter-spacing:3px}.comfort-auth h1{font-size:42px;text-transform:none;font-style:normal;line-height:1.15;letter-spacing:-.5px;margin:32px 0 15px}.comfort-auth h1+p{font-size:14px;line-height:1.8;color:#bcb2bd;margin-bottom:28px}.comfort-auth label{font-size:13px;color:#d6c8d8}.comfort-auth .comfort-password{position:relative;margin-top:9px}.comfort-auth .comfort-password input{background:#19151c;border:1px solid #59445b;min-height:52px;font-size:16px;border-radius:10px;margin:0;padding:13px 72px 13px 14px}.comfort-auth .comfort-password input:focus{outline:2px solid #dd7e91;outline-offset:2px}.comfort-auth .comfort-password button{position:absolute;right:5px;top:4px;width:61px;margin:0;padding:9px 8px;border:0;border-radius:7px;min-height:44px;background:#312534;color:#e2c5d9;font-size:12px;line-height:1.5}.comfort-auth-help{font-size:11px;color:#aa96b3;line-height:1.7;margin:12px 0 0}.comfort-auth #login>.primary{width:100%;margin-top:25px;background:#e83542;border:1px solid #e83542;border-radius:10px;font-size:13px;min-height:49px;color:#fff}.comfort-auth .caption{margin-top:30px;font-size:9px;letter-spacing:1.5px;color:#8e7b96}.comfort-auth #login-error{font-size:12px;color:#ecb6c3;line-height:1.7}.comfort-auth #login-error:empty{display:none}
 @media(max-width:540px){.comfort-top-title:before{content:'FFK';font:800 italic 20px 'Barlow Condensed',sans-serif;color:#ecd8e0;margin-right:7px;padding-right:13px;border-right:1px solid #51404e}.auth.comfort-auth{margin:6vh auto;padding:30px 27px}.comfort-auth h1{font-size:39px}}
+
+
+/* ═════════════════════════════════════════════════════════════════════
+   FFK WAR DESK — PROFESSIONAL TOURNAMENT OPERATIONS COMMAND CENTER
+   ═════════════════════════════════════════════════════════════════════ */
+
+.cmd-dashboard {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Header ────────────────────────────────────────────────────────── */
+.cmd-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--desk-line);
+}
+
+.cmd-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  color: #8A94A6;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.cmd-eyebrow-brand {
+  color: #E2E8F0;
+}
+
+.cmd-eyebrow-sep {
+  color: #E50914;
+  font-weight: 900;
+}
+
+.cmd-title {
+  font: 800 italic clamp(28px, 4vw, 42px) 'Barlow Condensed', sans-serif;
+  letter-spacing: -0.5px;
+  color: #F8FAFC;
+  line-height: 1.05;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+
+.cmd-subtitle {
+  font-size: 13.5px;
+  color: #94A3B8;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.cmd-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ── Standard Buttons ──────────────────────────────────────────────── */
+.cmd-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur-fast, 0.15s), border-color var(--dur-fast, 0.15s), box-shadow var(--dur-fast, 0.15s);
+  white-space: nowrap;
+  min-height: 42px;
+}
+
+.cmd-btn-primary {
+  background: #E50914;
+  border: 1px solid #FF3B47;
+  color: #FFFFFF;
+}
+
+.cmd-btn-primary:hover {
+  background: #FF1F2D;
+  box-shadow: 0 0 16px rgba(229, 9, 26, 0.35);
+}
+
+.cmd-btn-secondary {
+  background: #181D26;
+  border: 1px solid #2B3545;
+  color: #E2E8F0;
+}
+
+.cmd-btn-secondary:hover {
+  background: #202734;
+  border-color: #3E4B60;
+  color: #FFFFFF;
+}
+
+.cmd-btn-ghost {
+  background: transparent;
+  border: 1px solid #2B3545;
+  color: #94A3B8;
+}
+
+.cmd-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3E4B60;
+  color: #F1F5F9;
+}
+
+.cmd-btn:focus-visible,
+.cmd-link-btn:focus-visible,
+.cmd-action-card:focus-visible,
+.cmd-match-card:focus-visible {
+  outline: 2px solid #E50914;
+  outline-offset: 2px;
+}
+
+.cmd-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.cmd-link-btn:hover {
+  color: #E50914;
+}
+
+/* ── Draft In Progress Alert ───────────────────────────────────────── */
+.cmd-draft-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 14px 18px;
+}
+
+.cmd-draft-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cmd-draft-icon {
+  color: #F59E0B;
+}
+
+.cmd-draft-info strong {
+  display: block;
+  font-size: 13.5px;
+  color: #FEF3C7;
+  font-weight: 600;
+}
+
+.cmd-draft-info small {
+  display: block;
+  font-size: 11.5px;
+  color: #FCD34D;
+}
+
+/* ── KPI Grid ──────────────────────────────────────────────────────── */
+.cmd-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.cmd-kpi-card {
+  background: #131720;
+  border: 1px solid #232B3B;
+  border-radius: 8px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  transition: border-color 0.15s ease;
+}
+
+.cmd-kpi-card:hover {
+  border-color: #333F54;
+}
+
+.cmd-kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.cmd-kpi-label {
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: #7A8799;
+}
+
+.cmd-kpi-icon {
+  color: #E50914;
+  opacity: 0.85;
+}
+
+.cmd-kpi-value {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 38px;
+  font-weight: 800;
+  color: #F8FAFC;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 6px;
+}
+
+.cmd-kpi-denom {
+  font-size: 15px;
+  font-weight: 500;
+  color: #64748B;
+  margin-left: 4px;
+}
+
+.cmd-kpi-meta {
+  font-size: 11.5px;
+  color: #94A3B8;
+  line-height: 1.3;
+}
+
+/* ── Command Deck Grid ─────────────────────────────────────────────── */
+.cmd-deck-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.cmd-deck-main,
+.cmd-deck-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Shared Panel Styling ──────────────────────────────────────────── */
+.cmd-panel {
+  background: #131720;
+  border: 1px solid #232B3B;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cmd-panel-head {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #1C2331;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.cmd-panel-kicker {
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  color: #E50914;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 3px;
+}
+
+.cmd-panel-head h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #F1F5F9;
+  margin: 0;
+  text-transform: none;
+  font-style: normal;
+  letter-spacing: -0.2px;
+}
+
+/* ── Status Badges ─────────────────────────────────────────────────── */
+.cmd-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.cmd-status-badge.is-live {
+  background: rgba(229, 9, 26, 0.12);
+  color: #FF5A63;
+  border: 1px solid rgba(229, 9, 26, 0.35);
+}
+
+.cmd-status-badge.is-complete {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.cmd-status-badge.is-setup {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60A5FA;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.cmd-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── Active Stage Card Body ────────────────────────────────────────── */
+.cmd-stage-body {
+  padding: 20px;
+}
+
+.cmd-stage-progress-wrap {
+  margin-bottom: 18px;
+}
+
+.cmd-stage-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: #94A3B8;
+}
+
+.cmd-stage-progress-labels strong {
+  color: #E2E8F0;
+  font-weight: 600;
+}
+
+.cmd-progress-bar {
+  height: 8px;
+  background: #1C2331;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cmd-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #E50914, #FF4B55);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.cmd-stage-intel {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  background: #0E121A;
+  border: 1px solid #1C2331;
+  border-radius: 6px;
+}
+
+.cmd-intel-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cmd-intel-item .material-symbols-outlined {
+  color: #E50914;
+}
+
+.cmd-intel-item small {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #7A8799;
+}
+
+.cmd-intel-item strong {
+  display: block;
+  font-size: 13px;
+  color: #E2E8F0;
+  font-weight: 600;
+}
+
+.cmd-panel-actions {
+  padding: 14px 20px;
+  background: #0F131C;
+  border-top: 1px solid #1C2331;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ── Matches Panel ─────────────────────────────────────────────────── */
+.cmd-match-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cmd-match-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #1C2331;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  color: inherit;
+}
+
+.cmd-match-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cmd-match-card:last-child {
+  border-bottom: none;
+}
+
+.cmd-match-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.cmd-match-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.cmd-map-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #1C2331;
+  color: #93C5FD;
+  letter-spacing: 0.5px;
+}
+
+.cmd-stage-pill {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(229, 9, 26, 0.15);
+  color: #FF6B74;
+  letter-spacing: 0.5px;
+}
+
+.cmd-match-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #F1F5F9;
+}
+
+.cmd-match-sub {
+  font-size: 11.5px;
+  color: #94A3B8;
+}
+
+.cmd-match-winner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-right: 14px;
+  flex-shrink: 0;
+}
+
+.cmd-booyah-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #F59E0B;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cmd-match-winner strong {
+  font-size: 12.5px;
+  color: #E2E8F0;
+  font-weight: 600;
+}
+
+.cmd-match-arrow {
+  color: #475569;
+}
+
+/* ── Empty State ───────────────────────────────────────────────────── */
+.cmd-empty-state {
+  text-align: center;
+  padding: 38px 24px;
+}
+
+.cmd-empty-icon {
+  font-size: 40px !important;
+  color: #475569;
+  margin-bottom: 12px;
+}
+
+.cmd-empty-state h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #E2E8F0;
+  margin: 0 0 6px;
+  text-transform: none;
+  font-style: normal;
+}
+
+.cmd-empty-state p {
+  font-size: 13px;
+  color: #94A3B8;
+  max-width: 460px;
+  margin: 0 auto 20px;
+  line-height: 1.5;
+}
+
+.cmd-empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Quick Actions Grid ────────────────────────────────────────────── */
+.cmd-action-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.cmd-action-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #1C2331;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  color: inherit;
+}
+
+.cmd-action-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cmd-action-card:last-child {
+  border-bottom: none;
+}
+
+.cmd-action-icon {
+  color: #E50914;
+  flex-shrink: 0;
+}
+
+.cmd-action-content {
+  flex: 1;
+}
+
+.cmd-action-content strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #F1F5F9;
+}
+
+.cmd-action-content small {
+  display: block;
+  font-size: 11px;
+  color: #828E9E;
+  margin-top: 1px;
+}
+
+.cmd-action-arrow {
+  color: #475569;
+}
+
+/* ── System Telemetry Status ───────────────────────────────────────── */
+.cmd-status-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cmd-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid #1C2331;
+}
+
+.cmd-status-row:last-child {
+  border-bottom: none;
+}
+
+.cmd-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cmd-status-dot.is-good {
+  background: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+}
+
+.cmd-status-dot.is-standby {
+  background: #F59E0B;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
+}
+
+.cmd-status-info {
+  flex: 1;
+}
+
+.cmd-status-info strong {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #E2E8F0;
+}
+
+.cmd-status-info small {
+  display: block;
+  font-size: 11px;
+  color: #828E9E;
+  margin-top: 1px;
+}
+
+.cmd-status-pill {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #1C2331;
+  color: #CBD5E1;
+}
+
+/* ── Responsive Refinements ────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .cmd-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cmd-deck-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .cmd-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .cmd-header-actions {
+    width: 100%;
+  }
+
+  .cmd-header-actions .cmd-btn {
+    flex: 1;
+  }
+
+  .cmd-stage-intel {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .cmd-panel-actions {
+    flex-direction: column;
+  }
+
+  .cmd-panel-actions .cmd-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .cmd-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cmd-kpi-value {
+    font-size: 32px;
+  }
+}

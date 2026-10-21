@@ -15,7 +15,9 @@
   const team=id=>state.teams.find(t=>t.id===id);
   const name=id=>team(id)?.name||'Awaiting qualifier';
   const label=set=>set==='C'?'Semi-final':set==='finals'?'CS finals':'Set '+set;
-  const icon=(type)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${({arrow:'M5 12h14m-5-5 5 5-5 5',check:'m5 12 4 4L19 6',shield:'m12 3 8 3v6c0 4-8 9-8 9s-8-5-8-9V6z',cup:'M8 3h8v6a4 4 0 0 1-8 0V3m0 2H3v3a4 4 0 0 0 5 4m8-7h5v3a4 4 0 0 1-5 4m-4 1v7m-5 1h10',plus:'M12 5v14M5 12h14',file:'M14 2H5v20h14V7l-5-5zm0 0v6h5M8 12h8M8 16h6',swap:'M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4'})[type]||'M5 12h14'}"/></svg>`;
+  const ms=(name,size='sm',extra='')=>`<span class="material-symbols-outlined icon-${size}" aria-hidden="true"${extra}>${name}</span>`;
+  const iconMap={arrow:'arrow_forward',check:'check',shield:'security',cup:'emoji_events',plus:'add',file:'sports_esports',swap:'swap_horiz'};
+  const icon=(type)=>ms(iconMap[type]||'chevron_right','sm');
   const action=(text,handler,primary=false,extra='')=>`<button class="guide-button ${primary?'guide-primary':''}" onclick="${handler}" ${extra}>${text}${primary?icon('arrow'):''}</button>`;
   function alert(message){const node=document.querySelector('#war-feedback');if(node){node.hidden=false;node.textContent=message;node.focus();}else toast(message,'error');}
   const withWar=()=>({...state,war:w()});
@@ -123,31 +125,328 @@
     return `<div class="war-workspace">${head('FFK WAR / TOURNAMENT','Your war. Under control.','24 teams. Two opening sets. One champion. Take it one stage at a time.')}<p id="war-feedback" class="guide-inline-error" role="alert" tabindex="-1" hidden></p>${stageTabs()}${current==='finals'?finalsView():stageView(current)}${utilities()}</div>`;
   };
   overview=function(){
-    const n=next(state),war=w(),completed=!!WarTournament.playoffResults(war).final,stageProgress=n==='setup'?null:n==='finals'?null:progress(state,n),latest=state.matches.slice().reverse().slice(0,4);
-    const title=completed?'A war worth remembering.':n==='setup'?'A great war starts here.':n==='finals'?'The final four. Ready to fight.':'Let’s keep your war moving.';
-    const copy=completed?'Your champion is confirmed. All results are saved and ready to share.':n==='setup'?'Your teams, matches and points in one calm workspace. We’ll guide you from the first set to the final score.':n==='finals'?'Your top four are through. Record the Clash Squad scores and crown your champion.':'Set '+n+' is up next. '+(stageProgress.played===stageProgress.target?'All planned results are saved. Review your qualifiers.':'Add match '+(stageProgress.played+1)+' results when the game is finished.');
-    let resume='';try{if(JSON.parse(localStorage.getItem('ffk-match-draft-v1')||'null')?.draft)resume=`<div class="guide-resume"><div>${icon('file')}<span><strong>You have a match to finish</strong><small>Your progress is saved on this device.</small></span></div>${action('Resume review','resumeMatchDraft()')}</div>`;}catch{}
-    return `<div class="guide-home">${head('FFK PRASANTH / WAR DESK','Welcome to your war desk.','The next step is always right here.')}<section class="guide-home-hero"><div class="guide-home-copy"><span class="guide-kicker">${completed?'WAR COMPLETE':n==='setup'?'READY WHEN YOU ARE':'YOUR NEXT STEP'}</span><h2>${title}</h2><p>${copy}</p>${action(completed?'View the champion':n==='setup'?'Set up my war':n==='finals'?'Open CS finals':'Continue Set '+n,'comfortContinue()',true)}</div><div class="guide-home-art" aria-hidden="true"><span>FFK</span>${icon('cup')}<small>24 TEAMS · ONE CHAMPION</small></div></section>${resume}<div class="guide-home-stats"><div><span>Teams registered</span><strong>${state.teams.length}<small>/ 24 in a war</small></strong></div><div><span>BR results saved</span><strong>${state.matches.length}<small>verified matches</small></strong></div><div><span>Current stage</span><strong class="guide-current-stage">${completed?'Complete':n==='setup'?'Setup':label(n)}<small>${completed?'Champion confirmed':n==='setup'?'Prepare your teams':'One step at a time'}</small></strong></div></div>
-    <div class="guide-home-grid"><section class="guide-card"><div class="guide-card-heading"><div><h2>Recent results</h2><p>${latest.length?'Your latest saved matches.':'Your first result will start the story.'}</p></div>${latest.length?action('View all',"go('results')"):''}</div>${latest.map(m=>`<button class="guide-match-row" onclick="comfortResult('${esc(m.id)}')"><span class="guide-match-icon">${icon('file')}</span><span><strong>${esc(m.name)}</strong><small>${m.stage?'Set '+m.stage+' · ':''}${esc(m.map)}</small></span><span>${icon('arrow')}</span></button>`).join('')||`<div class="guide-home-empty">${icon('file')}<h3>No results yet</h3><p>After a match, upload screenshots or enter the result manually. We’ll handle the table.</p></div>`}</section><section class="guide-how"><span class="guide-kicker">A SIMPLE WAY TO RUN THE WAR</span><h2>From first drop<br>to final score.</h2><ol><li><span>1</span><div><strong>Prepare the teams</strong><p>Confirm two sets of 12.</p></div></li><li><span>2</span><div><strong>Add results as you go</strong><p>Check the names and kills. Points follow.</p></div></li><li><span>3</span><div><strong>Advance. Play. Crown.</strong><p>Confirm qualifiers, then score the CS finals.</p></div></li></ol></section></div></div>`;
-  };
+    const n=next(state),war=w(),completed=!!WarTournament.playoffResults(war).final;
+    const stageProgress=n==='setup'?null:n==='finals'?null:progress(state,n);
+    const latest=state.matches.slice().reverse().slice(0,5);
+    const players=state.teams.reduce((acc,t)=>acc+(t.players?t.players.length:0),0);
+    const totalKills=state.matches.reduce((acc,m)=>acc+m.rows.reduce((a,r)=>a+(r.players?r.players.reduce((b,p)=>b+(p.kills||0),0):0),0),0);
+    const nextMap=mapForMatch((stageProgress?stageProgress.played:0)+1);
+    const stagePct=stageProgress&&stageProgress.target?Math.min(100,Math.round((stageProgress.played/stageProgress.target)*100)):completed?100:0;
+
+    let resume='';
+    try{
+      if(JSON.parse(localStorage.getItem('ffk-match-draft-v1')||'null')?.draft){
+        resume=`<div class="cmd-draft-alert">
+          <div class="cmd-draft-info">
+            <span class="material-symbols-outlined icon-md cmd-draft-icon">pending_actions</span>
+            <div>
+              <strong>Unsaved match review in progress</strong>
+              <small>Screenshot crops and team allocations are saved on this workstation.</small>
+            </div>
+          </div>
+          <button class="cmd-btn cmd-btn-primary" onclick="resumeMatchDraft()">
+            <span class="material-symbols-outlined icon-sm">play_arrow</span>
+            <span>Resume review</span>
+          </button>
+        </div>`;
+      }
+    }catch(e){}
+
+    const stageStatusText=completed?'WAR CHAMPION CONFIRMED':n==='setup'?'TEAMS READY FOR ALLOCATION':n==='finals'?'CLASH SQUAD PLAYOFFS':'STAGE ACTIVE';
+    const stageBadgeClass=completed?'is-complete':n==='setup'?'is-setup':'is-live';
+    const stageActionLabel=completed?'View final standings':n==='setup'?'Set up war stages':n==='finals'?'Open CS playoffs':'Record Match '+(stageProgress?stageProgress.played+1:1)+' ('+nextMap+')';
+    const stageActionFn=completed?"go(\'results\')":n==='setup'?"go(\'war\')":n==='finals'?"go(\'war\')":`warNew('${n}')`;
+
+    return `<div class="cmd-dashboard">
+      <header class="cmd-header">
+        <div class="cmd-title-group">
+          <div class="cmd-eyebrow">
+            <span class="cmd-eyebrow-brand">FFK PRASANTH</span>
+            <span class="cmd-eyebrow-sep">/</span>
+            <span>TOURNAMENT OPERATIONS</span>
+          </div>
+          <h1 class="cmd-title">OPERATIONS COMMAND DESK</h1>
+          <p class="cmd-subtitle">Free Fire Season 11 · 24-Team War Format · Real-time standings & match coordination</p>
+        </div>
+        <div class="cmd-header-actions">
+          <button class="cmd-btn cmd-btn-secondary" onclick="openHostAccess()">
+            <span class="material-symbols-outlined icon-sm">manage_accounts</span>
+            <span>Host desk</span>
+          </button>
+          <button class="cmd-btn cmd-btn-primary" onclick="${stageActionFn}">
+            <span class="material-symbols-outlined icon-sm">${completed?'leaderboard':n==='finals'?'emoji_events':'add'}</span>
+            <span>${stageActionLabel}</span>
+          </button>
+        </div>
+      </header>
+
+      ${resume}
+
+      <section class="cmd-kpi-grid" aria-label="Tournament key performance indicators">
+        <div class="cmd-kpi-card">
+          <div class="cmd-kpi-header">
+            <span class="cmd-kpi-label">REGISTERED TEAMS</span>
+            <span class="material-symbols-outlined icon-sm cmd-kpi-icon">groups</span>
+          </div>
+          <div class="cmd-kpi-value">${state.teams.length}<span class="cmd-kpi-denom">/ 24</span></div>
+          <div class="cmd-kpi-meta">${state.teams.length>=24?'Full 24-team war roster ready':'War Lists 1 & 2 in preparation'}</div>
+        </div>
+        <div class="cmd-kpi-card">
+          <div class="cmd-kpi-header">
+            <span class="cmd-kpi-label">PLAYERS READY</span>
+            <span class="material-symbols-outlined icon-sm cmd-kpi-icon">person</span>
+          </div>
+          <div class="cmd-kpi-value">${players}</div>
+          <div class="cmd-kpi-meta">4 starters + 1 substitute per squad</div>
+        </div>
+        <div class="cmd-kpi-card">
+          <div class="cmd-kpi-header">
+            <span class="cmd-kpi-label">VERIFIED MATCHES</span>
+            <span class="material-symbols-outlined icon-sm cmd-kpi-icon">sports_esports</span>
+          </div>
+          <div class="cmd-kpi-value">${state.matches.length}</div>
+          <div class="cmd-kpi-meta">${state.matches.length?state.matches.length+' saved results across stages':'Waiting for initial drop'}</div>
+        </div>
+        <div class="cmd-kpi-card">
+          <div class="cmd-kpi-header">
+            <span class="cmd-kpi-label">ELIMINATIONS LOGGED</span>
+            <span class="material-symbols-outlined icon-sm cmd-kpi-icon">military_tech</span>
+          </div>
+          <div class="cmd-kpi-value">${totalKills}</div>
+          <div class="cmd-kpi-meta">1 elimination = 1 tournament point</div>
+        </div>
+      </section>
+
+      <div class="cmd-deck-grid">
+        <div class="cmd-deck-main">
+          <section class="cmd-panel cmd-active-stage" aria-labelledby="cmd-active-stage-title">
+            <div class="cmd-panel-head">
+              <div>
+                <span class="cmd-panel-kicker">ACTIVE TOURNAMENT PHASE</span>
+                <h2 id="cmd-active-stage-title">${completed?'Season 11 Champion Confirmed':n==='setup'?'Tournament Initialization':label(n)+' Tournament Stage'}</h2>
+              </div>
+              <span class="cmd-status-badge ${stageBadgeClass}">
+                <span class="cmd-badge-dot" aria-hidden="true"></span>
+                ${stageStatusText}
+              </span>
+            </div>
+            <div class="cmd-stage-body">
+              <div class="cmd-stage-progress-wrap">
+                <div class="cmd-stage-progress-labels">
+                  <span>Match completion</span>
+                  <strong>${stageProgress?stageProgress.played+' of '+stageProgress.target+' matches recorded ('+stagePct+'%)':completed?'Playoffs concluded':'Initialization ready'}</strong>
+                </div>
+                <div class="cmd-progress-bar" role="progressbar" aria-valuenow="${stagePct}" aria-valuemin="0" aria-valuemax="100">
+                  <div class="cmd-progress-fill" style="width: ${stagePct}%"></div>
+                </div>
+              </div>
+              <div class="cmd-stage-intel">
+                <div class="cmd-intel-item">
+                  <span class="material-symbols-outlined icon-sm">explore</span>
+                  <div>
+                    <small>Next Drop Map</small>
+                    <strong>${nextMap}</strong>
+                  </div>
+                </div>
+                <div class="cmd-intel-item">
+                  <span class="material-symbols-outlined icon-sm">flag</span>
+                  <div>
+                    <small>Stage Target</small>
+                    <strong>${stageProgress?stageProgress.target+' BR matches':'4-Team CS Bracket'}</strong>
+                  </div>
+                </div>
+                <div class="cmd-intel-item">
+                  <span class="material-symbols-outlined icon-sm">verified</span>
+                  <div>
+                    <small>Advancement</small>
+                    <strong>${n==='C'?'Top 4 to Grand Final':n==='finals'?'1 Champion':'Top 6 to Semi-finals'}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="cmd-panel-actions">
+              <button class="cmd-btn cmd-btn-primary" onclick="${stageActionFn}">
+                <span class="material-symbols-outlined icon-sm">${completed?'leaderboard':n==='finals'?'emoji_events':'add'}</span>
+                <span>${stageActionLabel}</span>
+              </button>
+              <button class="cmd-btn cmd-btn-ghost" onclick="go(\'war\')">
+                <span class="material-symbols-outlined icon-sm">tune</span>
+                <span>Stage management</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="cmd-panel cmd-matches-panel" aria-labelledby="cmd-matches-title">
+            <div class="cmd-panel-head">
+              <div>
+                <span class="cmd-panel-kicker">MATCH COORDINATION</span>
+                <h2 id="cmd-matches-title">Recent matches</h2>
+              </div>
+              ${latest.length?`<button class="cmd-link-btn" onclick="go(\'results\')"><span>View all matches</span> <span class="material-symbols-outlined icon-sm">arrow_forward</span></button>`:''}
+            </div>
+            ${latest.length ? `
+              <div class="cmd-match-list">
+                ${latest.map(m => {
+                  const winner = m.rows ? m.rows.find(r => r.placement === 1) : null;
+                  const elims = m.rows ? m.rows.reduce((acc, r) => acc + (r.players ? r.players.reduce((b, p) => b + (p.kills || 0), 0) : 0), 0) : 0;
+                  const dateStr = m.created ? new Date(m.created).toLocaleDateString('en-IN') : '';
+                  return `<button class="cmd-match-card" onclick="comfortResult(\'${esc(m.id)}\')">
+                    <div class="cmd-match-meta">
+                      <div class="cmd-match-badge-wrap">
+                        <span class="cmd-map-pill">${esc(m.map || 'Bermuda')}</span>
+                        ${m.stage ? `<span class="cmd-stage-pill">Set ${esc(m.stage)}</span>` : ''}
+                      </div>
+                      <strong class="cmd-match-name">${esc(m.name)}</strong>
+                      <div class="cmd-match-sub">${m.rows ? m.rows.length : 12} teams · ${elims} eliminations${dateStr ? ' · ' + dateStr : ''}</div>
+                    </div>
+                    ${winner ? `
+                      <div class="cmd-match-winner">
+                        <span class="cmd-booyah-tag">
+                          <span class="material-symbols-outlined icon-xs">emoji_events</span>
+                          BOOYAH
+                        </span>
+                        <strong>${esc(winner.teamName || 'Winner pending')}</strong>
+                      </div>
+                    ` : ''}
+                    <span class="material-symbols-outlined icon-sm cmd-match-arrow">chevron_right</span>
+                  </button>`;
+                }).join('')}
+              </div>
+            ` : `
+              <div class="cmd-empty-state">
+                <span class="material-symbols-outlined icon-xl cmd-empty-icon">sports_esports</span>
+                <h3>No matches recorded yet</h3>
+                <p>24 teams from War Lists 1 and 2 are registered. Match 1 is scheduled on <strong>${nextMap}</strong>. Once the drop is finished, upload screenshot results or enter scores manually to begin standings.</p>
+                <div class="cmd-empty-actions">
+                  <button class="cmd-btn cmd-btn-primary" onclick="${n==='finals'?'go(\'war\')':'warNew(\'" + n + "\')'}">
+                    <span class="material-symbols-outlined icon-sm">add</span>
+                    <span>Record Match 1 (${nextMap})</span>
+                  </button>
+                  <button class="cmd-btn cmd-btn-ghost" onclick="go(\'roster\')">
+                    <span class="material-symbols-outlined icon-sm">groups</span>
+                    <span>View 24 team rosters</span>
+                  </button>
+                </div>
+              </div>
+            `}
+          </section>
+        </div>
+
+        <aside class="cmd-deck-aside">
+          <section class="cmd-panel cmd-actions-panel" aria-labelledby="cmd-actions-title">
+            <div class="cmd-panel-head">
+              <div>
+                <span class="cmd-panel-kicker">SHORTCUTS</span>
+                <h2 id="cmd-actions-title">Quick operations</h2>
+              </div>
+            </div>
+            <div class="cmd-action-grid">
+              <button class="cmd-action-card" onclick="go(\'upload\')">
+                <span class="material-symbols-outlined icon-md cmd-action-icon">upload_file</span>
+                <div class="cmd-action-content">
+                  <strong>Record match</strong>
+                  <small>Screenshot OCR intake & score review</small>
+                </div>
+                <span class="material-symbols-outlined icon-sm cmd-action-arrow">chevron_right</span>
+              </button>
+              <button class="cmd-action-card" onclick="go(\'war\')">
+                <span class="material-symbols-outlined icon-md cmd-action-icon">emoji_events</span>
+                <div class="cmd-action-content">
+                  <strong>War stage manager</strong>
+                  <small>Sets A/B/C tracking & qualification rules</small>
+                </div>
+                <span class="material-symbols-outlined icon-sm cmd-action-arrow">chevron_right</span>
+              </button>
+              <button class="cmd-action-card" onclick="go(\'roster\')">
+                <span class="material-symbols-outlined icon-md cmd-action-icon">groups</span>
+                <div class="cmd-action-content">
+                  <strong>Team rosters</strong>
+                  <small>Inspect 24 squads, captains & players</small>
+                </div>
+                <span class="material-symbols-outlined icon-sm cmd-action-arrow">chevron_right</span>
+              </button>
+              <button class="cmd-action-card" onclick="go(\'results\')">
+                <span class="material-symbols-outlined icon-md cmd-action-icon">leaderboard</span>
+                <div class="cmd-action-content">
+                  <strong>Championship standings</strong>
+                  <small>Overall points, top fraggers & CSV export</small>
+                </div>
+                <span class="material-symbols-outlined icon-sm cmd-action-arrow">chevron_right</span>
+              </button>
+              <button class="cmd-action-card" onclick="openHostAccess()">
+                <span class="material-symbols-outlined icon-md cmd-action-icon">cast</span>
+                <div class="cmd-action-content">
+                  <strong>Host & broadcast desk</strong>
+                  <small>Read-only OBS links & caster talking points</small>
+                </div>
+                <span class="material-symbols-outlined icon-sm cmd-action-arrow">open_in_new</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="cmd-panel cmd-status-panel" aria-labelledby="cmd-telemetry-title">
+            <div class="cmd-panel-head">
+              <div>
+                <span class="cmd-panel-kicker">TELEMETRY</span>
+                <h2 id="cmd-telemetry-title">System readiness</h2>
+              </div>
+            </div>
+            <div class="cmd-status-list">
+              <div class="cmd-status-row">
+                <span class="cmd-status-dot is-good"></span>
+                <div class="cmd-status-info">
+                  <strong>Rosters deployed</strong>
+                  <small>${state.teams.length} teams registered across War Lists 1 & 2</small>
+                </div>
+                <span class="cmd-status-pill">${state.teams.length>=24?'READY':'IN PROGRESS'}</span>
+              </div>
+              <div class="cmd-status-row">
+                <span class="cmd-status-dot is-good"></span>
+                <div class="cmd-status-info">
+                  <strong>Scoring engine</strong>
+                  <small>Placement (12,9,8,7...) + 1 pt/kill + adjustments</small>
+                </div>
+                <span class="cmd-status-pill">ACTIVE</span>
+              </div>
+              <div class="cmd-status-row">
+                <span class="cmd-status-dot is-good"></span>
+                <div class="cmd-status-info">
+                  <strong>Host desk link</strong>
+                  <small>Caster interface & OBS 1080p browser source</small>
+                </div>
+                <span class="cmd-status-pill">ONLINE</span>
+              </div>
+              <div class="cmd-status-row">
+                <span class="cmd-status-dot ${state.matches.length?'is-good':'is-standby'}"></span>
+                <div class="cmd-status-info">
+                  <strong>Tournament status</strong>
+                  <small>${completed?'All stages completed':label(n)+' active'}</small>
+                </div>
+                <span class="cmd-status-pill">${completed?'COMPLETE':label(n).toUpperCase()}</span>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>`;  };
   const oldRender=render;
   render=function(){oldRender();mount();};
   function mount(){
     const shell=document.querySelector('.channel-shell');if(!shell)return;shell.classList.add('comfort-shell');
     const nav=shell.querySelector('.nav'),buttons=[...nav.querySelectorAll('button')];
-    const entries=[['overview','Home'],['war','War manager'],['roster','Teams'],['upload','Add results'],['results','Standings']];
+    const entries=[['overview','Overview'],['war','War manager'],['roster','Team roster'],['upload','Record match'],['results','Standings']];
     for(const [id,text] of entries){const button=buttons.find(b=>b.getAttribute('onclick')===`go('${id}')`);if(!button)continue;
       [...button.childNodes].filter(n=>n.nodeType===3).forEach(n=>n.remove());const span=document.createElement('span');span.className='comfort-nav-label';span.textContent=text;button.append(span);button.querySelector('small')?.remove();button.setAttribute('aria-current',page===id?'page':'false');nav.append(button);
     }
-    if(!document.querySelector('.comfort-sidebar-note')){const note=document.createElement('div');note.className='comfort-sidebar-note';note.innerHTML=icon('shield')+'<span>Made for the organizer.<small>One stage at a time.</small></span>';nav.after(note);}
+    if(!document.querySelector('.comfort-sidebar-note')){const note=document.createElement('div');note.className='comfort-sidebar-note';note.innerHTML=ms('security','sm')+'<span>Tournament operations<small>Strict scoring & verified rules</small></span>';nav.after(note);}
     const top=shell.querySelector('.topbar');top.querySelector('.insights-ticker')?.remove();
-    if(!top.querySelector('.comfort-top-title')){const title=document.createElement('span');title.className='comfort-top-title';title.innerHTML=`<span>FFK WAR DESK</span><strong>${({overview:'Home',war:'War manager',roster:'Teams',upload:'Add results',results:'Standings'})[page]||'Workspace'}</strong>`;top.prepend(title);}
+    if(!top.querySelector('.comfort-top-title')){const title=document.createElement('span');title.className='comfort-top-title';title.innerHTML=`<span>FFK WAR DESK</span><strong>${({overview:'Operations desk',war:'War manager',roster:'Team roster',upload:'Record match',results:'Standings'})[page]||'Workspace'}</strong>`;top.prepend(title);}
     const sync=top.querySelector('.sync-button');if(sync){sync.setAttribute('aria-label','Refresh saved data');sync.title='Refresh saved data';}
     const content=document.querySelector('.content');content?.querySelectorAll('.guide-primary').forEach(button=>{button.classList.remove('brand-outline-primary');button.classList.add('brand-main-action');});
     if(page==='roster'){
       const heading=content.querySelector('.heading h1');if(heading)heading.textContent='Your teams';
       const intro=content.querySelector(':scope > p:not([id])');if(intro)intro.textContent='Keep team and player names up to date. Use the exact in-game names to make result checking easier.';
-      const register=content.querySelector('.heading .primary');if(register)register.textContent='＋ Register team';
+      const register=content.querySelector('.heading .primary');if(register)register.innerHTML=ms('add','sm')+' <span>Register team</span>';
     }
     const add=nav.querySelector('[onclick="go(\'upload\')"]');if(add&&!draft)add.onclick=()=>{
       const set=next(state);if(['A','B','C'].includes(set)&&WarTournament.availableTeams(state,set).length>=12&&!progress(state,set).locked&&progress(state,set).played<progress(state,set).target)return warNew(set);
