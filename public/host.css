@@ -75,6 +75,32 @@ button, select {
 button:hover, button[aria-pressed=true] { border-color: var(--accent); background: rgba(229,9,26,0.12); }
 button:focus-visible, a:focus-visible, select:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
 
+/* ── Material Symbols ───────────────────────────────────────── */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 18px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+  flex-shrink: 0;
+  user-select: none;
+}
+.icon-sm { font-size: 16px; width: 16px; height: 16px; }
+.move-up { color: var(--success); vertical-align: -2px; }
+.move-down { color: var(--error); vertical-align: -2px; }
+button .material-symbols-outlined { vertical-align: -2px; }
+
 /* ── Host toolbar ───────────────────────────────────────────── */
 .host-toolbar {
   padding: 13px 26px;

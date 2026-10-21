@@ -4,7 +4,7 @@
  document.body.classList.toggle('broadcast',screen);
  let state=null,stats=null,last='',held=false,loading=false,page=0,chosen='';const size=12;
  const $=s=>document.querySelector(s),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const fmt=v=>Number(v).toFixed(1),move=t=>t.change===null?'NEW':t.change>0?'↑ '+t.change:t.change<0?'↓ '+Math.abs(t.change):'—';
+ const fmt=v=>Number(v).toFixed(1),move=t=>t.change===null?'NEW':t.change>0?'<span class="material-symbols-outlined icon-sm move-up" aria-hidden="true">arrow_upward</span> '+t.change:t.change<0?'<span class="material-symbols-outlined icon-sm move-down" aria-hidden="true">arrow_downward</span> '+Math.abs(t.change):'—';
  function metrics(items){return items.map(([label,value])=>`<div class="metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('');}
  function spotlight(){const t=stats.teams.find(t=>t.teamId===chosen)||stats.teams[0];if(!t){$('#team-detail').textContent='Team stats appear after the first saved match.';return;}chosen=t.teamId;
   $('#team-detail').innerHTML=`<h3>${esc(t.teamName)} <small>#${t.rank} overall</small></h3><div class="spotlight-metrics">${metrics([['Kills / match',fmt(t.averageKills)],['Points / match',fmt(t.averagePoints)],['Average finish','#'+fmt(t.averageFinish)],['Win rate',fmt(t.winRate)+'%']])}</div><h4>Last ${t.form.length} appearances</h4><div class="form-list">${t.form.map(r=>`<div><strong>${esc(r.name)}</strong><span>Finish #${r.placement}</span><span>${r.kills} kills</span><b>${r.total} pts</b></div>`).join('')}</div>`;
@@ -23,7 +23,7 @@
  }
  async function refresh(){if(loading||held)return;loading=true;try{const r=await fetch('/api/host/state',{headers:key?{'X-Host-Key':key}:{},cache:'no-store'});const data=await r.json();if(!r.ok)throw Error(data.error||'Unable to load results');const signature=JSON.stringify(data);if(signature!==last){state=data;render();last=signature;}$('#error').hidden=true;$('#connection').textContent='Updated '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});}catch(e){$('#error').hidden=false;$('#error').textContent=e.message+(state?' Showing the last successful update.':'');$('#connection').textContent='Updates unavailable';}finally{loading=false;}}
  $('#team-select').onchange=e=>{chosen=e.target.value;spotlight();};$('#refresh').onclick=()=>{if(held){$('#connection').textContent='Updates held — select Resume updates first';return;}refresh();};
- $('#freeze').onclick=()=>{held=!held;$('#freeze').setAttribute('aria-pressed',String(held));$('#freeze').textContent=held?'Resume updates':'Hold updates';$('#connection').textContent=held?'Updates held':'Refreshing…';if(!held)refresh();};
+ $('#freeze').onclick=()=>{held=!held;$('#freeze').setAttribute('aria-pressed',String(held));$('#freeze').innerHTML=held?'<span class="material-symbols-outlined icon-sm" aria-hidden="true">play_arrow</span> <span>Resume updates</span>':'<span class="material-symbols-outlined icon-sm" aria-hidden="true">pause</span> <span>Hold updates</span>';$('#connection').textContent=held?'Updates held':'Refreshing…';if(!held)refresh();};
  $('#broadcast').onclick=()=>{const p=new URLSearchParams();if(key)p.set('key',key);p.set('screen','1');window.open('/host.html#'+p,'_blank','noopener');};
  refresh();setInterval(refresh,10000);
 })();

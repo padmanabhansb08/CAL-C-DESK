@@ -499,16 +499,7 @@ svg { width: 18px; height: 18px; flex-shrink: 0; }
   transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
-.stat::after {
-  content: '///';
-  position: absolute;
-  right: 10px;
-  top: 8px;
-  font: bold italic 20px var(--font-display);
-  letter-spacing: -4px;
-  color: var(--line-soft);
-  pointer-events: none;
-}
+
 
 .stat:hover {
   border-color: var(--line-soft);
@@ -895,8 +886,59 @@ progress {
   min-height: 40px;
   padding: 0;
   border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.icon-button svg { width: 17px; height: 17px; }
+.icon-button svg, .icon-button .material-symbols-outlined { font-size: 18px; width: 18px; height: 18px; }
+
+/* ── Material Symbols Outlined Icon System ─────────────────── */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Icon Sizing Scale — 16 compact · 20 table/secondary · 24 standard · 32 feature */
+.icon-xs  { font-size: 14px; width: 14px; height: 14px; }
+.icon-sm  { font-size: 16px; width: 16px; height: 16px; }
+.icon-md  { font-size: 20px; width: 20px; height: 20px; }
+.icon-lg  { font-size: 24px; width: 24px; height: 24px; }
+.icon-xl  { font-size: 28px; width: 28px; height: 28px; }
+.icon-2xl { font-size: 32px; width: 32px; height: 32px; }
+
+/* Button and link optical alignment */
+button .material-symbols-outlined,
+a .material-symbols-outlined {
+  vertical-align: middle;
+}
+
+.button-icon-start {
+  margin-right: 6px;
+}
+
+.button-icon-end {
+  margin-left: 6px;
+}
+
+.icon-filled {
+  font-variation-settings: 'FILL' 1;
+}
 
 /* Search bar */
 .search-bar {
