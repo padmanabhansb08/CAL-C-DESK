@@ -24,7 +24,145 @@ window.addEventListener('beforeunload',e=>{if(busy||(draft&&(!window.isMatchDraf
 
 async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup);state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
 
-function auth(setup){$('#app').innerHTML=`<main class="auth"><div class="brand">FFK<span> /</span></div><div class="subbrand">WAR DESK</div><h1>${setup?'Your war.<br>Your command.':'Back in command.'}</h1><p>${setup?'Create your organizer password. This account controls rosters, match results, and penalties.':'Sign in to your organizer desk.'}</p><form id="login"><label>Organizer password<input type="password" name="password" minlength="10" required autocomplete="${setup?'new-password':'current-password'}"></label><button class="primary">${setup?'Create organizer account':'Sign in'} ↗</button><p id="login-error" class="error" role="alert"></p></form><p class="caption">FREE FIRE · FFK WAR · ORGANIZER ACCESS</p></main>`;$('#login').onsubmit=async e=>{e.preventDefault();const b=e.target.querySelector('button.primary');b.disabled=true;try{await api('login',{password:e.target.password.value});await init();}catch(e){$('#login-error').textContent=e.message;b.disabled=false;}};}
+function auth(setup){
+  const action=setup?'Create organizer access':'Sign in to War Desk';
+  const title=setup?'YOUR WAR.<br><span class="card-title-accent">YOUR COMMAND.</span>':'WELCOME BACK,<br><span class="card-title-accent">ORGANIZER.</span>';
+  const intro=setup?'Create your organizer password. This account controls rosters, match results, and penalties.':'Sign in to manage your tournaments.';
+  $('#app').innerHTML=`<main class="login-page">
+    <div class="login-ambient" aria-hidden="true">
+      <div class="ambient-glow-left"></div>
+      <div class="ambient-glow-right"></div>
+      <div class="ambient-grid"></div>
+    </div>
+    <section class="login-showcase" aria-labelledby="login-showcase-title">
+      <div class="showcase-watermark-claws" aria-hidden="true"></div>
+      <div class="showcase-top-meta">
+        <p class="login-kicker">FFK WAR DESK <span class="kicker-sep">/</span> TOURNAMENT OPERATIONS</p>
+        <span class="showcase-status-badge"><span class="badge-dot" aria-hidden="true"></span> COMMAND ACTIVE</span>
+      </div>
+      <div class="showcase-hero-art">
+        <div class="mascot-frame">
+          <div class="mascot-glow" aria-hidden="true"></div>
+          <img class="mascot-img" src="assets/mascot-badge.png" alt="FFK Prasanth" width="508" height="424">
+        </div>
+      </div>
+      <div class="login-showcase-copy">
+        <p class="login-status"><i aria-hidden="true"></i> ORGANIZER ACCESS</p>
+        <h1 id="login-showcase-title" class="showcase-headline">BACK IN<br><span class="headline-accent">COMMAND.</span></h1>
+        <p class="showcase-subtext">Your tournament. Your operations.<br>One command center.</p>
+      </div>
+      <div class="login-showcase-footer" aria-hidden="true">
+        <div class="telemetry-tag"><span class="telemetry-idx">[ 01 ]</span> <span>OPERATIONS CONSOLE</span></div>
+        <div class="telemetry-bar"></div>
+        <div class="telemetry-sys">FFK // DESK</div>
+      </div>
+    </section>
+    <section class="login-panel-wrap" aria-label="Organizer sign in">
+      <header class="login-mobile-brand">
+        <div class="mobile-avatar-wrap">
+          <img class="mobile-avatar" src="assets/channel-avatar.jpg" alt="FFK Prasanth" width="48" height="48">
+          <span class="avatar-ring" aria-hidden="true"></span>
+        </div>
+        <div class="mobile-brand-meta">
+          <span class="mobile-brand-name">FFK PRASANTH</span>
+          <span class="mobile-brand-sub">WAR DESK · TOURNAMENT OPS</span>
+        </div>
+      </header>
+      <div class="login-card">
+        <div class="card-accent-strip" aria-hidden="true"></div>
+        <div class="login-card-header">
+          <div class="login-mark" aria-hidden="true">FFK<span>/</span></div>
+          <div class="login-mark-text">
+            <p class="login-mark-title">WAR DESK</p>
+            <span class="login-mark-badge">ESPORTS</span>
+          </div>
+        </div>
+        <div class="login-card-body">
+          <p class="login-overline"><span class="overline-dot" aria-hidden="true"></span>ORGANIZER CONSOLE</p>
+          <h2 class="card-title">${title}</h2>
+          <p class="login-intro">${intro}</p>
+          <form id="login" novalidate>
+            <div class="form-group">
+              <label for="organizer-password" class="field-label">Organizer password</label>
+              <div class="login-password-field">
+                <input id="organizer-password"
+                       type="password"
+                       name="password"
+                       minlength="10"
+                       required
+                       autocomplete="${setup?'new-password':'current-password'}"
+                       aria-describedby="login-help login-error"
+                       placeholder="Enter your password">
+                <button class="login-password-toggle"
+                        type="button"
+                        aria-label="Show organizer password"
+                        aria-pressed="false">
+                  <svg class="toggle-eye-icon eye-show" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="toggle-eye-icon eye-hide" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                  <span class="toggle-text" aria-hidden="true">Show</span>
+                </button>
+              </div>
+            </div>
+            <p id="login-help" class="login-help">${setup?'Use at least 10 characters. This password controls your organizer access.':'Only organizers can change teams, results, and qualification.'}</p>
+            <p id="login-error" class="login-error" role="alert" aria-live="polite"></p>
+            <button class="primary login-submit" type="submit">
+              <span class="submit-text">${action}</span>
+              <span class="submit-spinner" aria-hidden="true"></span>
+              <svg class="submit-arrow" aria-hidden="true" viewBox="0 0 20 20">
+                <path d="M3 10h12M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </form>
+          <div class="login-card-footer">
+            <span class="footer-divider"></span>
+            <p class="footer-security-text">
+              <svg class="security-shield-icon" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="currentColor">
+                <path d="M8 0c-.2 0-.4 0-.6.1L2.4 2.2C1.6 2.5 1 3.3 1 4.2V8c0 4.1 2.8 7.3 6.6 7.9.3 0 .5 0 .8 0 3.8-.6 6.6-3.8 6.6-7.9V4.2c0-.9-.6-1.7-1.4-2L8.6.1C8.4 0 8.2 0 8 0zm0 1.5 5 1.7v4.8c0 3.3-2.2 5.9-5 6.4-2.8-.5-5-3.1-5-6.4V3.2l5-1.7z"/>
+              </svg>
+              SECURE TOURNAMENT OPERATIONS
+            </p>
+            <span class="footer-divider"></span>
+          </div>
+        </div>
+      </div>
+      <p class="login-legal">FFK PRASANTH <b>•</b> FREE FIRE TOURNAMENT DESK</p>
+    </section>
+  </main>`;
+
+  const form=$('#login'),field=$('#organizer-password'),toggle=form.querySelector('.login-password-toggle'),submit=form.querySelector('.login-submit'),error=$('#login-error'),eyeShow=toggle.querySelector('.eye-show'),eyeHide=toggle.querySelector('.eye-hide'),toggleText=toggle.querySelector('.toggle-text');
+  toggle.onclick=()=>{
+    const isPassword=field.type==='password';
+    field.type=isPassword?'text':'password';
+    if(toggleText)toggleText.textContent=isPassword?'Hide':'Show';
+    if(eyeShow)eyeShow.style.display=isPassword?'none':'inline-block';
+    if(eyeHide)eyeHide.style.display=isPassword?'inline-block':'none';
+    toggle.setAttribute('aria-label',isPassword?'Hide organizer password':'Show organizer password');
+    toggle.setAttribute('aria-pressed',String(isPassword));
+    field.focus();
+  };
+  form.onsubmit=async e=>{
+    e.preventDefault();
+    error.textContent='';
+    if(!form.reportValidity())return;
+    submit.disabled=true;
+    submit.setAttribute('aria-busy','true');
+    try{
+      await api('login',{password:field.value});
+      await init();
+    }catch(err){
+      error.textContent=err.message||'Incorrect password';
+      submit.disabled=false;
+      submit.removeAttribute('aria-busy');
+      field.focus();
+    }
+  };
+}
 
 function render(){const nav=[['overview','Overview','01'],['roster','Team roster',String(state.teams.length).padStart(2,'0')],['upload','Match intake','+'],['results','Match results',String(state.matches.length).padStart(2,'0')],['war','War manager','24']];$('#app').innerHTML=`<div class="shell"><aside class="sidebar"><div class="brand">FFK<span> /</span></div><div class="subbrand">WAR DESK</div><nav class="nav">${nav.map(([id,label,n])=>`<button class="${page===id?'active':''}" onclick="go('${id}')">${label}<small>${n}</small></button>`).join('')}</nav><div class="sidebar-footer"><span class="dot"></span>Organizer workspace<br>FREE FIRE / BR + CS<br><button onclick="logout()" style="margin-top:15px">Sign out</button></div></aside><main class="main"><header class="topbar"><span>WORKSPACE <span style="margin:0 12px">/</span> <strong>FFK WAR</strong></span><span><span class="dot"></span>Organizer <span class="avatar">FF</span></span></header><div class="content">${page==='war'?renderWar():page==='overview'?overview():page==='roster'?roster():page==='upload'?intake():results()}</div></main></div>`;bind();}
 
