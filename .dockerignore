@@ -7,8 +7,9 @@ __pycache__/
 .ocr-cache/
 .ocr-runtime/
 war.sqlite3*
-*.png
-*.pdf
+/*.png
+/*.pdf
+!public/assets/*.png
 tools/
 ocr-data/
 node_modules/

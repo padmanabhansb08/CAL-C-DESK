@@ -54,6 +54,8 @@ class Handler(SimpleHTTPRequestHandler):
         return sessions.get(cookies.get('ffk', ''), 0) > time.time()
 
     def do_GET(self):
+        if self.path.split('?')[0] in ('/health', '/healthz', '/api/health'):
+            return self.reply(200, {'status': 'ok'})
         if self.path == '/api/host/state':
             key = self.headers.get('X-Host-Key', '')
             expected = get('host_access_key')
@@ -78,8 +80,11 @@ class Handler(SimpleHTTPRequestHandler):
             return self.reply(415, {'error': 'JSON required'})
         origin = self.headers.get('Origin')
         host = self.headers.get('X-Forwarded-Host') or self.headers.get('Host')
-        if origin and host and origin.split('://', 1)[-1] != host:
-            return self.reply(403, {'error': 'Origin rejected'})
+        if origin and host:
+            origin_host = origin.split('://', 1)[-1].split('/')[0].split(':')[0].lower()
+            expected_host = host.split(',')[0].strip().split(':')[0].lower()
+            if origin_host != expected_host:
+                return self.reply(403, {'error': 'Origin rejected'})
         try:
             size = int(self.headers.get('Content-Length', 0))
             if size > (12_000_000 if self.path == '/api/ocr' else 2_000_000): return self.reply(413, {'error': 'Request too large'})
