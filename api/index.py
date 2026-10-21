@@ -1,8 +1,17 @@
-﻿"""FFK War Desk - Vercel + Neon edition (Flask + PostgreSQL)."""
-import hashlib, hmac, json, os, secrets, time
+"""FFK War Desk - Vercel + Neon edition (Flask + PostgreSQL)."""
+import hashlib, hmac, json, os, secrets, sys, time
 from flask import Flask, request, jsonify, make_response
 import psycopg2
-import default_rosters_pg as default_rosters
+
+# Ensure api directory is in sys.path so sibling imports work in Vercel serverless environment
+_api_dir = os.path.dirname(os.path.abspath(__file__))
+if _api_dir not in sys.path:
+    sys.path.insert(0, _api_dir)
+
+try:
+    import default_rosters_pg as default_rosters
+except ImportError:
+    from api import default_rosters_pg as default_rosters
 
 app = Flask(__name__)
 DATABASE_URL = os.environ.get("DATABASE_URL", "")

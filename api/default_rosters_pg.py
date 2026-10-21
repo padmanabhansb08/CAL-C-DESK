@@ -1,4 +1,4 @@
-﻿"""PostgreSQL-compatible port of default_rosters.py for Vercel + Neon."""
+"""PostgreSQL-compatible port of default_rosters.py for Vercel + Neon."""
 import json
 import re
 import uuid
