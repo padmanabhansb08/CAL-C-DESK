@@ -1,3 +1,2 @@
-﻿# Vercel + Neon production dependencies
-flask>=3.0
-psycopg2-binary>=2.9
+flask>=3.0.0
+psycopg2-binary>=2.9.9
