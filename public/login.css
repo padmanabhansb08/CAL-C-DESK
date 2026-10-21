@@ -766,6 +766,8 @@ body:has(.login-page) {
 /* ═════════════════════════════════════════════════════════════════════
    RESPONSIVE DESIGN (TABLET & MOBILE)
    ═════════════════════════════════════════════════════════════════════ */
+
+/* ── Intermediate tablet: two-column grid gets cramped below 960px ── */
 @media (max-width: 960px) {
   .login-page {
     grid-template-columns: minmax(0, 1fr) minmax(380px, 0.95fr);
@@ -784,46 +786,91 @@ body:has(.login-page) {
   }
 }
 
+/* ── Tablet portrait: two-column layout becomes too tight at ~900px ──
+   Keep showcase visible but trim it further; min-width for login col. */
+@media (max-width: 900px) {
+  .login-page {
+    grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1fr);
+  }
+
+  .login-showcase {
+    padding: 28px 24px;
+  }
+
+  .showcase-headline {
+    font-size: clamp(42px, 5.5vw, 68px);
+  }
+
+  .mascot-img {
+    max-height: 210px;
+  }
+
+  .showcase-subtext {
+    font-size: 13px;
+  }
+
+  .login-showcase-footer {
+    gap: 10px;
+    font-size: 11px;
+  }
+}
+
+/* ── Mobile: single-column, vertically stacked layout ──────────────── */
 @media (max-width: 780px) {
   .login-page {
-    display: block;
+    /* Switch from grid to flex column for reliable stacking and centering */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Use min-height rather than height so content can grow beyond viewport
+       and the user can scroll — important when virtual keyboard is open.    */
     min-height: 100vh;
     min-height: 100dvh;
     width: 100%;
     max-width: 100vw;
     box-sizing: border-box;
-    padding: max(16px, env(safe-area-inset-top)) 14px max(24px, env(safe-area-inset-bottom));
+    /* Safe-area-aware padding: top for notch/status-bar, bottom for nav bar */
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
     background: radial-gradient(circle at 50% 0%, #161B24 0%, var(--login-bg) 60%);
     overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .login-showcase {
     display: none;
   }
 
+  /* Panel wrap becomes a full-width flex child, no competing height */
   .login-panel-wrap {
-    min-height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
     width: 100%;
-    max-width: 100%;
+    min-height: auto;
     padding: 0;
     background: transparent;
     box-sizing: border-box;
   }
 
-  /* Dedicated Mobile Esports Branding Header */
+  /* ── Mobile esports branding header ── */
   .login-mobile-brand {
     display: flex;
     align-items: center;
     gap: 12px;
     width: 100%;
-    max-width: 440px;
-    margin: 4px auto 16px;
+    max-width: 480px;
+    margin: 0 0 16px;
     padding: 8px 12px;
     background: rgba(17, 21, 28, 0.9);
     border: 1px solid var(--login-border);
     border-radius: var(--login-radius-sm);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
     box-sizing: border-box;
+    flex-shrink: 0;
   }
 
   .mobile-avatar-wrap {
@@ -882,12 +929,14 @@ body:has(.login-page) {
     white-space: nowrap;
   }
 
+  /* ── Login card: full-width, max 480px, centered ── */
   .login-card {
     width: 100%;
-    max-width: 440px;
-    margin: 0 auto;
+    max-width: 480px;
+    margin: 0;
     padding: 22px 18px 20px;
     box-sizing: border-box;
+    flex-shrink: 0;
   }
 
   .card-title {
@@ -899,17 +948,39 @@ body:has(.login-page) {
     margin-bottom: 20px;
   }
 
+  /* Touch-comfortable button: min 50px, easy to tap */
   .login-submit {
     min-height: 50px;
     font-size: 12.5px;
     padding: 0 14px 0 16px;
   }
+
+  /* Password input already 52px; ensure toggle stays 44px touch target */
+  .login-password-toggle {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .login-legal {
+    max-width: 480px;
+    width: 100%;
+  }
 }
 
+/* ── Small phones (≤380px): tighter padding, smaller type ────────── */
 @media (max-width: 380px) {
   .login-page {
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  .login-mobile-brand {
+    padding: 7px 10px;
+    gap: 10px;
+  }
+
+  .mobile-brand-name {
+    font-size: 17px;
   }
 
   .login-card {
@@ -930,7 +1001,107 @@ body:has(.login-page) {
   }
 }
 
-/* Reduced Motion Support */
+/* ── Very small phones (≤320px): minimal spacing ─────────────────── */
+@media (max-width: 320px) {
+  .login-mobile-brand {
+    gap: 8px;
+    padding: 6px 8px;
+  }
+
+  .mobile-avatar,
+  .mobile-avatar-wrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mobile-brand-name {
+    font-size: 15px;
+  }
+
+  .login-card {
+    padding: 16px 12px 16px;
+  }
+
+  .login-card-header {
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+  }
+
+  .login-intro {
+    font-size: 12.5px;
+    margin-bottom: 16px;
+  }
+}
+
+/* ── Landscape phones: short viewport, keyboard-safe layout ──────── */
+@media (max-height: 500px) and (max-width: 960px) {
+  .login-page {
+    /* Allow page to scroll naturally — never fight the keyboard */
+    min-height: auto;
+    padding-top: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .login-mobile-brand {
+    margin-bottom: 10px;
+    padding: 6px 10px;
+  }
+
+  .mobile-avatar,
+  .mobile-avatar-wrap {
+    width: 32px;
+    height: 32px;
+  }
+
+  .login-card {
+    padding: 14px 16px 14px;
+  }
+
+  .login-card-header {
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .login-intro {
+    font-size: 12px;
+    margin: 8px 0 14px;
+  }
+
+  .form-group {
+    margin-bottom: 4px;
+  }
+
+  .login-help {
+    margin-top: 5px;
+    font-size: 11px;
+  }
+
+  .login-submit {
+    min-height: 46px;
+    margin-top: 12px;
+  }
+
+  .login-card-footer {
+    margin-top: 14px;
+  }
+
+  .login-legal {
+    margin-top: 10px;
+  }
+
+  /* Suppress purely decorative ambient glows on cramped screens */
+  .ambient-glow-left,
+  .ambient-glow-right {
+    display: none;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .login-page *,
   .login-page *::before,
@@ -941,3 +1112,4 @@ body:has(.login-page) {
     scroll-behavior: auto !important;
   }
 }
+
