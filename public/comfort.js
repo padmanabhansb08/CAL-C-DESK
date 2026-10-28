@@ -162,8 +162,8 @@
   }
   root.ComfortDesk={mount};
   const oldAuth=auth;
-  auth=function(setup){
-    oldAuth(setup);const panel=document.querySelector('.auth'),form=document.querySelector('#login');if(!panel||!form)return;
+  auth=function(setup,...rest){
+    oldAuth(setup,...rest);const panel=document.querySelector('.auth'),form=document.querySelector('#login');if(!panel||!form)return;
     panel.classList.add('comfort-auth');panel.querySelector('h1').textContent=setup?'Your war starts here.':'Welcome back.';
     const intro=panel.querySelector('h1 + p');if(intro)intro.textContent=setup?'Create your organizer password. Then we’ll guide you through teams, matches and the finals.':'Sign in to your organizer desk. Your teams and saved results will be ready.';
     const field=form.querySelector('input[type=password]'),label=field?.closest('label');if(!field||!label)return;

@@ -175,10 +175,19 @@
         const confirmation=query('button[onclick^="confirmRow"]',card);if(confirmation){confirmation.classList.add('comfort-confirm-team');confirmation.textContent=row.confirmed?'Confirm changes →':'Confirm & next team →';confirmation.before(node('p','comfort-kills-note','Enter 0 when a player has no kills. Corrected player selections are remembered after you save the match.'));
           confirmation.previousSibling.id='comfort-kills-help-'+i;all('[data-kills]',card).forEach(el=>el.setAttribute('aria-describedby',confirmation.previousSibling.id));}
       }
-      const jump=button('#'+row.placement,()=>{focusedTeam=i;showFocused(true);},'comfort-team-jump');jump.dataset.teamIndex=i;jump.classList.toggle('is-checked',!!row.confirmed);
+      const jump=button('#'+row.placement,()=>{focusedTeam=i;showFocused(true);},'comfort-team-jump');jump.dataset.teamIndex=i;jump.classList.toggle('is-checked',!!row.confirmed);if(typeof rowStatus==='function'){const status=rowStatus(row);jump.classList.toggle('is-ready',status==='ready');jump.classList.toggle('is-look',status==='look');jump.title=status==='ready'?'Everything read confidently':status==='look'?'Needs a quick check':'Confirmed';}
       if(row.confirmed)jump.innerHTML='<span class="material-symbols-outlined icon-xs" aria-hidden="true">check</span> '+'#'+row.placement;
       const team=typeof state!=='undefined'?state.teams.find(t=>t.id===row.teamId):null;jump.setAttribute('aria-label','Placement '+row.placement+', '+(team?.name||'team not selected')+(row.confirmed?', confirmed':', needs review'));nav.append(jump);
     });
+    let bar=query('.comfort-ready-bar');
+    if(typeof reviewSummary==='function'){
+      const sum=reviewSummary();
+      if(!bar){bar=node('div','comfort-ready-bar');nav.before(bar);}
+      bar.replaceChildren();
+      const text=node('p','comfort-ready-text');text.innerHTML=`<strong>${sum.ready}</strong> ready · <strong>${sum.look}</strong> to check`;bar.append(text);
+      if(sum.ready){const all=button('Confirm '+sum.ready+' ready team'+(sum.ready===1?'':'s'),()=>{confirmReadyRows();},'comfort-confirm-ready primary');bar.append(all);}
+      bar.append(node('span','comfort-ready-legend','Green = read confidently · Amber = check this one'));
+    }
     let controls=query('.comfort-review-controls');
     if(!controls){controls=node('div','comfort-review-controls');grid.after(controls);}
     controls.replaceChildren();

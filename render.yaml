@@ -1,13 +1,24 @@
+# Render.com blueprint. A persistent disk requires a paid instance type; the free plan has no
+# disk, so its database would be erased on every restart and redeploy.
 services:
   - type: web
     name: ffk-war-desk
     runtime: docker
-    plan: free
+    plan: starter
     region: singapore
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    healthCheckPath: /health
+    disk:
+      name: ffk-data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: PORT
         value: "8080"
       - key: DB_PATH
-        value: /tmp/war.sqlite3
+        value: /data/war.sqlite3
+      # Needed once, to create the organizer password. Render generates it; read it under
+      # Environment in the dashboard, then enter it on the first-run screen.
+      - key: SETUP_TOKEN
+        generateValue: true

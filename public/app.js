@@ -18,6 +18,28 @@ let state={teams:[],matches:[]}, page='overview', selected=null, tab='teams', dr
 
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
 
+function fileToDataUrl(file,image){
+  return new Promise((resolve,reject)=>{
+    if(file.size<9_000_000){const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(file);return;}
+    const scale=Math.min(1,2400/(image.naturalWidth||image.width)),canvas=document.createElement('canvas');canvas.width=Math.round((image.naturalWidth||image.width)*scale);canvas.height=Math.round((image.naturalHeight||image.height)*scale);
+    canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',.95));
+  });
+}
+function serverRoster(teams){return {teams:teams.map(t=>({id:t.id,name:t.name,players:(t.players||[]).map(p=>({id:p.id,name:p.name,aliases:p.ocrAliases||[]}))}))};}
+// Read screenshots with the server's OCR engine and roster reasoning (one at a time; the engine is shared).
+async function scanOnServer(sources,files,candidates,updateProgress){
+  const roster=serverRoster(candidates),rows=[];
+  for(let i=0;i<sources.length;i++){
+    $('#ocr-status').textContent=`Reading screenshot ${i+1} of ${sources.length}…`;updateProgress(i,.05);
+    const source=sources[i],image=await fileToDataUrl(files[i],source.image);
+    // Manual panel bounds are drawn on a 1392-wide canvas; the server wants original pixels.
+    const k=(source.image.naturalWidth||source.image.width)/1392,regions=source.bounds?.length?source.bounds.map(b=>({x:b.x*k,y:b.y*k,width:b.width*k,height:b.height*k})):undefined;
+    const scan=await api('ocr/scan',{image,roster,regions}),result=WarOCR.fromServerScan(scan);
+    if(!result.length)throw Error(scan.warnings?.[0]||'No result panels were found in this screenshot.');
+    source.layout=result.layout;source.rows=structuredClone(result);showSources();updateProgress(i,1);rows.push(result);
+  }
+  return rows;
+}
 async function api(path,data){const r=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});const body=await r.json();if(!r.ok)throw Error(body.error||'Request failed');return body;}
 
 function toast(msg){$('#toast').textContent=msg;$('#toast').style.display='block';setTimeout(()=>$('#toast').style.display='none',4500);}
@@ -32,9 +54,9 @@ async function go(next){if(busy){toast('Wait for screenshot reading to finish.')
 
 window.addEventListener('beforeunload',e=>{if(busy||(draft&&(!window.isMatchDraftSaved||!window.isMatchDraftSaved()))){e.preventDefault();e.returnValue='';}});
 
-async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup);state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
+async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup,session.setupRequiresToken);state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
 
-function auth(setup){
+function auth(setup,needsToken){
   const action=setup?'Create organizer access':'Sign in to War Desk';
   const title=setup?'YOUR WAR.<br><span class="card-title-accent">YOUR COMMAND.</span>':'WELCOME BACK,<br><span class="card-title-accent">ORGANIZER.</span>';
   const intro=setup?'Create your organizer password. This account controls rosters, match results, and penalties.':'Sign in to manage your tournaments.';
@@ -113,6 +135,10 @@ function auth(setup){
                 </button>
               </div>
             </div>
+            ${setup&&needsToken?`<div class="form-group">
+              <label for="setup-token" class="field-label">Setup token</label>
+              <div class="login-password-field"><input id="setup-token" type="password" name="setupToken" autocomplete="off" required placeholder="From the SETUP_TOKEN server setting"></div>
+            </div>`:''}
             <p id="login-help" class="login-help">${setup?'Use at least 10 characters. This password controls your organizer access.':'Only organizers can change teams, results, and qualification.'}</p>
             <p id="login-error" class="login-error" role="alert" aria-live="polite"></p>
             <button class="primary login-submit" type="submit">
@@ -153,7 +179,7 @@ function auth(setup){
     submit.disabled=true;
     submit.setAttribute('aria-busy','true');
     try{
-      await api('login',{password:field.value});
+      await api('login',{password:field.value,setupToken:$('#setup-token')?.value});
       await init();
     }catch(err){
       error.textContent=err.message||'Incorrect password';
@@ -166,7 +192,8 @@ function auth(setup){
 
 function render(){const nav=[['overview','Overview','01'],['roster','Team roster',String(state.teams.length).padStart(2,'0')],['upload','Match intake','+'],['results','Match results',String(state.matches.length).padStart(2,'0')],['war','War manager','24']];$('#app').innerHTML=`<div class="shell"><aside class="sidebar"><div class="brand">FFK<span> /</span></div><div class="subbrand">WAR DESK</div><nav class="nav">${nav.map(([id,label,n])=>`<button class="${page===id?'active':''}" onclick="go('${id}')">${label}<small>${n}</small></button>`).join('')}</nav><div class="sidebar-footer"><span class="dot"></span>Organizer workspace<br>FREE FIRE / BR + CS<br><button onclick="logout()" style="margin-top:15px">Sign out</button></div></aside><main class="main"><header class="topbar"><span>WORKSPACE <span style="margin:0 12px">/</span> <strong>FFK WAR</strong></span><span><span class="dot"></span>Organizer <span class="avatar">FF</span></span></header><div class="content">${page==='war'?renderWar():page==='overview'?overview():page==='roster'?roster():page==='upload'?intake():results()}</div></main></div>`;bind();}
 
-function header(kicker,title,action=''){return `<div class="eyebrow">${kicker}</div><div class="heading"><h1>${title}</h1>${action}</div>`;}function overview(){const players=state.teams.reduce((n,t)=>n+t.players.length,0),kills=state.matches.reduce((n,m)=>n+m.rows.reduce((a,r)=>a+r.players.reduce((b,p)=>b+p.kills,0),0),0);return header('Tournament operations','Every point. Accounted for.','<button class="primary" onclick="go(\'upload\')"><span class="material-symbols-outlined icon-sm" aria-hidden="true">add</span> <span>New match</span></button>')+`<p style="margin-top:-15px;margin-bottom:30px">From the final zone to the final standings. Your match desk, in one place.</p><div class="stats">${[['Registered teams',state.teams.length,'12 teams per match'],['Players ready',players,'Up to 5 per roster'],['Matches recorded',state.matches.length,'Individual match standings'],['Eliminations logged',kills,'1 elimination = 1 point']].map(x=>`<div class="stat"><label>${x[0]}</label><strong>${String(x[1]).padStart(2,'0')}</strong><small>${x[2]}</small></div>`).join('')}</div><div class="grid"><section class="panel"><div class="panel-head"><h2>Match room</h2><span class="badge">BATTLE ROYALE</span></div>${state.matches.length?state.matches.slice().reverse().slice(0,4).map(matchItem).join(''):`<div class="empty"><div class="empty-symbol">[ 01 / 06 ]</div><h3>The next war starts here.</h3><p>Register your teams. Drop in the result screenshots.<br>We’ll help you turn the match into a points table.</p><button class="primary" onclick="go('roster')"><span>Set up your roster</span> <span class="material-symbols-outlined icon-sm" aria-hidden="true">arrow_forward</span></button></div>`}<div class="rule-strip"><span>12 TEAMS · 4 ACTIVE PLAYERS</span><span>NO API KEYS REQUIRED</span></div></section><section class="panel"><div class="panel-head"><h2>Ready. Read. Rank.</h2></div><div class="steps"><div class="step"><div><strong>Build your roster</strong><p>Add team names and exact in-game player names before the war.</p></div></div><div class="step"><div><strong>Bring the match results</strong><p>Upload overlapping screenshots. Repeated teams count once.</p></div></div><div class="step"><div><strong>Review & publish your table</strong><p>Resolve uncertain readings, apply penalties, then export.</p></div></div></div><div class="notice" style="margin:15px 0 0">Placement + eliminations + host adjustments.<br>Every change has a reason.</div></section></div>`;}
+function header(kicker,title,action=''){return `<div class="eyebrow">${kicker}</div><div class="heading"><h1>${title}</h1>${action}</div>`;}
+function overview(){const players=state.teams.reduce((n,t)=>n+t.players.length,0),kills=state.matches.reduce((n,m)=>n+m.rows.reduce((a,r)=>a+r.players.reduce((b,p)=>b+p.kills,0),0),0);return header('Tournament operations','Every point. Accounted for.','<button class="primary" onclick="go(\'upload\')"><span class="material-symbols-outlined icon-sm" aria-hidden="true">add</span> <span>New match</span></button>')+`<p style="margin-top:-15px;margin-bottom:30px">From the final zone to the final standings. Your match desk, in one place.</p><div class="stats">${[['Registered teams',state.teams.length,'12 teams per match'],['Players ready',players,'Up to 5 per roster'],['Matches recorded',state.matches.length,'Individual match standings'],['Eliminations logged',kills,'1 elimination = 1 point']].map(x=>`<div class="stat"><label>${x[0]}</label><strong>${String(x[1]).padStart(2,'0')}</strong><small>${x[2]}</small></div>`).join('')}</div><div class="grid"><section class="panel"><div class="panel-head"><h2>Match room</h2><span class="badge">BATTLE ROYALE</span></div>${state.matches.length?state.matches.slice().reverse().slice(0,4).map(matchItem).join(''):`<div class="empty"><div class="empty-symbol">[ 01 / 06 ]</div><h3>The next war starts here.</h3><p>Register your teams. Drop in the result screenshots.<br>We’ll help you turn the match into a points table.</p><button class="primary" onclick="go('roster')"><span>Set up your roster</span> <span class="material-symbols-outlined icon-sm" aria-hidden="true">arrow_forward</span></button></div>`}<div class="rule-strip"><span>12 TEAMS · 4 ACTIVE PLAYERS</span><span>NO API KEYS REQUIRED</span></div></section><section class="panel"><div class="panel-head"><h2>Ready. Read. Rank.</h2></div><div class="steps"><div class="step"><div><strong>Build your roster</strong><p>Add team names and exact in-game player names before the war.</p></div></div><div class="step"><div><strong>Bring the match results</strong><p>Upload overlapping screenshots. Repeated teams count once.</p></div></div><div class="step"><div><strong>Review & publish your table</strong><p>Resolve uncertain readings, apply penalties, then export.</p></div></div></div><div class="notice" style="margin:15px 0 0">Placement + eliminations + host adjustments.<br>Every change has a reason.</div></section></div>`;}
 
 function roster(){return header('Before the first drop','Team roster',`<button class="primary" onclick="teamForm()"><span class="material-symbols-outlined icon-sm" aria-hidden="true">add</span> <span>Add team</span></button>`)+`<p>Teams from Season 11 War Lists 1 and 2 are ready below. Edit any team or player name, or add your own team.</p><div class="team-grid">${state.teams.map((t,i)=>`<article class="team-card"><div class="eyebrow">${t.rosterList?`WAR LIST ${t.rosterList} · SLOT ${String(t.slot).padStart(2,'0')}`:`TEAM ${String(i+1).padStart(2,'0')}`}</div><h2 style="margin-top:12px">${esc(t.name)}</h2><ol>${t.players.map(p=>`<li>${esc(p.name)}</li>`).join('')}</ol><div class="actions"><button onclick="teamForm('${t.id}')">Edit roster</button><button class="danger" onclick="deleteTeam('${t.id}')">Remove</button></div></article>`).join('')||'<div class="empty"><h3>No teams registered yet</h3><p>Add your first team.</p></div>'}</div>`;}
 
@@ -188,7 +215,19 @@ function bindReview(){document.querySelectorAll('[data-sub-name]').forEach(el=>e
 
 function rematchDraft(){let matched=0;draft.rows.forEach(r=>{const team=state.teams.find(t=>t.id===r.teamId),result=WarOCR.matchTeam(r.players,team?[team]:state.teams,team?{trustedTeamId:team.id}:{});if(result.teamId){r.teamId=result.teamId;applySubstitutes(r);r.confirmed=false;matched+=r.players.filter(p=>p.playerId&&!p.isSubstitute).length;}});redrawReview();toast(matched+' player names matched to registered rosters.');}
 
-function confirmReadyRows(){let count=0;draft.rows.forEach(r=>{if(r.teamId&&!draft.rows.some(x=>x!==r&&x.teamId===r.teamId)&&r.players.every(p=>p.playerId&&p.name.trim()&&Number.isInteger(p.kills)&&p.kills>=0&&p.kills<=99)&&new Set(r.players.map(p=>p.playerId)).size===4&&!r.warnings.some(w=>w.includes('disagree'))){r.confirmed=true;r.warnings=[];count++;}});redrawReview();toast(count+' complete team results confirmed. Check the remaining flagged fields.');}
+// 'confirmed', 'ready' (complete and every reading confident) or 'look' (needs the organizer's eyes).
+function rowStatus(r){
+  if(r.confirmed)return 'confirmed';
+  const complete=r.teamId&&r.players.every(p=>p.playerId&&p.name.trim()&&Number.isInteger(p.kills)&&p.kills>=0&&p.kills<=99);
+  const doubtful=r.players.some(p=>p.serverRead&&(p.killConfidence??100)<70||(p.matchScore!==undefined&&p.matchScore<.7))||r.warnings.some(w=>w.includes('disagree'));
+  return complete&&!doubtful?'ready':'look';
+}
+function reviewSummary(){
+  const rows=draft.rows,cells=rows.flatMap(r=>r.players),read=cells.filter(p=>Number.isInteger(p.kills)).length;
+  const ready=rows.filter(r=>rowStatus(r)==='ready').length,look=rows.filter(r=>rowStatus(r)==='look').length;
+  return {read,total:cells.length,teams:rows.filter(r=>r.teamId).length,ready,look};
+}
+function confirmReadyRows(){let count=0;draft.rows.forEach(r=>{if(rowStatus(r)==='ready'&&r.teamId&&!draft.rows.some(x=>x!==r&&x.teamId===r.teamId)&&r.players.every(p=>p.playerId&&p.name.trim()&&Number.isInteger(p.kills)&&p.kills>=0&&p.kills<=99)&&new Set(r.players.map(p=>p.playerId)).size===4&&!r.warnings.some(w=>w.includes('disagree'))){r.confirmed=true;r.warnings=[];count++;}});redrawReview();toast(count?count+' team result'+(count===1?'':'s')+' confirmed. Check the ones marked “Look”.':'No team is ready to confirm yet. Check the ones marked “Look”.');}
 
 function confirmRow(i){const r=draft.rows[i];if(!r.teamId||r.players.some(p=>!p.playerId||!p.name.trim()||!Number.isInteger(p.kills)||p.kills<0||p.kills>99)||new Set(r.players.map(p=>p.playerId)).size!==4)return toast('Select a team, four different players, and valid kill counts.');if(draft.rows.some((x,j)=>i!==j&&x.teamId===r.teamId))return toast('This team is assigned to another placement.');r.confirmed=true;r.warnings=[];redrawReview();}
 
@@ -230,7 +269,7 @@ async function scan(skipConfirm=false){
   if(!files.length)return toast('Select your result screenshots first.');
   if(files.length>6)return toast('Use at most 6 screenshots per match.');
   if(files.some(f=>f.size>15*1024*1024))return toast('Each screenshot must be smaller than 15 MB.');
-  if(!window.Tesseract||!window.WarOCRBatch)return toast('Unable to prepare results. Refresh the page and try again.');
+  if(!window.WarOCRBatch)return toast('Unable to prepare results. Refresh the page and try again.');
   if(draft&&skipConfirm!==true&&!await confirmAction({title:'Replace current results?',message:'Your new screenshots will replace this unsaved match.',accept:'Replace results',cancel:'Keep results'}))return;
   busy=true;setMatchLoading(true);$('#scan').disabled=true;$('#manual').disabled=true;$('#screenshots').disabled=true;$('#ocr-progress').hidden=false;
   const previousBounds=files.map(f=>images.find(im=>im.fileKey===f.name+':'+f.size)?.bounds);
@@ -246,7 +285,14 @@ async function scan(skipConfirm=false){
     const localOCR=await api('ocr/status').catch(()=>({available:false}));
     images=files.map((file,i)=>{const url=URL.createObjectURL(file),image=new Image();image.src=url;return {url,image,bounds:previousBounds[i],fileKey:file.name+':'+file.size};});
     await Promise.all(images.map(source=>source.image.decode()));showSources();
-    const rowsByScreenshot=await WarOCRBatch.run(images,{
+    const candidates=typeof WarTournament==='undefined'?state.teams:WarTournament.availableTeams(state,draft.stage);
+    let rowsByScreenshot=null;
+    if(localOCR.scan){
+      try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress);}
+      catch(e){console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
+    }
+    if(!rowsByScreenshot&&!window.Tesseract)throw Error('The in-browser reader could not load (it needs an internet connection). Use a server with the screenshot reader installed, or enter results by hand.');
+    if(!rowsByScreenshot)rowsByScreenshot=await WarOCRBatch.run(images,{
       maxWorkers:WarOCRBatch.capacity(files.length,navigator),
       createWorker:async()=>{
         const worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status&&progress.every(n=>n===0))$('#ocr-status').textContent='Preparing the screenshot reader…';}});
@@ -254,7 +300,6 @@ async function scan(skipConfirm=false){
       },
       onWorkerFailure:e=>console.warn('Using available screenshot readers:',e),
       process:async(worker,source,index)=>{
-        const candidates=typeof WarTournament==='undefined'?state.teams:WarTournament.availableTeams(state,draft.stage);
         const rows=await WarOCR.extract(worker,source.image,candidates,(width,height)=>{const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;return canvas;},(_text,value)=>updateProgress(index,value),{
           bounds:source.bounds,compare:localOCR.available?async(image,boxes)=>(await api('ocr',{image,boxes})).readings:undefined
         });
@@ -264,7 +309,8 @@ async function scan(skipConfirm=false){
     // Completion order never changes screenshot precedence or disagreement handling.
     rowsByScreenshot.forEach(rows=>rows.forEach(row=>WarOCR.merge(draft.rows[row.placement-1],row)));
     draft.rows.forEach(row=>{applySubstitutes(row);if(!row.teamId)row.warnings.push('Team could not be matched confidently');if(row.players.some(p=>p.kills===null))row.warnings.push('Missing or uncertain kill counts');if(row.players.some(p=>!p.playerId))row.warnings.push('Some screenshot names do not match this registered roster');});
-    $('#ocr-status').textContent='Results ready. Check the teams and kills, then save.';redrawReview();
+    const sum=reviewSummary();
+    $('#ocr-status').textContent=`Results ready · ${sum.read} of ${sum.total} kill counts read · ${sum.teams} of 12 teams matched · ${sum.ready} ready to confirm, ${sum.look} to check`;redrawReview();
   }catch(e){
     console.error('Screenshot processing failed',e);$('#ocr-status').textContent='Unable to prepare results. Try clearer screenshots or enter results manually.';toast('Unable to prepare results. Try again or enter results manually.');
   }finally{

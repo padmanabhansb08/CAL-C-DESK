@@ -3,7 +3,8 @@ const assert=require('node:assert/strict');
 const http=require('node:http');
 const fs=require('node:fs/promises');
 const path=require('node:path');
-const {chromium}=require(process.env.PLAYWRIGHT_PACKAGE||'C:/Users/Acer/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {dep,launchOptions}=require('./deps.cjs');
+const {chromium}=dep('playwright');
 const publicRoot=path.resolve(__dirname,'../public');
 let fixture={teams:Array.from({length:24},(_,i)=>({id:'team-'+i,name:'FFK '+(i===0?'DEEPAK':i===1?'PRAGA':'SQUAD '+(i+1)),players:Array.from({length:4},(_,j)=>({id:`player-${i}-${j}`,name:`Player ${i+1}.${j+1}`}))})),matches:[]};
 const server=http.createServer(async(req,res)=>{
@@ -26,7 +27,7 @@ async function run(){
   const origin='http://127.0.0.1:'+server.address().port;
   let browser;
   try{
-    browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+    browser=await chromium.launch(launchOptions());
     const page=await browser.newPage({viewport:{width:1366,height:1000}}),pageErrors=[];
     page.on('pageerror',error=>pageErrors.push(error.message));
     await page.route('https://cdn.jsdelivr.net/**',route=>route.fulfill({status:200,contentType:'application/javascript',body:''}));

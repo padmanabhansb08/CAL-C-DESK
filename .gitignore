@@ -1,9 +1,11 @@
-war.sqlite3
-war.sqlite3-*
-__pycache__/
+
+.backups/
+.env*
 .ocr-cache/
 .ocr-runtime/
-.backups/
-
+.venv/
 .vercel
-.env*
+__pycache__/
+node_modules/
+war.sqlite3
+war.sqlite3-*

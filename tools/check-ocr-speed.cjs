@@ -1,7 +1,7 @@
 // Compare every OCR output against the pre-optimization reader on labeled screenshots.
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),Module=require('node:module');
-const deps=process.env.OCR_NODE_MODULES||path.join(process.env.USERPROFILE,'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules');
-const {createCanvas,loadImage}=require(path.join(deps,'@napi-rs/canvas')),Tesseract=require(path.join(deps,'tesseract.js'));
+const {dep,launchOptions}=require('./deps.cjs');
+const {createCanvas,loadImage}=dep('@napi-rs/canvas'),Tesseract=dep('tesseract.js');
 const batch=require('../public/ocr-batch.js'),OCR=require('../public/ocr.js');require('../public/digit-templates.js');
 const cache=path.resolve(__dirname,'../.ocr-cache'),baselinePath=process.env.OCR_BASELINE_PATH||path.resolve(__dirname,'../public/ocr.js');
 const previous=new Module(path.resolve(__dirname,'../public/ocr.js'),module);previous.filename=path.resolve(__dirname,'../public/ocr.js');previous.paths=module.paths;previous._compile(fs.readFileSync(baselinePath,'utf8'),previous.filename);

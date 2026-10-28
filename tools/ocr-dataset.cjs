@@ -1,7 +1,7 @@
 // Approved direction: labeled screenshots, digit exemplars, and match-separated evaluation.
 const fs=require('fs'),path=require('path');
-const deps=process.env.OCR_NODE_MODULES||'C:/Users/Acer/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
-const {createCanvas,loadImage}=require(path.join(deps,'@napi-rs/canvas'));
+const {dep,launchOptions}=require('./deps.cjs');
+const {createCanvas,loadImage}=dep('@napi-rs/canvas');
 const OCR=require('../public/ocr.js'),Layout=require('../public/layout.js');
 require('../public/digit-templates.js');
 const folder=process.argv[2]||path.join(__dirname,'../ocr-data/images');
@@ -16,7 +16,7 @@ const matches=[
 async function main(){
  const out=path.join(__dirname,'../ocr-data');fs.mkdirSync(out,{recursive:true});
  fs.writeFileSync(path.join(out,'labels.json'),JSON.stringify({order:['top-left','top-right','bottom-left','bottom-right'],matches},null,2));
- const Tesseract=require(path.join(deps,'tesseract.js')),worker=await Tesseract.createWorker('eng',1,{cachePath:path.join(__dirname,'../.ocr-cache')});
+ const Tesseract=dep('tesseract.js'),worker=await Tesseract.createWorker('eng',1,{cachePath:path.join(__dirname,'../.ocr-cache')});
  const results=[];
  try{for(const match of matches)for(const suffix of match.files){
   const file=`WhatsApp Image 2026-10-18 at 20.02.${suffix}.jpeg`,image=await loadImage(path.join(folder,file));

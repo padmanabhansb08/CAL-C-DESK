@@ -175,16 +175,42 @@
     }
     rows.layout={mode:'reference',panels:layout.panels.map(p=>({side:p.side,top:p.top,bottom:p.bottom,rankBox:p.rankBox})),width:1392,height:790};return rows;
   }
+  // Convert a /api/ocr/scan response (server-side OCR + reasoning) into the rows the review screen uses.
+  function fromServerScan(scan){
+    const rows=[];
+    for(const panel of scan.panels||[]){
+      if(!Number.isInteger(panel.placement)||panel.placement<1||panel.placement>12)continue;
+      const players=[0,1,2,3].map(i=>{
+        const c=panel.cells[i];
+        if(!c)return {name:'',playerId:'',kills:null,killConfidence:0};
+        const matched=!!c.playerId;
+        const player={name:matched?c.playerName:c.name,playerId:c.playerId||'',kills:c.kills,killConfidence:Math.round((c.killsConf||0)*100),rawName:c.rawName||c.name,matchScore:c.matchScore,serverRead:true,
+          ocrRegion:{name:c.boxes.name,digits:c.boxes.digits,width:scan.width,height:scan.height}};
+        if(matched)player.isSubstitute=false;
+        return player;
+      });
+      rows.push({placement:panel.placement,teamId:panel.team?.id||'',players,matchConfidence:panel.team?.score||0,warnings:[]});
+    }
+    rows.layout={mode:'server',panels:(scan.panels||[]).map(p=>({side:p.side,top:p.top,bottom:p.bottom})),width:scan.width,height:scan.height,warnings:scan.warnings||[]};
+    return rows;
+  }
   function merge(existing,incoming){
     if(!existing._read){Object.assign(existing,incoming,{_read:true});return;}
     if(existing.teamId&&incoming.teamId&&existing.teamId!==incoming.teamId){existing.teamId='';existing.warnings.push('Screenshots disagree on team identity');}
     else if(!existing.teamId&&incoming.teamId&&!existing.warnings.some(w=>w.includes('identity')))existing.teamId=incoming.teamId;
     incoming.players.forEach((p,i)=>{const old=existing.players[i],key=`Screenshots disagree on player ${i+1} kills`;
-      if(old.kills!==null&&p.kills!==null&&old.kills!==p.kills){old.kills=null;if(!existing.warnings.includes(key))existing.warnings.push(key);}
-      else if(old.kills===null&&!existing.warnings.includes(key))old.kills=p.kills;
+      if(old.kills!==null&&p.kills!==null&&old.kills!==p.kills){
+        // Two screenshots disagree. A much more confident reading wins; otherwise leave it for review.
+        const a=old.killConfidence||0,b=p.killConfidence||0;
+        if(Math.abs(a-b)>=25&&Math.max(a,b)>=85){if(b>a){old.kills=p.kills;old.killConfidence=b;old.ocrRegion=p.ocrRegion||old.ocrRegion;}}
+        else{old.kills=null;if(!existing.warnings.includes(key))existing.warnings.push(key);}
+      }
+      else if(old.kills===null&&!existing.warnings.includes(key)){old.kills=p.kills;old.killConfidence=p.killConfidence;if(p.ocrRegion)old.ocrRegion=p.ocrRegion;}
+      // Two independent screenshots agreeing is stronger evidence than either alone.
+      else if(old.kills!==null&&old.kills===p.kills&&p.serverRead)old.killConfidence=Math.min(100,Math.max(old.killConfidence||0,p.killConfidence||0)+10);
       if(p.playerId&&(!old.playerId||(p.matchScore||0)>(old.matchScore||0))){old.playerId=p.playerId;old.name=p.name;old.matchScore=p.matchScore;}
     });
   }
-  const api={prepare,prepareOriginal,originalRegion,extract,matchTeam,merge,similarity,rosterSimilarity,playerSimilarity,rememberAliases,smallDigitConsensus,digitFeature,templateDigit,playerRegion};if(typeof module!=='undefined')module.exports=api;else root.WarOCR=api;
+  const api={fromServerScan,prepare,prepareOriginal,originalRegion,extract,matchTeam,merge,similarity,rosterSimilarity,playerSimilarity,rememberAliases,smallDigitConsensus,digitFeature,templateDigit,playerRegion};if(typeof module!=='undefined')module.exports=api;else root.WarOCR=api;
 })(typeof window!=='undefined'?window:globalThis);
 

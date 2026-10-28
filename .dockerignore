@@ -13,3 +13,6 @@ war.sqlite3*
 tools/
 ocr-data/
 node_modules/
+.venv/
+scratchpad/
+restored-scoreboard-preview.png

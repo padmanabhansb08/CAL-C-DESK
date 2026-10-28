@@ -12,9 +12,21 @@ Scoreboard exports keep the same seven columns, label options, highlight selecto
 
 ## Run
 
-Requires Python 3.10 or newer. From this folder run `python server.py`, then open http://localhost:8080. On first use, create the organizer password (at least 10 characters). Devices on the same network can visit `http://YOUR-COMPUTER-IP:8080` if the firewall allows it. The computer must stay on.
+**Quickest start.** Install Python 3.10+, then in this folder run `./start.sh` (macOS/Linux) or double-click `start.bat` (Windows). The script creates a private virtual environment, installs the screenshot reader on first run and starts the desk. Open http://localhost:8080 and create the organizer password (at least 10 characters). The terminal also prints an address such as `http://192.168.1.20:8080` for phones and other devices on the same network.
 
-Results, roster, and password hash are stored in `war.sqlite3`. Back up this file while the server is stopped. Screenshots are processed in the browser and, for unfamiliar layouts, compared by the optional local server OCR engine in memory. Screenshot files are not stored on the server. OCR code and English recognition models download from public CDNs and require internet on first use. Decorative Unicode names remain difficult for English OCR; roster matching suggests identities and unresolved fields require review.
+Manual start: `pip install -r requirements-docker.txt && python server.py`. Without that install the desk still works and falls back to the slower in-browser reader.
+
+**Docker.** `docker compose up -d` builds the same image used for hosting and keeps data in a named volume. `/health` is the health check.
+
+**Public hosting.** Render (`render.yaml`, needs a paid instance for the persistent disk) and Fly.io (`fly.toml`) configs are included. Both run the SQLite server with a persistent disk. When the desk sits behind a proxy or a public URL, first-run setup requires a `SETUP_TOKEN` environment variable that you type into the "Setup token" field, so a stranger who finds the URL first cannot claim the desk. Set it before you deploy. `vercel.json` plus `api/index.py` is the PostgreSQL (Neon) alternative; it has the same login and request-size protections but no server-side screenshot reader, so the browser reader is used there.
+
+Results, roster, and password hash are stored in `war.sqlite3` (or the `DB_PATH` you set). Back this file up while the server is stopped. Screenshot files are never stored on the server.
+
+**Checks.** `node tools/run-checks.cjs` runs all logic and Python checks; `CHECK_BROWSER=1` adds the real-browser journeys (needs `npm install`). The OCR accuracy gate skips itself if the screenshot reader is not installed.
+
+### Security behaviour
+
+Requests larger than 2 MB (14 MB for a screenshot) are rejected before they are read. After repeated wrong passwords an address is locked out for a while. The session cookie is `HttpOnly`, `SameSite=Strict` and gets `Secure` automatically on HTTPS. Host links use a separate read-only key that cannot call organizer APIs.
 
 ## FFK War tournament
 
@@ -45,7 +57,7 @@ Draft values and available evidence crops save automatically in this browser. Af
 The workspace refreshes data when you return to the tab or change sections. Use **Up to date ↻** for a manual refresh. Before a whole-workspace save, a freshness check rejects changes when newer server data is detected, preserving the local draft. Continue using one active organizer editor; this preflight check is not an atomic multi-editor collaboration protocol.
 
 1. Add at least twelve teams with four players and optionally a substitute.
-2. Add a match, choose the map, and upload overlapping original screenshots in the supplied 1392×790 layout (proportional resolution changes supported).
+2. Add a match, choose the map, and upload overlapping original screenshots (any resolution; the reader measures the layout).
 3. Read screenshots, inspect sources, select active registered players, correct missing values, and confirm every team.
 4. Save the verified match. Team standings and per-match player kill leaderboard are available.
 5. Apply signed point adjustments with a reason. Export CSV or print/save PDF.
@@ -65,35 +77,31 @@ Overall CSV includes all participating teams. The restored artwork-based graphic
 
 To remove a saved match, open **Match results**, select the match, then choose **Delete match** and confirm. The selected match and its results are removed permanently; registered teams and other matches are preserved.
 
-OCR extraction is tailored to the provided screenshot layout. It isolates yellow kill digits, enhances name crops, uses fixed-font numeral exemplars from the host's reference screenshot, and matches four players jointly to registered rosters. Overlapping frames fill missing fields; conflicting counts remain unresolved. Numeral exemplars now cover 0–9, 11 and 13; other values depend on multiple OCR readings. These checks reduce errors but do not establish a general accuracy guarantee. More independent matches are needed before relying on it in live events. Complete rows can be confirmed in one action; incomplete or conflicting rows still require correction. The current app is runnable locally and on the LAN; it has not been deployed publicly. Public hosting requires an HTTPS reverse proxy and a persistent Python host; the built-in server is for local/LAN use. Use one active editor at a time (whole-state saves). Login sessions last twelve hours and end on server restart.
+Use one active editor at a time (whole-state saves). Login sessions last twelve hours and end on server restart. Public hosting needs HTTPS (any of the supplied host configs provide it) and a persistent disk.
 
-## Adaptive screenshot layouts
+## Reading screenshots (OCR)
 
-For multi-image uploads, the browser can read two screenshots concurrently on devices with at least four reported CPU threads and 4 GB of reported device memory. Other devices use one reader; a failed worker startup falls back to the available reader. Every screenshot retains the full recognition passes, comparison engine and disagreement checks, and results merge in the original upload order. Workers are released after each scan. A reversed-order local benchmark of two screenshots took 7.1 seconds sequentially versus 4.0 seconds in parallel, with identical OCR outputs; a separate ten-image comparison also matched exactly. Timings vary by device, image layout and initial model loading. Run `tools/check-ocr-speed.cjs` to repeat the comparison; `OCR_BENCH_LIMIT` and `OCR_BENCH_REVERSE` control sample size and run order.
+The desk reads the scoreboard with real text recognition and then reasons about what it read. There are no per-layout templates and no hard-coded pixel positions, so different resolutions and crops work.
 
-The reader detects four repeated yellow kill columns and pairs player rows at the screenshot's original aspect ratio. The original reference layout retains its validated extraction path. Other detected layouts use panel-relative crops and an optional RapidOCR/ONNX CPU comparison engine. Engine disagreements remain unresolved. Partial rows and missing teams are not filled with invented results.
+1. **Recognition.** RapidOCR (PP-OCR ONNX models, bundled in the pip wheel, CPU only, no downloads, no API key) reads every word with its position. The image is read at a working size chosen from its text height, and results are merged across scales.
+2. **Digit reading.** Each "N Eliminations" label is re-read from several differently prepared crops (scaled, contrast-stretched, colour-isolated). The crops vote, weighted by confidence. A number is accepted only when the votes agree strongly enough; otherwise the field is left empty with the alternatives listed, never guessed.
+3. **Layout reasoning.** Cells are grouped into columns, rows and panels from their measured geometry. Placement comes from the printed rank numbers where they are readable and from the panel order where they are not; a cut-off panel at the edge of the screen is recognised as partial.
+4. **Roster reasoning.** Names are compared with the registered players (decorative Unicode, look-alike letters, clan tags and leet digits are normalised). Every panel is scored against every registered team, then one global assignment gives each team to at most one panel, so a weak panel is settled by what the others already claimed. A team is only accepted with clear evidence over the runner-up.
+5. **Cross-checks.** Duplicate or missing placements, unreadable fields, implausible kill totals and low-confidence names are listed for review, and the review screen puts those teams first. Several screenshots of one match are merged, and conflicting counts stay unresolved.
 
-The comparison runtime is installed in `.ocr-runtime/` for this workspace. To install it in another checkout, run `python -m pip install --target .ocr-runtime rapidocr==3.10.0 onnxruntime==1.31.0`, then restart the server. No external OCR API or credentials are required. The engine's initial model files may download if they are not already bundled/cached. Browser-only recognition remains available if the local comparison engine is unavailable.
+On the 10 labelled screenshots (5 matches, 2 frames each) the server reader gets 252/252 training and 166/166 held-out kill counts right with zero wrong readings accepted, and matches 22/22 teams to the right roster entry. Run `python tools/evaluate_ocr.py --verbose` to reproduce it, or `--stress` to see how it behaves on half-size and blurred copies (a couple of fields become unresolved rather than wrong). Reading takes about 5 to 6 seconds per screenshot on a laptop CPU.
 
-Use **Adjust panels** below a source thumbnail to drag two result-area bounds and rerun extraction. This restricts detection to those areas. It does not restore pixels missing from a cropped screenshot. Re-upload another screenshot to cover cut-off teams.
+Be careful with the claim: the sample is small and all from one screenshot style, so treat this as strong evidence for that style, not a guarantee for every phone and layout. Anything uncertain is flagged for review instead of being filled in, and corrections you confirm are remembered for the next scan.
 
-Validation on the host-supplied wider screenshot: all 38 visible kill fields matched manual transcription; 2 blank player fields remained unresolved; cut-off placement 11 and absent placement 12 were omitted. The earlier supplied pair still produced 47 correct kill counts and 1 unresolved count. These are sample-specific checks, not an accuracy guarantee for future matches.
+Use **Adjust panels** below a source thumbnail to drag two result-area bounds and rerun extraction; this restricts reading to those areas. It cannot restore pixels missing from a cropped screenshot, so re-upload another frame to cover cut-off teams.
 
-## Additional OCR examples
+The browser reader (Tesseract) remains as a fallback when the server reader is not installed. The vendored Tesseract worker and WASM core still load from a public CDN, so the fallback needs internet on first use.
 
-The ten October 18 screenshots are labeled and preserved in ocr-data/. Three matches add 240 digit templates; two separate matches are held out. Correct kill-count coverage on the held-out frames improved from 121/160 (75.6%) to 153/160 (95.6%), with seven unresolved fields and zero incorrect accepted readings. This measures complete detected panels using Tesseract without roster matching or RapidOCR comparison; names and partial rows are not scored. See [dataset details](ocr-data/README.md) for limits and reproducible evaluation. This updates numeral exemplars rather than fine-tuning the underlying OCR engines.
+### Reviewed corrections
 
-## Original-resolution OCR and reviewed corrections
+When you edit a kill count, confirm the team and successfully save the match, a small digit crop and its corrected label are stored in this browser. Unconfirmed rows, failed saves and discarded drafts create nothing. Up to 500 examples are kept; only labels supported by at least two different saved matches contribute templates. **Export reviewed OCR examples** downloads them for backup or future training. They belong to this browser and site address. `node tools/check-ocr-learning.cjs` checks persistence, crop capture and save-failure behaviour in an isolated profile.
 
-Panel detection still uses a consistent working size. Names are read from original-resolution crops when the uploaded screenshot is larger. Unresolved adaptive-layout kill counts get an additional original-resolution reading; it requires agreement from at least two sufficiently confident recognition passes and cannot override conflicting normalized evidence. The established digit-template path is retained.
-
-On the same two held-out matches, this recovered two more fields: 155/160 correct (96.9%), five unresolved, zero incorrect accepted readings. `ocr-data/original-resolution.json` records the result. This benchmark does not measure name accuracy or the optional RapidOCR comparison.
-
-When you edit a kill count, confirm the team result and successfully save the verified match, a small digit crop and its corrected label are stored in this browser. Unchanged readings, unconfirmed rows, failed match saves and discarded drafts do not create examples. Full screenshots remain temporary. Up to 500 reviewed examples are retained; only labels supported by corrections in at least two different saved matches contribute additional templates on later scans. This does not retrain the underlying OCR engines or learn player-name spellings.
-
-Use **Export reviewed OCR examples** in match review to download the labeled crops for backup or future training. Examples belong to the current browser and site address; clearing site data removes them, and other devices do not receive them. Saving a verified match still succeeds if local example storage is unavailable. `node tools/check-ocr-learning.cjs` checks browser persistence, crop capture and match-save failure behavior using an isolated browser profile (Edge by default; override with `OCR_BROWSER_CHANNEL`).
-
-
+Dataset details and the earlier browser-reader benchmark are in [ocr-data/README.md](ocr-data/README.md).
 
 ## Default team roster
 

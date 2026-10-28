@@ -1,0 +1,7 @@
+{
+  "note": "Teams visible in each labelled screenshot, by placement, read manually from the images. Used by tools/evaluate_ocr.py to score roster matching.",
+  "frames": {
+    "21": {"1": "DEEPAK", "2": "BABIN", "3": "RAM", "4": "SANJAY 1M", "5": "ARTLORD", "6": "KO OBITO", "7": "PARTHI", "8": "PRAGA", "9": "KARTHIK", "10": "KAKASHI", "11": "VINI"},
+    "47": {"1": "RAM", "2": "PRAGA", "3": "KAKASHI", "4": "BABIN", "5": "KARTHIK", "6": "VINI", "7": "PARTHI", "8": "ARTLORD", "9": "DEEPAK", "10": "KO OBITO", "11": "BOBBY"}
+  }
+}

@@ -1,7 +1,7 @@
 // Check exported score values and dimensions without writing organizer data.
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
-const deps=process.env.OCR_NODE_MODULES||'C:/Users/Acer/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
-const {createCanvas,Image}=require(path.join(deps,'@napi-rs/canvas'));
+const {dep,launchOptions}=require('./deps.cjs');
+const {createCanvas,Image}=dep('@napi-rs/canvas');
 class LocalImage extends Image{set src(value){this.ready=new Promise((resolve,reject)=>{this.onload=resolve;this.onerror=reject;});super.src=fs.readFileSync(path.join(__dirname,'../public',value));}async decode(){await this.ready;return this;}}
 (async()=>{
  const canvas=createCanvas(1,1),context=canvas.getContext('2d'),drawn=[];

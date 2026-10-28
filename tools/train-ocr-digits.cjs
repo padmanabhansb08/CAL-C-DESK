@@ -1,10 +1,10 @@
 // Fit numeral exemplars using training matches only; never fit held-out frames.
 const fs=require('fs'),path=require('path');
-const deps=process.env.OCR_NODE_MODULES||'C:/Users/Acer/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
-const {createCanvas,loadImage}=require(path.join(deps,'@napi-rs/canvas'));
+const {dep,launchOptions}=require('./deps.cjs');
+const {createCanvas,loadImage}=dep('@napi-rs/canvas');
 const OCR=require('../public/ocr.js'),Layout=require('../public/layout.js');
 async function main(){
- const folder=process.argv[2]||'C:/Users/Acer/OneDrive/Desktop/photos of end ss';
+ const folder=process.argv[2]||path.resolve(__dirname,'../ocr-data/images');
  const baseline=require('../ocr-data/baseline.json'),templates=require('../ocr-data/reference-templates.json').map(t=>({...t}));
  const imageDir=path.join(__dirname,'../ocr-data/images');fs.mkdirSync(imageDir,{recursive:true});
  let added=0;

@@ -1,12 +1,12 @@
 // Exercise real browser persistence without touching the organizer's saved results or browser profile.
 const assert=require('node:assert/strict'),http=require('node:http'),fs=require('node:fs'),path=require('node:path');
-const deps=process.env.OCR_NODE_MODULES||'C:/Users/Acer/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules';
-const {chromium}=require(path.join(deps,'playwright'));
+const {dep,launchOptions}=require('./deps.cjs');
+const {chromium}=dep('playwright');
 (async()=>{
  const server=http.createServer((req,res)=>{const file={'/ocr.js':'ocr.js','/learning.js':'ocr-learning.js','/app.js':'app.js'}[req.url];res.setHeader('Content-Type',file?'application/javascript':'text/html');let body=file?fs.readFileSync(path.join(__dirname,'../public',file),'utf8'):'<html><body>OCR storage verification</body></html>';if(file==='app.js')body=body.replace(/\binit\(\);\s*$/,'');res.end(body);});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));let browser;
  try{
-  browser=await chromium.launch({headless:true,channel:process.env.OCR_BROWSER_CHANNEL||'msedge'});const page=await browser.newPage();await page.goto('http://127.0.0.1:'+server.address().port);
+  browser=await chromium.launch(launchOptions());const page=await browser.newPage();await page.goto('http://127.0.0.1:'+server.address().port);
   await page.evaluate(()=>{globalThis.WarDigitTemplates=[];});await page.addScriptTag({url:'/ocr.js'});await page.addScriptTag({url:'/learning.js'});
   const result=await page.evaluate(async()=>{
    const canvas=(w,h)=>Object.assign(document.createElement('canvas'),{width:w,height:h});

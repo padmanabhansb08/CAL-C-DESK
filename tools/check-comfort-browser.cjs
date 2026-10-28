@@ -1,9 +1,11 @@
 // Real-browser journey using an isolated in-memory workspace. No real database is opened.
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
-let chromium;try{({chromium}=require(process.env.PLAYWRIGHT_PACKAGE||'playwright'));}catch{({chromium}=require(path.join(process.env.USERPROFILE,'.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright')));}
+const {dep,launchOptions}=require('./deps.cjs');
+const {chromium}=dep('playwright');
 const root=path.resolve(__dirname,'../public');
 let authenticated=true;
 let failReset=false;
+let sessionExtra={};
 let remote={teams:Array.from({length:24},(_,i)=>({id:'t'+i,name:'FFK Team '+String(i+1).padStart(2,'0'),players:Array.from({length:4},(_,j)=>({id:'p'+i+'-'+j,name:'Player '+i+'.'+j}))})),matches:[]};
 function match(set,id){const ids=set==='C'?[...remote.war.qualified.A,...remote.war.qualified.B]:remote.war.groups[set];return {id,name:'Set '+set+' · '+id,stage:set,map:'Bermuda',created:new Date().toISOString(),rows:ids.map((teamId,i)=>({teamId,teamName:remote.teams.find(t=>t.id===teamId).name,placement:i+1,confirmed:true,adjustments:[],players:remote.teams.find(t=>t.id===teamId).players.map((p,j)=>({playerId:p.id,name:p.name,kills:j===0?12-i:0}))}))};}
 const server=http.createServer((req,res)=>{
@@ -14,13 +16,13 @@ const server=http.createServer((req,res)=>{
 (async()=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const base='http://127.0.0.1:'+server.address().port;
-  const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe'});
+  const browser=await chromium.launch(launchOptions());
   try{
     const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.route('https://cdn.jsdelivr.net/**',route=>route.fulfill({contentType:'application/javascript',body:''}));
     await page.route('**/api/**',async route=>{
       const url=new URL(route.request().url()),p=url.pathname,method=route.request().method();
-      if(p==='/api/session')return route.fulfill({json:{authenticated}});
+      if(p==='/api/session')return route.fulfill({json:{authenticated,...sessionExtra}});
       if(p==='/api/login'){authenticated=true;return route.fulfill({json:{ok:true}});}
       if(p==='/api/ocr/status')return route.fulfill({json:{available:false}});
       if(p==='/api/state'){if(method==='POST'){const incoming=route.request().postDataJSON();if(failReset&&!incoming.matches.length)return route.fulfill({status:503,json:{error:'Reset failed for test'}});remote=incoming;}return route.fulfill({json:method==='POST'?{ok:true}:remote});}
@@ -73,9 +75,11 @@ const server=http.createServer((req,res)=>{
     await page.locator('.guide-champion').waitFor();assert.equal(remote.war.cs.final.winner,remote.war.qualified.C[0]);
     for(const width of [390,760,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'No page overflow at '+width);}
     await page.reload();await page.getByRole('button',{name:'View the champion',exact:true}).click();await page.locator('.guide-champion').waitFor();
-    authenticated=false;await page.reload();await page.getByRole('heading',{name:'Welcome back.',exact:true}).waitFor();
-    await page.getByRole('button',{name:'Show organizer password',exact:true}).click();assert.equal(await page.locator('#login input').getAttribute('type'),'text');
-    await page.locator('#login input').fill('synthetic-test-password');await page.getByRole('button',{name:'Open my war desk',exact:false}).click();
+    sessionExtra={setup:true,setupRequiresToken:true};authenticated=false;await page.reload();await page.locator('#setup-token').waitFor();sessionExtra={};
+    authenticated=false;await page.reload();await page.getByRole('heading',{name:/welcome back/i}).waitFor();
+    assert.equal(await page.locator('#setup-token').count(),0,'Setup token field is only for first-run setup');
+    await page.getByRole('button',{name:'Show organizer password',exact:true}).click();assert.equal(await page.locator('#organizer-password').getAttribute('type'),'text');
+    await page.locator('#organizer-password').fill('synthetic-test-password');await page.getByRole('button',{name:/Sign in to War Desk/}).click();
     await page.getByRole('heading',{name:'Welcome to your war desk.',exact:true}).waitFor();
     await page.getByRole('button',{name:'View the champion',exact:true}).click();
     const beforeReset=structuredClone(remote);

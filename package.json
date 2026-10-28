@@ -1,0 +1,17 @@
+{
+  "name": "ffk-war-desk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FFK War Desk: Free Fire tournament results desk with screenshot OCR.",
+  "scripts": {
+    "start": "python server.py",
+    "test": "node tools/run-checks.cjs",
+    "test:browser": "CHECK_BROWSER=1 node tools/run-checks.cjs"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^0.1.65",
+    "playwright": "^1.48.0",
+    "tesseract.js": "7.0.0"
+  },
+  "engines": { "node": ">=18" }
+}

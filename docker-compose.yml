@@ -8,6 +8,8 @@ services:
     environment:
       - PORT=8080
       - DB_PATH=/data/war.sqlite3
+      # Required only if the app is reached through a public address / reverse proxy:
+      # - SETUP_TOKEN=choose-a-long-random-value
     volumes:
       - wardesk_data:/data
 
