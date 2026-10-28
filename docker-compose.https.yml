@@ -1,0 +1,27 @@
+# Public HTTPS with automatic certificates:
+#   DOMAIN=desk.example.com SETUP_TOKEN=$(openssl rand -hex 16) \
+#     docker compose -f docker-compose.yml -f docker-compose.https.yml up -d
+# Then open https://desk.example.com and enter SETUP_TOKEN on the first-run screen.
+services:
+  wardesk:
+    environment:
+      - TRUST_PROXY=1
+      - SETUP_TOKEN=${SETUP_TOKEN:?set SETUP_TOKEN to a long random value}
+    ports: !override
+      - "127.0.0.1:8080:8080"
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:?set DOMAIN to your hostname}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - wardesk
+
+volumes:
+  caddy_data:

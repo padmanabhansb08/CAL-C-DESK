@@ -42,14 +42,36 @@ def via_proxy(headers):
     return any(name in h for name in _PROXY_HEADERS)
 
 
+def trusted_hops():
+    """How many reverse proxies sit in front of this server (TRUST_PROXY, default 0).
+
+    Forwarded headers are client-controlled unless a proxy you run overwrites them, so they are
+    ignored unless the operator says how many proxies to trust. Vercel always has one.
+    """
+    raw = os.environ.get('TRUST_PROXY', '').strip().lower()
+    if raw in ('1', 'true', 'yes', 'on'):
+        return 1
+    if raw.isdigit():
+        return int(raw)
+    return 1 if os.environ.get('VERCEL') else 0
+
+
 def client_ip(headers, peer):
-    """The caller's address. Forwarded headers are only consulted when present (a proxy added them)."""
+    """The caller's address, for lockouts and rate limits.
+
+    With no trusted proxy this is the TCP peer, so a header such as X-Forwarded-For cannot be used to
+    dodge a lockout. With TRUST_PROXY=N the Nth entry from the right of X-Forwarded-For is used, which is
+    the address the outermost trusted proxy saw; entries to its left are client-supplied and ignored.
+    """
+    hops = trusted_hops()
+    if hops <= 0:
+        return peer or 'unknown'
     h = _lower(headers)
-    for name in ('fly-client-ip', 'cf-connecting-ip', 'x-real-ip'):
-        if h.get(name):
-            return h[name].split(',')[0].strip()
-    if h.get('x-forwarded-for'):
-        return h['x-forwarded-for'].split(',')[0].strip()
+    if os.environ.get('FLY_APP_NAME') and h.get('fly-client-ip'):
+        return h['fly-client-ip'].strip()
+    chain = [p.strip() for p in h.get('x-forwarded-for', '').split(',') if p.strip()]
+    if len(chain) >= hops:
+        return chain[-hops]
     return peer or 'unknown'
 
 
@@ -140,3 +162,63 @@ class Throttle:
     def succeeded(self, ip):
         with self._lock:
             self._by_ip.pop(ip, None)
+
+
+class RateLimiter:
+    """Sliding-window request limiter, per key (single-process, in memory)."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._hits = {}
+
+    def allow(self, key, limit, per=60.0, now=None):
+        now = now or time.time()
+        with self._lock:
+            hits = [t for t in self._hits.get(key, ()) if now - t < per]
+            if len(hits) >= limit:
+                self._hits[key] = hits
+                return False
+            hits.append(now)
+            self._hits[key] = hits
+            if len(self._hits) > 20000:
+                self._hits = {k: v for k, v in self._hits.items() if v and now - v[-1] < per}
+            return True
+
+
+API_PER_MINUTE = 240      # any /api request from one address
+SCAN_PER_MINUTE = 12      # screenshot reads from one address
+
+
+def rate_limited(limiter, ip, path):
+    """True if this request should be refused with 429."""
+    if not path.startswith('/api/'):
+        return False
+    if path in ('/api/ocr', '/api/ocr/scan') and not limiter.allow((ip, 'scan'), SCAN_PER_MINUTE):
+        return True
+    return not limiter.allow((ip, 'api'), API_PER_MINUTE)
+
+
+def hash_token(token):
+    """Session tokens are stored hashed so a leaked database cannot be replayed as cookies."""
+    return hashlib.sha256(str(token).encode()).hexdigest()
+
+
+def security_headers(headers):
+    """Response headers for every page and API reply. Returns a list of (name, value)."""
+    csp = ("default-src 'self'; "
+           # The app builds markup with inline handlers, so inline scripts stay allowed for now; everything
+           # else (framing, plugins, <base> injection, form hijacking, foreign scripts) is closed.
+           "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; "
+           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+           "font-src 'self' https://fonts.gstatic.com data:; "
+           "img-src 'self' data: blob:; "
+           "connect-src 'self' https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; "
+           "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+    name = ('Content-Security-Policy-Report-Only' if os.environ.get('CSP_REPORT_ONLY') == '1'
+            else 'Content-Security-Policy')
+    out = [(name, csp), ('X-Content-Type-Options', 'nosniff'), ('X-Frame-Options', 'DENY'),
+           ('Referrer-Policy', 'no-referrer'), ('Permissions-Policy', 'camera=(), microphone=(), geolocation=()'),
+           ('Cross-Origin-Opener-Policy', 'same-origin')]
+    if is_https(headers):
+        out.append(('Strict-Transport-Security', 'max-age=31536000; includeSubDomains'))
+    return out

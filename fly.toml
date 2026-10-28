@@ -9,6 +9,7 @@ primary_region = "sin"
 [env]
   PORT = "8080"
   DB_PATH = "/data/war.sqlite3"
+  TRUST_PROXY = "1"
 
 # Before the first visit run:  fly secrets set SETUP_TOKEN=<long random value>
 # and enter it on the first-run screen to create the organizer password.

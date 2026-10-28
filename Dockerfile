@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements-docker.txt
 COPY server.py local_ocr.py default_rosters.py ./
 COPY ffk_core/ ./ffk_core/
 COPY ocr_engine/ ./ocr_engine/
+COPY tools/backup.py ./tools/backup.py
 COPY public/ ./public/
 
 # Run as an unprivileged user; /data is the persistent volume for the SQLite database
@@ -23,6 +24,7 @@ RUN useradd --create-home --uid 10001 app && mkdir -p /data && chown app:app /da
 USER app
 ENV DB_PATH=/data/war.sqlite3
 ENV PORT=8080
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \

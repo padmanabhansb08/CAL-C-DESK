@@ -11,6 +11,7 @@ war.sqlite3*
 /*.pdf
 !public/assets/*.png
 tools/
+!tools/backup.py
 ocr-data/
 node_modules/
 .venv/

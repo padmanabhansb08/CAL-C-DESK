@@ -24,9 +24,30 @@ Results, roster, and password hash are stored in `war.sqlite3` (or the `DB_PATH`
 
 **Checks.** `node tools/run-checks.cjs` runs all logic and Python checks; `CHECK_BROWSER=1` adds the real-browser journeys (needs `npm install`). The OCR accuracy gate skips itself if the screenshot reader is not installed.
 
+### Running it for real (production notes)
+
+**Put HTTPS in front.** The built-in server speaks plain HTTP, which is fine on a home network but not on the internet. Render and Fly provide HTTPS for you. On your own machine or VPS, use the bundled Caddy setup, which gets and renews a certificate automatically:
+
+`DOMAIN=desk.example.com SETUP_TOKEN=$(openssl rand -hex 16) docker compose -f docker-compose.yml -f docker-compose.https.yml up -d`
+
+**Tell the app how many proxies are in front (`TRUST_PROXY`).** Lockouts and rate limits are per visitor address. Behind a proxy every visitor would otherwise look identical, but trusting forwarded headers blindly would let anyone dodge the lockout by sending fake ones. So forwarded headers are ignored unless you set `TRUST_PROXY=1` (one proxy, as on Render, Fly, Caddy and Vercel; the supplied configs already set it). Leave it unset when people connect directly.
+
+**Backups.** A consistent copy of the database is written on start and then every `BACKUP_HOURS` hours (default 6; `0` turns it off) to a `backups/` folder next to the database (or `BACKUP_DIR`), keeping the newest `BACKUP_KEEP` (default 30). Each copy is integrity-checked before it replaces anything. Manual use:
+
+- `python tools/backup.py` writes a backup now; `python tools/backup.py --list` lists them.
+- `python tools/backup.py --restore backups/war-YYYYMMDD-HHMMSS.sqlite3` restores one. Stop the server first; the database it replaces is kept as `war.sqlite3.before-restore`.
+
+These backups sit on the same disk as the database, so they protect against mistakes and corruption, not against losing the disk. Copy the `backups/` folder somewhere else regularly (or point `BACKUP_DIR` at a different volume). `/health` reports how old the newest backup is.
+
+**Screenshot reading is one at a time.** The reader is heavy (about 400 MB and several seconds per screenshot). If someone else's screenshot is being read, the next one waits up to 25 s and the browser retries a few times with a message; a read that exceeds 2 minutes is cut off with a clear error. Adjust with `SCAN_WAIT_SECONDS` and `SCAN_TIMEOUT_SECONDS`.
+
+**Logs and health.** Logs go to standard output as one line per event (sign-ins, lockouts, scans with timing, errors with traces); `LOG_LEVEL` changes verbosity. `/health` checks the database and returns 503 if it cannot be read.
+
+**Not covered.** This is still the standard-library Python server: it drops stalled connections after 30 s and caps simultaneous connections (`MAX_CONNECTIONS`, default 64), which suits one event, not heavy public traffic. Whole-workspace saves remain last-writer-wins, so use one organizer editor at a time. The Content-Security-Policy allows inline scripts because the pages build their buttons with inline handlers; everything else (framing, plugins, `<base>` and form hijacking, foreign scripts) is blocked. Set `CSP_REPORT_ONLY=1` to log violations instead of blocking if you suspect it is breaking something. The browser fallback reader loads its worker from a CDN and has not been verified under this policy.
+
 ### Security behaviour
 
-Requests larger than 2 MB (14 MB for a screenshot) are rejected before they are read. After repeated wrong passwords an address is locked out for a while. The session cookie is `HttpOnly`, `SameSite=Strict` and gets `Secure` automatically on HTTPS. Host links use a separate read-only key that cannot call organizer APIs.
+Requests larger than 2 MB (14 MB for a screenshot) are rejected before they are read. After repeated wrong passwords an address is locked out for 10 minutes, and every address is limited to 240 requests a minute (12 screenshot reads). Sign-ins are stored in the database, so a restart no longer signs everyone out, and only a hash of each session token is stored. The session cookie is `HttpOnly`, `SameSite=Strict` and gets `Secure` automatically on HTTPS, and pages are served with HSTS (on HTTPS), `X-Frame-Options`, a referrer policy and a content security policy. Host links use a separate read-only key that cannot call organizer APIs.
 
 ## FFK War tournament
 

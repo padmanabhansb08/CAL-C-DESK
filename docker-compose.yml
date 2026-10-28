@@ -10,6 +10,9 @@ services:
       - DB_PATH=/data/war.sqlite3
       # Required only if the app is reached through a public address / reverse proxy:
       # - SETUP_TOKEN=choose-a-long-random-value
+      # Backups: written every 6 hours to /data/backups (30 kept). Change or switch off with:
+      # - BACKUP_HOURS=6      (0 = off)
+      # - BACKUP_KEEP=30
     volumes:
       - wardesk_data:/data
 

@@ -34,13 +34,19 @@ async function scanOnServer(sources,files,candidates,updateProgress){
     const source=sources[i],image=await fileToDataUrl(files[i],source.image);
     // Manual panel bounds are drawn on a 1392-wide canvas; the server wants original pixels.
     const k=(source.image.naturalWidth||source.image.width)/1392,regions=source.bounds?.length?source.bounds.map(b=>({x:b.x*k,y:b.y*k,width:b.width*k,height:b.height*k})):undefined;
-    const scan=await api('ocr/scan',{image,roster,regions}),result=WarOCR.fromServerScan(scan);
+    // The server reads one screenshot at a time; if someone else's is in progress, wait and retry.
+    let scan;
+    for(let attempt=0;;attempt++){
+      try{scan=await api('ocr/scan',{image,roster,regions});break;}
+      catch(e){if(!e.busy||attempt>=5)throw e;$('#ocr-status').textContent=`Another screenshot is being read. Waiting your turn (${attempt+1} of 5)…`;await new Promise(r=>setTimeout(r,4000));}
+    }
+    const result=WarOCR.fromServerScan(scan);
     if(!result.length)throw Error(scan.warnings?.[0]||'No result panels were found in this screenshot.');
     source.layout=result.layout;source.rows=structuredClone(result);showSources();updateProgress(i,1);rows.push(result);
   }
   return rows;
 }
-async function api(path,data){const r=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});const body=await r.json();if(!r.ok)throw Error(body.error||'Request failed');return body;}
+async function api(path,data){const r=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});const body=await r.json().catch(()=>({}));if(!r.ok){const e=Error(body.error||(r.status===429?'Too many requests. Wait a moment and try again.':'Request failed'));e.status=r.status;e.busy=!!body.busy;throw e;}return body;}
 
 function toast(msg){$('#toast').textContent=msg;$('#toast').style.display='block';setTimeout(()=>$('#toast').style.display='none',4500);}
 

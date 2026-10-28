@@ -1,15 +1,19 @@
 """FFK War Desk: one organizer, SQLite persistence, no API keys."""
-import base64, hmac, json, os, secrets, socket, sqlite3, time
+import base64, hmac, json, os, secrets, socket, sqlite3, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 import local_ocr
 import default_rosters
-from ffk_core import policy
+from ffk_core import policy, backup, logs
+from ffk_core.scan_gate import ScanGate, Busy, TimedOut
 
 ROOT = Path(__file__).parent
 DB = Path(os.environ.get('DB_PATH', ROOT / 'war.sqlite3'))
-sessions = {}
 throttle = policy.Throttle()
+limiter = policy.RateLimiter()
+scan_gate = ScanGate(float(os.environ.get('SCAN_WAIT_SECONDS', '25')), float(os.environ.get('SCAN_TIMEOUT_SECONDS', '120')))
+MAX_CONNECTIONS = int(os.environ.get('MAX_CONNECTIONS', '64'))
+log = logs.setup()
 
 
 def scanner():
@@ -23,6 +27,21 @@ def scanner():
 class WarDeskServer(ThreadingHTTPServer):
     # Windows SO_REUSEADDR can let an old and new process share the same port.
     allow_reuse_address = os.name != 'nt'
+    request_queue_size = 64
+    _slots = threading.BoundedSemaphore(MAX_CONNECTIONS)
+
+    def process_request(self, request, client_address):
+        # A flood of idle connections must not exhaust threads: refuse beyond the cap.
+        if not self._slots.acquire(blocking=False):
+            self.shutdown_request(request)
+            return
+        super().process_request(request, client_address)
+
+    def process_request_thread(self, request, client_address):
+        try:
+            super().process_request_thread(request, client_address)
+        finally:
+            self._slots.release()
 
     def server_bind(self):
         if os.name == 'nt':
@@ -31,11 +50,47 @@ class WarDeskServer(ThreadingHTTPServer):
 
 def connect():
     DB.parent.mkdir(parents=True, exist_ok=True)
-    db = sqlite3.connect(DB)
+    db = sqlite3.connect(DB, timeout=30)
     db.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
+    db.execute('CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL)')
     default_rosters.initialize(db)
     db.commit()
     return db
+
+
+def init_db():
+    with connect() as db:
+        # Write-ahead logging lets reads and the periodic backup run alongside saves.
+        db.execute('PRAGMA journal_mode=WAL')
+
+
+def quick():
+    """Light connection for per-request session checks (no roster bootstrap)."""
+    db = sqlite3.connect(DB, timeout=30)
+    db.execute('CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL)')
+    return db
+
+
+def session_valid(token):
+    if not token:
+        return False
+    try:
+        with quick() as db:
+            row = db.execute('SELECT expires FROM sessions WHERE token_hash=?', (policy.hash_token(token),)).fetchone()
+        return bool(row) and row[0] > time.time()
+    except sqlite3.Error:
+        return False
+
+
+def session_create(token, expires):
+    with quick() as db:
+        db.execute('DELETE FROM sessions WHERE expires <= ?', (time.time(),))
+        db.execute('INSERT OR REPLACE INTO sessions VALUES (?,?)', (policy.hash_token(token), expires))
+
+
+def session_delete(token):
+    with quick() as db:
+        db.execute('DELETE FROM sessions WHERE token_hash=?', (policy.hash_token(token),))
 
 def get(key):
     with connect() as db:
@@ -47,15 +102,27 @@ def put(key, value):
         db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', (key, value))
 
 class Handler(SimpleHTTPRequestHandler):
+    timeout = 30  # a client that stalls mid-request is dropped instead of holding a thread
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT / 'public'), **kwargs)
+
+    def end_headers(self):
+        # self.headers is missing when the request line itself was malformed.
+        for name, value in policy.security_headers(getattr(self, 'headers', None) or {}):
+            self.send_header(name, value)
+        super().end_headers()
+
+    def log_message(self, fmt, *args):
+        quiet = getattr(self, 'path', '').split('?')[0] in ('/health', '/healthz', '/api/health')
+        who = self.caller() if getattr(self, 'headers', None) else self.client_address[0]
+        (log.debug if quiet else log.info)('http %s %s', who, fmt % args)
 
     def reply(self, status, payload, cookie=None):
         body = json.dumps(payload).encode()
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')
-        self.send_header('X-Content-Type-Options', 'nosniff')
         if cookie: self.send_header('Set-Cookie', cookie)
         self.end_headers()
         self.wfile.write(body)
@@ -64,14 +131,22 @@ class Handler(SimpleHTTPRequestHandler):
         return dict(x.strip().split('=', 1) for x in self.headers.get('Cookie', '').split(';') if '=' in x)
 
     def authorized(self):
-        return sessions.get(self.cookies().get('ffk', ''), 0) > time.time()
+        return session_valid(self.cookies().get('ffk', ''))
+
+    def throttled(self):
+        if policy.rate_limited(limiter, self.caller(), self.path.split('?')[0]):
+            self.reply(429, {'error': 'Too many requests. Wait a moment and try again.', 'busy': True})
+            return True
+        return False
 
     def caller(self):
         return policy.client_ip(self.headers, self.client_address[0])
 
     def do_GET(self):
         if self.path.split('?')[0] in ('/health', '/healthz', '/api/health'):
-            return self.reply(200, {'status': 'ok'})
+            return self.health()
+        if self.throttled():
+            return
         if self.path == '/api/host/state':
             key = self.headers.get('X-Host-Key', '')
             expected = get('host_access_key')
@@ -92,7 +167,20 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path.startswith('/api/'): return self.reply(404, {'error': 'Not found'})
         super().do_GET()
 
+    def health(self):
+        try:
+            with quick() as db:
+                db.execute('SELECT 1 FROM settings LIMIT 1').fetchall()
+            database = 'ok'
+        except sqlite3.Error as error:
+            return self.reply(503, {'status': 'error', 'database': str(error)})
+        age = backup.latest_backup_age(DB)
+        self.reply(200, {'status': 'ok', 'database': database, 'screenshotReader': scanner() is not None,
+                         'lastBackupSecondsAgo': None if age is None else int(age)})
+
     def do_POST(self):
+        if self.throttled():
+            return
         # Same-origin JSON requests prevent cross-site form submissions.
         if self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
             return self.reply(415, {'error': 'JSON required'})
@@ -116,6 +204,7 @@ class Handler(SimpleHTTPRequestHandler):
             ip = self.caller()
             wait = throttle.retry_after(ip)
             if wait:
+                log.warning('login locked out ip=%s', ip)
                 return self.reply(429, {'error': f'Too many attempts. Try again in {max(1, wait // 60)} minute(s).'})
             password = data.get('password', '')
             if not isinstance(password, str):
@@ -128,16 +217,15 @@ class Handler(SimpleHTTPRequestHandler):
                 if len(password) < 10: return self.reply(400, {'error': 'Use at least 10 characters.'})
                 stored = policy.hash_password(password)
                 put('password', stored)
+                log.info('organizer password created ip=%s', ip)
             if not policy.verify_password(password, stored):
                 throttle.failed(ip)
+                log.warning('login failed ip=%s', ip)
                 time.sleep(1)
                 return self.reply(401, {'error': 'Incorrect password'})
             throttle.succeeded(ip)
-            now = time.time()
-            for token in [t for t, expires in sessions.items() if expires <= now]:
-                sessions.pop(token, None)
             token = secrets.token_urlsafe(32)
-            sessions[token] = now + policy.SESSION_SECONDS
+            session_create(token, time.time() + policy.SESSION_SECONDS)
             return self.reply(200, {'ok': True}, policy.session_cookie(token, self.headers))
         if not self.authorized(): return self.reply(401, {'error': 'Please sign in.'})
         if self.path == '/api/host/access':
@@ -178,14 +266,23 @@ class Handler(SimpleHTTPRequestHandler):
             try:
                 image = data['image']
                 raw = base64.b64decode(image.split(',', 1)[-1], validate=True)
-                result = engine.scan(raw, data.get('roster'), data.get('regions'))
+                started = time.time()
+                result = scan_gate.run(engine.scan, raw, data.get('roster'), data.get('regions'))
+                log.info('scan ok seconds=%.1f panels=%d warnings=%d', time.time() - started,
+                         len(result.get('panels', [])), len(result.get('warnings', [])))
                 return self.reply(200, result)
+            except Busy:
+                return self.reply(429, {'error': 'Another screenshot is still being read. Trying again shortly.', 'busy': True})
+            except TimedOut:
+                log.error('scan timed out')
+                return self.reply(504, {'error': 'Reading this screenshot took too long. Try a smaller image or crop it.'})
             except (KeyError, ValueError, TypeError) as error:
                 return self.reply(400, {'error': 'Could not read this screenshot: ' + str(error)})
             except Exception as error:
+                log.exception('scan failed')
                 return self.reply(500, {'error': 'The screenshot reader failed: ' + str(error)})
         if self.path == '/api/logout':
-            sessions.pop(self.cookies().get('ffk', ''), None)
+            session_delete(self.cookies().get('ffk', ''))
             return self.reply(200, {'ok': True}, policy.session_cookie('', self.headers, 0))
         if self.path == '/api/state':
             if not isinstance(data.get('teams'), list) or not isinstance(data.get('matches'), list):
@@ -225,6 +322,8 @@ def lan_address():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', '8080'))
+    init_db()
+    backup.start_scheduler(DB, log.info)
     print(f'FFK War Desk: http://localhost:{port}', flush=True)
     lan = lan_address()
     if lan and not lan.startswith('127.'):
@@ -233,4 +332,8 @@ if __name__ == '__main__':
           'not installed, the browser reader will be used. Install it with: pip install -r requirements-docker.txt'), flush=True)
     if get('password') is None:
         print('First visit: create the organizer password.' + (' A setup token is required.' if os.environ.get('SETUP_TOKEN') else ''), flush=True)
+    if os.environ.get('BACKUP_HOURS', '6') not in ('0', '0.0'):
+        print(f'Backups: every {os.environ.get("BACKUP_HOURS", "6")} h into {backup.backup_dir(DB)} (keeping {os.environ.get("BACKUP_KEEP", "30")})', flush=True)
+    if os.environ.get('RENDER') or os.environ.get('FLY_APP_NAME') or os.environ.get('TRUST_PROXY'):
+        print(f'Trusting {policy.trusted_hops()} reverse proxy hop(s) for client addresses.', flush=True)
     WarDeskServer(('0.0.0.0', port), Handler).serve_forever()

@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory() as folder:
     original = {'teams': [{'id': 'keep-team', 'name': 'Preserved team'}],
                 'matches': [{'id': 'first', 'name': 'First'}, {'id': 'second', 'name': 'Second'}]}
     server.put('state', json.dumps(original))
-    server.sessions['test-token'] = time.time() + 60
+    server.session_create('test-token', time.time() + 60)
     host = server.WarDeskServer(('127.0.0.1', 0), server.Handler)
     try:
         duplicate = server.WarDeskServer(('127.0.0.1', host.server_port), server.Handler)

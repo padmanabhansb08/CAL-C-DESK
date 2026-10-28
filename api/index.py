@@ -82,7 +82,7 @@ def is_authorized():
         return False
     with connect() as db:
         with db.cursor() as cur:
-            cur.execute("SELECT expires_at FROM sessions WHERE token=%s", (token,))
+            cur.execute("SELECT expires_at FROM sessions WHERE token=%s", (policy.hash_token(token),))
             row = cur.fetchone()
             return bool(row and row[0] > time.time())
 
@@ -94,7 +94,7 @@ def create_session(token, expires_at):
             cur.execute(
                 "INSERT INTO sessions (token,expires_at) VALUES (%s,%s) "
                 "ON CONFLICT (token) DO UPDATE SET expires_at=EXCLUDED.expires_at",
-                (token, int(expires_at)),
+                (policy.hash_token(token), int(expires_at)),
             )
         db.commit()
 
@@ -102,7 +102,7 @@ def create_session(token, expires_at):
 def delete_session(token):
     with connect() as db:
         with db.cursor() as cur:
-            cur.execute("DELETE FROM sessions WHERE token=%s", (token,))
+            cur.execute("DELETE FROM sessions WHERE token=%s", (policy.hash_token(token),))
         db.commit()
 
 
@@ -157,10 +157,26 @@ def clear_failures(ip):
 def reply(data, status=200, cookie=None):
     resp = make_response(jsonify(data), status)
     resp.headers["Cache-Control"] = "no-store"
-    resp.headers["X-Content-Type-Options"] = "nosniff"
     if cookie:
         resp.headers["Set-Cookie"] = cookie
     return resp
+
+
+@app.after_request
+def add_security_headers(resp):
+    for name, value in policy.security_headers(request.headers):
+        resp.headers[name] = value
+    return resp
+
+
+_limiter = policy.RateLimiter()  # per serverless instance: a best-effort brake, not a global quota
+
+
+@app.before_request
+def brake():
+    if policy.rate_limited(_limiter, caller(), request.path):
+        return reply({"error": "Too many requests. Wait a moment and try again.", "busy": True}, 429)
+    return None
 
 
 def err(msg, status=400):
@@ -209,7 +225,13 @@ def guard():
 @app.route("/healthz", methods=["GET"])
 @app.route("/api/health", methods=["GET"])
 def api_health():
-    return reply({"status": "ok"})
+    try:
+        with connect() as db:
+            with db.cursor() as cur:
+                cur.execute("SELECT 1")
+        return reply({"status": "ok", "database": "ok", "screenshotReader": False})
+    except Exception as error:
+        return reply({"status": "error", "database": type(error).__name__}, 503)
 
 
 @app.route("/api/session", methods=["GET"])

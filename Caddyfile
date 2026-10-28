@@ -1,0 +1,7 @@
+# Automatic HTTPS in front of the War Desk (used by docker-compose.https.yml).
+# DOMAIN must point at this server (an A/AAAA record) and ports 80 and 443 must be open.
+{$DOMAIN} {
+	encode gzip
+	# Caddy sets X-Forwarded-For to the real visitor address; the app trusts exactly this one hop.
+	reverse_proxy wardesk:8080
+}

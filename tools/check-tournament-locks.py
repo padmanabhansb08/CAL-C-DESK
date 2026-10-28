@@ -17,7 +17,7 @@ with tempfile.TemporaryDirectory() as folder:
                 'war': {'groups': {'A': ['t1'], 'B': []},
                         'qualified': {'A': ['t1'], 'C': ['t1']}, 'cs': {'final': {'winner': 't1'}}}}
     server.put('state', json.dumps(original))
-    server.sessions['test'] = time.time() + 60
+    server.session_create('test', time.time() + 60)
     host = server.WarDeskServer(('127.0.0.1', 0), server.Handler)
     threading.Thread(target=host.serve_forever, daemon=True).start()
     def post(path, payload):
