@@ -41,10 +41,15 @@ async function run(){
     await page.goto(origin,{waitUntil:'domcontentloaded'});await page.waitForSelector('.comfort-shell');
     await page.locator('.nav').getByRole('button',{name:'Teams',exact:true}).click();
     await page.locator('.heading .primary').click();
-    await page.locator('[name="team"]').fill('FFK DEEPAK');await page.getByRole('button',{name:'Continue to players'}).click();
-    assert(await page.locator('[name="team"]').evaluate(el=>el.validationMessage.includes('already registered')),'Duplicate team should be blocked');
-    await page.locator('[name="team"]').fill('FFK Test Squad');await page.getByRole('button',{name:'Continue to players'}).click();
+    // One screen: team name and the four players together.
+    assert(await page.locator('[name="p0"]').isVisible(),'Players are on the same screen as the team name');
+    assert.equal(await page.getByRole('button',{name:'Continue to players'}).count(),0,'No second step');
+    await page.locator('[name="team"]').fill('FFK DEEPAK');
     for(let j=0;j<4;j++)await page.locator('[name="p'+j+'"]').fill('Test Starter '+j);
+    await page.getByRole('button',{name:'Register team',exact:true}).click();
+    assert(await page.locator('[name="team"]').evaluate(el=>el.validationMessage.includes('already registered')),'Duplicate team should be blocked');
+    assert(await page.locator('#modal').evaluate(el=>el.open),'A blocked save keeps the form open');
+    await page.locator('[name="team"]').fill('FFK Test Squad');
     await page.locator('[name="p0"]').fill('Test Starter 1');
     assert(await page.locator('[name="p0"]').evaluate(el=>!!el.validationMessage),'Duplicate player should be blocked');
     await page.locator('[name="p0"]').fill('Test Starter 0');await page.getByRole('button',{name:'Register team',exact:true}).click();
@@ -52,9 +57,9 @@ async function run(){
     assert.equal(await page.evaluate(()=>state.teams.length),25,'Existing team save handler should run');
     assert.equal(await page.locator('#modal').evaluate(el=>el.classList.contains('comfort-team-dialog')),false,'Team presentation should not leak to other dialogs');
     // Failed saves must leave the form usable and retries must save the actual edit.
-    await page.locator('.team-card').first().locator('.team-menu summary').click();
+    assert(await page.locator('.team-card').first().getByRole('button',{name:'Edit roster'}).isVisible(),'Edit is visible without opening a menu');
     await page.locator('.team-card').first().getByRole('button',{name:'Edit roster'}).click();
-    await page.locator('[name="team"]').fill('FFK Retry Team');await page.getByRole('button',{name:'Continue to players'}).click();
+    await page.locator('[name="team"]').fill('FFK Retry Team');
     failNextSave=true;await page.getByRole('button',{name:'Save roster',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('#form-error')?.textContent.includes('Simulated save failure'));
     assert(await page.getByRole('button',{name:'Save roster',exact:true}).isEnabled(),'Save should re-enable after failure');
@@ -81,43 +86,53 @@ async function run(){
       draft.rows[0].players[0].rawName='Player OCR';draft.rows[0].players[0].kills=null;
       images=[{url:canvas.toDataURL(),image:canvas,rows:[{placement:1,players:[{ocrRegion:{name:[10,10,140,35],digits:[180,10,30,35],width:600,height:80}}]}]}];redrawReview();
     });
-    const evidence=page.locator('#review-team-0 .review-player').first();
-    assert(await evidence.locator('.review-evidence').evaluate(el=>el.open),'Uncertain player must show evidence immediately');
-    assert(await evidence.locator('.evidence-crop').isVisible(),'Name and kill screenshot crop should be visible');
+    const evidence=page.locator('#review-team-0 .desk-player').first();
+    assert(await evidence.locator('.evidence-crop').isVisible(),'Name and kill screenshot crop sits beside the fields');
     assert.equal(await evidence.locator('[data-kills]').getAttribute('placeholder'),'?','Unknown kills must not look like zero');
-    assert(await evidence.getByText('Not read',{exact:true}).isVisible());
+    assert(await evidence.evaluate(el=>el.classList.contains('is-missing')),'A missing kill count is marked');
+    assert((await page.locator('#review-team-0 .desk-why').innerText()).includes('kill count'),'The row says why it needs a check');
     await page.waitForFunction(()=>document.querySelector('#review-team-0 .evidence-crop')?.naturalWidth===200);
     await page.screenshot({path:path.join(publicRoot,'../.ocr-cache/evidence-review-preview.png')});
     await page.evaluate(()=>{window.dispatchEvent(new Event('pagehide'));images=[];redrawReview();});
-    assert(await evidence.locator('.evidence-crop').isVisible(),'Saved draft crop should work after sources are gone');
+    assert(await page.locator('#review-team-0 .desk-player').first().locator('.evidence-crop').isVisible(),'Saved draft crop should work after sources are gone');
     assert(await page.evaluate(()=>!!JSON.parse(localStorage.getItem('ffk-match-draft-v1')).draft.rows[0].players[0].evidenceCrop),'Evidence must be persisted with the draft');
     await page.evaluate(()=>{ComfortForms.mount();ComfortForms.mount();});
-    assert.equal(await page.locator('.comfort-review-nav').count(),1,'Mount should be idempotent');
+    assert.equal(await page.locator('.desk-review').count(),1,'Mount should be idempotent');
+    assert.equal(await page.locator('.desk-row').count(),12,'All 12 placements are listed together');
     for(let i=0;i<12;i++){
-      assert.equal(await page.locator('.review-card:visible').count(),1,'Only one team should be shown');
-      if(i>0)assert.equal(await page.locator('.review-card:visible [data-team] option[value="team-0"]').count(),0,'Confirmed teams must be removed from the next team dropdown');
+      const row=page.locator('#review-team-'+i);
+      if(i>0)assert.equal(await row.locator('[data-team] option[value="team-0"]').count(),0,'Confirmed teams must be removed from later dropdowns');
       if(i===1){
-        await page.locator('.review-card:visible .comfort-team-finder summary').click();
-        await page.locator('.review-card:visible [data-team-search]').fill('Retry');
-        assert.equal(await page.locator('.review-card:visible [data-team] option[value="team-0"]').count(),0,'Searching must not bring back a confirmed team');
-        await page.locator('.review-card:visible [data-team-search]').fill('');
-        await page.evaluate(()=>setReviewMode('all'));
-        assert.equal(await page.locator('#review-team-0 [data-team] option[value="team-0"]').count(),1,'A confirmed row must retain its own team for correction');
         await page.evaluate(()=>{draft.rows[0].confirmed=false;redrawReview();});
-        assert.equal(await page.locator('#review-team-1 [data-team] option[value="team-0"]').count(),1,'Unconfirming must return the team to other dropdowns');
-        await page.evaluate(()=>{draft.rows[0].confirmed=true;setReviewMode('pending');});
+        assert.equal(await row.locator('[data-team] option[value="team-0"]').count(),1,'Unconfirming must return the team to other dropdowns');
+        await page.evaluate(()=>{draft.rows[0].confirmed=true;redrawReview();});
       }
-      await page.locator('.review-card:visible [data-team]').selectOption('team-'+i);
-      if(i===0)assert(await page.locator('.review-card:visible [data-team] option[value="team-20"]').evaluate(el=>!el.disabled&&!el.hidden),'First result should allow any registered team');
+      await row.locator('[data-team]').selectOption('team-'+i);
+      if(i===0)assert(await row.locator('[data-team] option[value="team-20"]').evaluate(el=>!el.disabled&&!el.hidden),'First result should allow any registered team');
       for(let j=0;j<4;j++){
-        await page.locator('.review-card:visible [data-player="'+i+','+j+'"]').selectOption('player-'+i+'-'+j);
-        await page.locator('.review-card:visible [data-kills="'+i+','+j+'"]').fill(String(i===0?1:0));
-        if(i===0&&j===0)assert(await evidence.getByText('Not read',{exact:true}).isHidden(),'Entering a kill count clears the missing indicator');
+        await row.locator('[data-player="'+i+','+j+'"]').selectOption('player-'+i+'-'+j);
+        await row.locator('[data-kills="'+i+','+j+'"]').fill(String(i===0?1:0));
+        if(i===0&&j===0)assert(await row.locator('.desk-player').first().evaluate(el=>!el.classList.contains('is-missing')),'Entering a kill count clears the missing mark');
       }
-      await page.locator('.review-card:visible .comfort-confirm-team').click();
-      assert(await page.evaluate(index=>draft.rows[index].confirmed,i),'Team '+i+' should confirm');
+      if(i===0){
+        await row.locator('[data-kills="0,1"]').fill('x7');assert.equal(await row.locator('[data-kills="0,1"]').inputValue(),'7','Only digits are kept');
+        await row.locator('[data-kills="0,1"]').press('ArrowDown');assert.equal(await page.evaluate(()=>draft.rows[0].players[1].kills),6,'Arrow keys change a kill count');
+        await row.locator('[data-kills="0,1"]').fill('1');
+        assert.equal(await row.locator('.desk-sum').innerText().then(t=>t.replace(/\s+/g,' ').trim()),'4 kills 16 pts','Row total updates while typing');
+      }
+      if(i===11){
+        await page.locator('#desk-confirm-ready').click();assert(await page.evaluate(()=>draft.rows[11].confirmed),'Bulk confirm');
+        await page.locator('#desk-undo-bulk').click();assert(await page.evaluate(()=>!draft.rows[11].confirmed),'Bulk confirm can be undone');
+      }
+      await row.locator('[data-kills="'+i+',3"]').press('Enter');
+      assert(await page.evaluate(index=>draft.rows[index].confirmed,i),'Enter confirms team '+i);
+      if(i<11)assert.equal(await page.evaluate(()=>document.activeElement.closest('.desk-row')?.id),'review-team-'+(i+1),'Enter moves to the next team');
+      if(i===0){
+        await page.locator('#review-team-0 [data-edit]').click();assert(await page.evaluate(()=>!draft.rows[0].confirmed),'Change re-opens a confirmed team');
+        await page.locator('#review-team-0 [data-kills="0,3"]').press('Enter');assert(await page.evaluate(()=>draft.rows[0].confirmed),'Re-confirm with Enter');
+      }
     }
-    assert.equal(await page.locator('.review-card:visible').count(),0,'Confirmed teams should leave the pending queue');
+    assert.equal(await page.locator('.desk-row.desk-confirmed').count(),12,'All rows show as confirmed');
     const save=page.locator('.save-bar button[onclick="finalize()"]');assert(await save.isEnabled(),'All twelve confirmations should unlock save');
     await save.click();await page.waitForFunction(()=>state.matches.length===1&&!draft);
     assert.deepEqual(await page.evaluate(()=>({stage:state.matches[0].stage,rows:state.matches[0].rows.length})),{stage:'A',rows:12});
@@ -131,7 +146,7 @@ async function run(){
     await page.setViewportSize({width:390,height:844});
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,'Mobile view should fit the screen');
     assert.deepEqual(pageErrors,[],'Integrated forms should have no browser errors');
-    console.log('PASS: guided registration, duplicate validation, save failure/retry, stage context/restrictions, focused 12-team review/save, screenshot add/remove, idempotence, 390px layout.');
+    console.log('PASS: one-step registration, duplicate validation, save failure/retry, stage context/restrictions, 12-row results check with evidence, keyboard confirm/next, undo, live totals, save, screenshot add/remove, 390px layout.');
   }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 }
 run().catch(error=>{console.error(error);process.exitCode=1;});

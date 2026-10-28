@@ -44,7 +44,7 @@
  sidebar.querySelectorAll('.nav button').forEach((button,i)=>{const count=button.querySelector('small');if(count)count.className='nav-count';const span=document.createElement('span');span.className='nav-icon';span.innerHTML=ms(navIcons[i]||'chevron_right','md');button.prepend(span);});
   const hostButton=document.createElement('button');hostButton.className='host-access-button';hostButton.innerHTML=ms('manage_accounts','md')+'<span>Host desk</span>';hostButton.onclick=openHostAccess;sidebar.querySelector('.nav').after(hostButton);
   const footer=sidebar.querySelector('.sidebar-footer'),signout=footer.querySelector('button');signout.classList.add('signout');signout.innerHTML=ms('logout','sm')+'<span>Sign out</span>';
-  footer.replaceChildren();const socials=document.createElement('div');socials.className='channel-socials';socials.innerHTML=`<a href="https://www.instagram.com/ffk_prasanth/" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on Instagram">${svgIcon('instagram')}</a><a href="${channel}" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on YouTube">${svgIcon('youtube')}</a><span aria-label="Discord" title="Discord community — invite not provided">${svgIcon('discord')}</span>`;footer.append(socials,signout);
+  footer.replaceChildren();const socials=document.createElement('div');socials.className='channel-socials';socials.innerHTML=`<a href="https://www.instagram.com/ffk_prasanth/" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on Instagram">${svgIcon('instagram')}</a><a href="${channel}" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on YouTube">${svgIcon('youtube')}</a>`;footer.append(socials,signout);
   const bar=document.querySelector('.topbar'),sync=bar.querySelector('.sync-button'),breadcrumbs=document.createElement('div');breadcrumbs.className='brand-breadcrumb';breadcrumbs.innerHTML=`<span>FFK WAR DESK</span><i>/</i><strong>${({overview:'Overview',roster:'Team roster',upload:'New match',results:'Match results',war:'War manager'})[page]}</strong>`;
   const right=document.createElement('div');right.className='topbar-right';right.innerHTML=`<span class="subscriber-count"><strong>915K</strong><small>SUBSCRIBERS</small></span><a class="watch-live" href="${channel}" target="_blank" rel="noopener noreferrer">${svgIcon('youtube')} Watch live</a>`;if(sync)right.append(sync);const account=document.createElement('details');account.className='mobile-account';account.innerHTML='<summary aria-label="Channel and account menu">•••</summary>';const accountPanel=document.createElement('div');accountPanel.className='mobile-account-panel';const mobileHost=document.createElement('button');mobileHost.type='button';mobileHost.className='mobile-host-btn';mobileHost.innerHTML=ms('manage_accounts','sm')+'<span>Host desk</span>';mobileHost.onclick=()=>{account.open=false;openHostAccess();};accountPanel.append(mobileHost,socials.cloneNode(true),signout.cloneNode(true));account.append(accountPanel);right.append(account);bar.replaceChildren(right);right.querySelector('.subscriber-count')?.remove();right.querySelector('.watch-live')?.remove();WarInsights.mount(bar,state);
   if(page==='overview'){
@@ -56,7 +56,6 @@
   }
   if(page==='roster'){
    const search=document.querySelector('.search-bar'),input=document.querySelector('#roster-search');if(search){search.classList.add('topbar-search');document.querySelector('.heading').after(search);input.placeholder='Search teams or players';const count=search.querySelector('#roster-count');if(count){count.classList.add('roster-result-count');document.querySelector('.heading h1').after(count);}}
-   document.querySelectorAll('.team-card').forEach((card,i)=>{const heading=card.querySelector('h2'),badge=document.createElement('span');badge.className='team-initials';badge.textContent=initials(state.teams[i].name);heading.before(badge);const actions=card.querySelector('.actions'),menu=document.createElement('details');menu.className='team-menu';const summary=document.createElement('summary');summary.setAttribute('aria-label','Manage '+state.teams[i].name);summary.textContent='•••';menu.append(summary,actions);card.append(menu);});
   }
   if(page==='upload'){
    const input=document.querySelector('#screenshots'),drop=document.querySelector('#dropzone');if(input&&drop){input.classList.add('native-file-input');const visual=document.createElement('label');visual.htmlFor='screenshots';visual.className='upload-picker';visual.innerHTML=`<span class="upload-symbol">${ms('upload_file','lg')}</span><strong>DROP YOUR FINAL SCORE.</strong><span>Drag screenshots here, or <u>browse files</u></span>`;drop.prepend(visual);}
@@ -115,17 +114,11 @@
    addReviewNavigation();
   }
  }
- function addReviewNavigation(){
-  document.querySelector('.review-jump')?.remove();
-  const grid=document.querySelector('.review-grid');if(!grid)return;
-  const nav=document.createElement('nav');nav.className='review-jump';nav.setAttribute('aria-label','Jump to a team to review');
-  grid.querySelectorAll('.review-card').forEach(card=>{const link=document.createElement('a');link.href='#'+card.id;link.textContent=card.querySelector('.placement-number')?.textContent||'Team';link.className=card.classList.contains('unresolved')?'':'checked';link.title=card.querySelector('h3')?.textContent.trim();nav.append(link);});
-  if(nav.childElementCount)grid.before(nav);
- }
+ function addReviewNavigation(){}
  function enforcePrimary(){
   const content=document.querySelector('.content');if(!content)return;
   const target=page==='overview'?content.querySelector('.channel-hero .primary'):page==='roster'?content.querySelector('.heading .primary'):page==='results'?content.querySelector('#export-results'):content.querySelector('#scan');
-  content.querySelectorAll('.primary').forEach(button=>button.classList.add('brand-outline-primary'));if(target){target.classList.remove('brand-outline-primary');target.classList.add('brand-main-action');}
+  content.querySelectorAll('.primary').forEach(button=>{if(!button.closest('#review'))button.classList.add('brand-outline-primary');});const main=target||[...content.querySelectorAll('.primary')].find(button=>!button.closest('#review'));if(main){main.classList.remove('brand-outline-primary');main.classList.add('brand-main-action');}
  }
  function openExportChooser(){
   const match=resultMatch();if(!match)return;

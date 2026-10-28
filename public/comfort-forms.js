@@ -15,17 +15,15 @@
     const team=form.elements.namedItem('team'),players=Array.from({length:5},(_,i)=>form.elements.namedItem('p'+i));
     if(!team||players.some(p=>!p))return;
     const editing=!!id,header=node('div','comfort-form-intro');
-    header.append(node('span','comfort-kicker',editing?'TEAM ROSTER':'NEW TEAM'),node('p','',editing?'Update the team identity, then check the players.':'A team name and four players. We’ll guide you through both.'));
-    if(title)title.before(header);
+    header.append(node('p','',editing?'Update the team name or any player.':'A team name and its four players. A substitute is optional.'));
+    if(title)title.after(header);
     const steps=node('div','comfort-form-steps');steps.setAttribute('aria-label','Team registration steps');
     const stepButtons=[button('1  Team name',()=>setStep(0)),button('2  Players',()=>next())];steps.append(...stepButtons);form.prepend(steps);
     const identity=node('section','comfort-team-identity'),roster=node('section','comfort-team-players');
-    const teamLabel=team.closest('label');identity.append(node('h3','','What’s your team called?'),node('p','','Use the name you want on the standings.'),teamLabel);
-    team.placeholder='For example, FFK Phoenix';team.autocomplete='off';team.spellcheck=false;team.setAttribute('aria-describedby','comfort-team-help');
-    identity.append(node('p','comfort-help','You can update this later.'));
-    identity.lastChild.id='comfort-team-help';
+    const teamLabel=team.closest('label');identity.append(teamLabel);
+    team.placeholder='For example, FFK Phoenix';team.autocomplete='off';team.spellcheck=false;
     const summary=node('div','comfort-roster-summary');summary.append(node('strong','','Your team'),node('span','','0 of 4 players added'));summary.setAttribute('aria-live','polite');
-    roster.append(summary,node('h3','','Add your starting four'),node('p','','Copy each player’s in-game name, including symbols. This helps match screenshots to the right team.'));
+    roster.append(node('h3','','Starting four'),node('p','comfort-help','Use each player’s exact in-game name, symbols included, so screenshots match.'));
     const grid=node('div','comfort-player-fields');
     players.slice(0,4).forEach((input,index)=>{
       const label=input.closest('label');label.style.marginTop='';label.classList.add('comfort-player-field');
@@ -52,10 +50,10 @@
       subSummary.textContent=values[4]?'Substitute added · '+values[4]:'Add a substitute';
     }
     function setStep(step){
-      current=step;identity.hidden=step!==0;roster.hidden=step!==1;back.hidden=step===0;save.hidden=step===0;continueButton.hidden=step===1;
-      stepButtons.forEach((el,index)=>{el.classList.toggle('is-active',index===step);el.setAttribute('aria-current',index===step?'step':'false');});
-      if(title)title.textContent=step===0?(editing?'Edit team':'Register a team'):'Meet the squad';
-      validateNames();(step===0?team:players[0]).focus({preventScroll:true});
+      // A single screen: team name and players together. Validation runs on submit.
+      current=1;identity.hidden=false;roster.hidden=false;back.hidden=true;save.hidden=false;continueButton.hidden=true;steps.hidden=true;
+      if(title)title.textContent=editing?'Edit team':'Register a team';
+      validateNames();team.focus({preventScroll:true});
     }
     function next(){
       team.setCustomValidity(!team.value.trim()?'Enter a team name.':'');
@@ -68,7 +66,8 @@
     team.addEventListener('input',()=>{team.setCustomValidity('');validateNames();});players.forEach(input=>input.addEventListener('input',validateNames));
     form.addEventListener('keydown',event=>{if(event.key==='Enter'&&current===0){event.preventDefault();next();}});
     const submit=form.onsubmit;form.onsubmit=async function(event){
-      if(current===0){event.preventDefault();next();return;}
+      team.setCustomValidity(!team.value.trim()?'Enter a team name.':typeof state!=='undefined'&&state.teams.some(t=>t.id!==id&&t.name.toLowerCase()===team.value.trim().toLowerCase())?'This team name is already registered.':'');
+      if(!form.reportValidity()){event.preventDefault();return;}
       const label=save.textContent;save.disabled=true;save.textContent='Saving roster…';
       try{return await submit.call(this,event);}finally{if(form.isConnected){save.disabled=false;save.textContent=label;if(error?.textContent)error.focus();}}
     };
@@ -135,72 +134,8 @@
       drop.classList.toggle('has-screenshots',count>0);
     }
   }
-  function mountReview(){
-    const grid=query('.review-grid');if(!grid)return;
-    if(typeof draft==='undefined'||!draft)return;
-    if(reviewDraft!==draft.id){reviewDraft=draft.id;focusedTeam=null;}
-    const cards=all('.review-card',grid);grid.classList.add('comfort-review-grid');
-    query('.review-jump')?.remove();
-    const toolbar=query('.review-toolbar');toolbar?.classList.add('comfort-review-toolbar');
-    if(toolbar&&!toolbar.dataset.comfort){
-      toolbar.dataset.comfort='true';const actions=query('.actions',toolbar);
-      if(actions){
-        const secondary=all('button',actions).filter(el=>/rematchDraft|confirmReadyRows/.test(el.getAttribute('onclick')||''));
-        const more=node('details','comfort-review-tools');more.append(node('summary','','Review tools'));secondary.forEach(el=>more.append(el));actions.append(more);
-        all('button',actions).forEach(el=>{if(/setReviewMode\('pending'\)/.test(el.getAttribute('onclick')||''))el.textContent='To check ('+draft.rows.filter(r=>!r.confirmed).length+')';if(/setReviewMode\('all'\)/.test(el.getAttribute('onclick')||''))el.textContent='All 12 teams';});
-      }
-      const description=node('p','comfort-review-description','Check one team at a time. Select the team, verify the four players and kills, then confirm.');toolbar.after(description);
-    }
-    const saveBar=query('.save-bar');saveBar?.classList.add('comfort-save-bar');
-    if(saveBar&&!query('.comfort-draft-note',saveBar)){const note=node('span','comfort-draft-note','Your draft stays on this device while you work.');query(':scope > div',saveBar)?.append(note);}
-    if(!cards.length){query('.comfort-review-nav')?.remove();query('.comfort-review-controls')?.remove();return;}
-    const indices=cards.map(card=>Number(card.id.replace('review-team-','')));
-    if(!indices.includes(focusedTeam))focusedTeam=focusedTeam===null?indices[0]:(indices.find(i=>i>focusedTeam)??indices[0]);
-    let nav=query('.comfort-review-nav');
-    if(!nav){nav=node('nav','comfort-review-nav');nav.setAttribute('aria-label','Team results to review');grid.before(nav);}
-    nav.replaceChildren();
-    cards.forEach((card,index)=>{
-      const i=indices[index],row=draft.rows[i];card.classList.add('comfort-review-card');
-      if(!card.dataset.comfort){
-        card.dataset.comfort='true';
-        const search=query('[data-team-search]',card);if(search){const label=search.closest('label'),details=node('details','comfort-team-finder');label.before(details);details.append(node('summary','','Find a team by name or player'),label);search.placeholder='Type a team or player name…';}
-        const team=query('[data-team]',card);if(team){const text=Array.from(team.closest('label').childNodes).find(n=>n.nodeType===3);if(text)text.textContent='Which team finished here?';}
-        all('[data-kills]',card).forEach(el=>{
-          el.inputMode='numeric';el.placeholder='?';el.setAttribute('aria-describedby','comfort-kills-help');
-          const status=node('span','comfort-kill-missing','Not read');el.after(status);
-          const update=()=>{const missing=el.value==='';status.hidden=!missing;el.setAttribute('aria-invalid',String(missing));};
-          el.addEventListener('input',update);update();
-        });
-        const instruction=node('div','comfort-player-heading');instruction.append(node('span','','Players in this match'),node('span','','Kills'));query('.review-player',card)?.before(instruction);
-        const confirmation=query('button[onclick^="confirmRow"]',card);if(confirmation){confirmation.classList.add('comfort-confirm-team');confirmation.textContent=row.confirmed?'Confirm changes →':'Confirm & next team →';confirmation.before(node('p','comfort-kills-note','Enter 0 when a player has no kills. Corrected player selections are remembered after you save the match.'));
-          confirmation.previousSibling.id='comfort-kills-help-'+i;all('[data-kills]',card).forEach(el=>el.setAttribute('aria-describedby',confirmation.previousSibling.id));}
-      }
-      const jump=button('#'+row.placement,()=>{focusedTeam=i;showFocused(true);},'comfort-team-jump');jump.dataset.teamIndex=i;jump.classList.toggle('is-checked',!!row.confirmed);if(typeof rowStatus==='function'){const status=rowStatus(row);jump.classList.toggle('is-ready',status==='ready');jump.classList.toggle('is-look',status==='look');jump.title=status==='ready'?'Everything read confidently':status==='look'?'Needs a quick check':'Confirmed';}
-      if(row.confirmed)jump.innerHTML='<span class="material-symbols-outlined icon-xs" aria-hidden="true">check</span> '+'#'+row.placement;
-      const team=typeof state!=='undefined'?state.teams.find(t=>t.id===row.teamId):null;jump.setAttribute('aria-label','Placement '+row.placement+', '+(team?.name||'team not selected')+(row.confirmed?', confirmed':', needs review'));nav.append(jump);
-    });
-    let bar=query('.comfort-ready-bar');
-    if(typeof reviewSummary==='function'){
-      const sum=reviewSummary();
-      if(!bar){bar=node('div','comfort-ready-bar');nav.before(bar);}
-      bar.replaceChildren();
-      const text=node('p','comfort-ready-text');text.innerHTML=`<strong>${sum.ready}</strong> ready · <strong>${sum.look}</strong> to check`;bar.append(text);
-      if(sum.ready){const all=button('Confirm '+sum.ready+' ready team'+(sum.ready===1?'':'s'),()=>{confirmReadyRows();},'comfort-confirm-ready primary');bar.append(all);}
-      bar.append(node('span','comfort-ready-legend','Green = read confidently · Amber = check this one'));
-    }
-    let controls=query('.comfort-review-controls');
-    if(!controls){controls=node('div','comfort-review-controls');grid.after(controls);}
-    controls.replaceChildren();
-    const previous=button('← Previous',()=>move(-1)),position=node('span','comfort-review-position'),next=button('Next team →',()=>move(1));controls.append(previous,position,next);
-    function move(amount){const position=indices.indexOf(focusedTeam);const next=indices[position+amount];if(next!==undefined){focusedTeam=next;showFocused(true);}}
-    function showFocused(focus){
-      cards.forEach((card,index)=>{card.hidden=indices[index]!==focusedTeam;});
-      all('button',nav).forEach(el=>{const active=Number(el.dataset.teamIndex)===focusedTeam;el.classList.toggle('is-current',active);el.setAttribute('aria-current',active?'step':'false');});
-      const at=indices.indexOf(focusedTeam);position.textContent=(at+1)+' of '+cards.length+' '+(cards.length===12?'teams':'to check');previous.disabled=at===0;next.disabled=at===indices.length-1;
-      const card=cards[at];if(focus&&card){const heading=query('h3',card);heading?.setAttribute('tabindex','-1');heading?.focus({preventScroll:true});card.scrollIntoView({block:'nearest',behavior:'instant'});}
-    }
-    showFocused(false);
-  }
+  // The results check is rendered directly by workspace.js; nothing to rewrite here.
+  function mountReview(){}
   function mount(){mountTeamForm();mountIntake();mountReview();}
   root.ComfortForms={mount};
   if(typeof teamForm==='function'){const prior=teamForm;teamForm=function(id){const result=prior.apply(this,arguments);mountTeamForm(id);return result;};}

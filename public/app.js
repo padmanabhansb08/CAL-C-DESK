@@ -27,9 +27,10 @@ function fileToDataUrl(file,image){
 }
 function serverRoster(teams){return {teams:teams.map(t=>({id:t.id,name:t.name,players:(t.players||[]).map(p=>({id:p.id,name:p.name,aliases:p.ocrAliases||[]}))}))};}
 // Read screenshots with the server's OCR engine and roster reasoning (one at a time; the engine is shared).
-async function scanOnServer(sources,files,candidates,updateProgress){
+async function scanOnServer(sources,files,candidates,updateProgress,signal){
   const roster=serverRoster(candidates),rows=[];
   for(let i=0;i<sources.length;i++){
+    if(signal?.aborted)throw new DOMException('Cancelled','AbortError');
     $('#ocr-status').textContent=`Reading screenshot ${i+1} of ${sources.length}…`;updateProgress(i,.05);
     const source=sources[i],image=await fileToDataUrl(files[i],source.image);
     // Manual panel bounds are drawn on a 1392-wide canvas; the server wants original pixels.
@@ -37,8 +38,8 @@ async function scanOnServer(sources,files,candidates,updateProgress){
     // The server reads one screenshot at a time; if someone else's is in progress, wait and retry.
     let scan;
     for(let attempt=0;;attempt++){
-      try{scan=await api('ocr/scan',{image,roster,regions});break;}
-      catch(e){if(!e.busy||attempt>=5)throw e;$('#ocr-status').textContent=`Another screenshot is being read. Waiting your turn (${attempt+1} of 5)…`;await new Promise(r=>setTimeout(r,4000));}
+      try{scan=await api('ocr/scan',{image,roster,regions},{signal});break;}
+      catch(e){if(e.name==='AbortError'||!e.busy||attempt>=5)throw e;$('#ocr-status').textContent=`Another screenshot is being read. Waiting your turn (${attempt+1} of 5)…`;await new Promise(r=>setTimeout(r,4000));}
     }
     const result=WarOCR.fromServerScan(scan);
     if(!result.length)throw Error(scan.warnings?.[0]||'No result panels were found in this screenshot.');
@@ -46,7 +47,7 @@ async function scanOnServer(sources,files,candidates,updateProgress){
   }
   return rows;
 }
-async function api(path,data){const r=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data)});const body=await r.json().catch(()=>({}));if(!r.ok){const e=Error(body.error||(r.status===429?'Too many requests. Wait a moment and try again.':'Request failed'));e.status=r.status;e.busy=!!body.busy;throw e;}return body;}
+async function api(path,data,options={}){const r=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data),signal:options.signal});const body=await r.json().catch(()=>({}));if(!r.ok){const e=Error(body.error||(r.status===429?'Too many requests. Wait a moment and try again.':'Request failed'));e.status=r.status;e.busy=!!body.busy;throw e;}return body;}
 
 function toast(msg){$('#toast').textContent=msg;$('#toast').style.display='block';setTimeout(()=>$('#toast').style.display='none',4500);}
 
@@ -64,8 +65,8 @@ async function init(){try{const session=await api('session');if(!session.authent
 
 function auth(setup,needsToken){
   const action=setup?'Create organizer access':'Sign in to War Desk';
-  const title=setup?'YOUR WAR.<br><span class="card-title-accent">YOUR COMMAND.</span>':'WELCOME BACK,<br><span class="card-title-accent">ORGANIZER.</span>';
-  const intro=setup?'Create your organizer password. This account controls rosters, match results, and penalties.':'Sign in to manage your tournaments.';
+  const title=setup?'Set up your<br><span class="card-title-accent">war desk.</span>':'Welcome back,<br><span class="card-title-accent">organizer.</span>';
+  const intro=setup?'Create the organizer password. Only this password can change teams, results and penalties.':'Sign in to manage your tournament.';
   $('#app').innerHTML=`<main class="login-page">
     <div class="login-ambient" aria-hidden="true">
       <div class="ambient-glow-left"></div>
@@ -76,7 +77,6 @@ function auth(setup,needsToken){
       <div class="showcase-watermark-claws" aria-hidden="true"></div>
       <div class="showcase-top-meta">
         <p class="login-kicker">FFK WAR DESK <span class="kicker-sep">/</span> TOURNAMENT OPERATIONS</p>
-        <span class="showcase-status-badge"><span class="badge-dot" aria-hidden="true"></span> COMMAND ACTIVE</span>
       </div>
       <div class="showcase-hero-art">
         <div class="mascot-frame">
@@ -86,13 +86,8 @@ function auth(setup,needsToken){
       </div>
       <div class="login-showcase-copy">
         <p class="login-status"><i aria-hidden="true"></i> ORGANIZER ACCESS</p>
-        <h1 id="login-showcase-title" class="showcase-headline">BACK IN<br><span class="headline-accent">COMMAND.</span></h1>
+        <h1 id="login-showcase-title" class="showcase-headline">${setup?'READY<br><span class="headline-accent">FOR WAR.</span>':'BACK IN<br><span class="headline-accent">COMMAND.</span>'}</h1>
         <p class="showcase-subtext">Your tournament. Your operations.<br>One command center.</p>
-      </div>
-      <div class="login-showcase-footer" aria-hidden="true">
-        <div class="telemetry-tag"><span class="telemetry-idx">[ 01 ]</span> <span>OPERATIONS CONSOLE</span></div>
-        <div class="telemetry-bar"></div>
-        <div class="telemetry-sys">FFK // DESK</div>
       </div>
     </section>
     <section class="login-panel-wrap" aria-label="Organizer sign in">
@@ -153,14 +148,6 @@ function auth(setup,needsToken){
               <span class="material-symbols-outlined submit-arrow icon-sm" aria-hidden="true">arrow_forward</span>
             </button>
           </form>
-          <div class="login-card-footer">
-            <span class="footer-divider"></span>
-            <p class="footer-security-text">
-              <span class="material-symbols-outlined security-shield-icon icon-xs" aria-hidden="true">lock</span>
-              SECURE TOURNAMENT OPERATIONS
-            </p>
-            <span class="footer-divider"></span>
-          </div>
         </div>
       </div>
       <p class="login-legal">FFK PRASANTH <b>•</b> FREE FIRE TOURNAMENT DESK</p>
@@ -201,7 +188,10 @@ function render(){const nav=[['overview','Overview','01'],['roster','Team roster
 function header(kicker,title,action=''){return `<div class="eyebrow">${kicker}</div><div class="heading"><h1>${title}</h1>${action}</div>`;}
 function overview(){const players=state.teams.reduce((n,t)=>n+t.players.length,0),kills=state.matches.reduce((n,m)=>n+m.rows.reduce((a,r)=>a+r.players.reduce((b,p)=>b+p.kills,0),0),0);return header('Tournament operations','Every point. Accounted for.','<button class="primary" onclick="go(\'upload\')"><span class="material-symbols-outlined icon-sm" aria-hidden="true">add</span> <span>New match</span></button>')+`<p style="margin-top:-15px;margin-bottom:30px">From the final zone to the final standings. Your match desk, in one place.</p><div class="stats">${[['Registered teams',state.teams.length,'12 teams per match'],['Players ready',players,'Up to 5 per roster'],['Matches recorded',state.matches.length,'Individual match standings'],['Eliminations logged',kills,'1 elimination = 1 point']].map(x=>`<div class="stat"><label>${x[0]}</label><strong>${String(x[1]).padStart(2,'0')}</strong><small>${x[2]}</small></div>`).join('')}</div><div class="grid"><section class="panel"><div class="panel-head"><h2>Match room</h2><span class="badge">BATTLE ROYALE</span></div>${state.matches.length?state.matches.slice().reverse().slice(0,4).map(matchItem).join(''):`<div class="empty"><div class="empty-symbol">[ 01 / 06 ]</div><h3>The next war starts here.</h3><p>Register your teams. Drop in the result screenshots.<br>We’ll help you turn the match into a points table.</p><button class="primary" onclick="go('roster')"><span>Set up your roster</span> <span class="material-symbols-outlined icon-sm" aria-hidden="true">arrow_forward</span></button></div>`}<div class="rule-strip"><span>12 TEAMS · 4 ACTIVE PLAYERS</span><span>NO API KEYS REQUIRED</span></div></section><section class="panel"><div class="panel-head"><h2>Ready. Read. Rank.</h2></div><div class="steps"><div class="step"><div><strong>Build your roster</strong><p>Add team names and exact in-game player names before the war.</p></div></div><div class="step"><div><strong>Bring the match results</strong><p>Upload overlapping screenshots. Repeated teams count once.</p></div></div><div class="step"><div><strong>Review & publish your table</strong><p>Resolve uncertain readings, apply penalties, then export.</p></div></div></div><div class="notice" style="margin:15px 0 0">Placement + eliminations + host adjustments.<br>Every change has a reason.</div></section></div>`;}
 
-function roster(){return header('Before the first drop','Team roster',`<button class="primary" onclick="teamForm()"><span class="material-symbols-outlined icon-sm" aria-hidden="true">add</span> <span>Add team</span></button>`)+`<p>Teams from Season 11 War Lists 1 and 2 are ready below. Edit any team or player name, or add your own team.</p><div class="team-grid">${state.teams.map((t,i)=>`<article class="team-card"><div class="eyebrow">${t.rosterList?`WAR LIST ${t.rosterList} · SLOT ${String(t.slot).padStart(2,'0')}`:`TEAM ${String(i+1).padStart(2,'0')}`}</div><h2 style="margin-top:12px">${esc(t.name)}</h2><ol>${t.players.map(p=>`<li>${esc(p.name)}</li>`).join('')}</ol><div class="actions"><button onclick="teamForm('${t.id}')">Edit roster</button><button class="danger" onclick="deleteTeam('${t.id}')">Remove</button></div></article>`).join('')||'<div class="empty"><h3>No teams registered yet</h3><p>Add your first team.</p></div>'}</div>`;}
+function roster(){
+  const groups=state.war?.groups||{},setOf=id=>['A','B'].find(set=>(groups[set]||[]).includes(id));
+  const name=text=>{const m=/^(FFK\s+)(.*)$/i.exec(text||'');return m?`<span class="ffk-prefix">${esc(m[1].trim())}</span> ${esc(m[2])}`:esc(text);};
+  return header('Before the first drop','Teams',`<button class="primary" onclick="teamForm()"><span class="material-symbols-outlined icon-sm" aria-hidden="true">add</span> <span>Register team</span></button>`)+`<p class="team-list-intro">${state.teams.length} teams registered. Use each player’s exact in-game name so screenshots match the right team.</p><div class="team-grid team-list">${state.teams.map((t,i)=>{const set=setOf(t.id);return `<article class="team-card team-row"><div class="team-row-id"><h2>${name(t.name)}</h2><span class="team-row-meta">${t.rosterList?`List ${t.rosterList} · slot ${t.slot}`:`Team ${i+1}`}${set?` · <span class="team-set">Set ${set}</span>`:''}</span></div><ol class="team-row-players">${t.players.map((p,j)=>`<li${j>3?' class="team-row-sub" title="Substitute"':''}>${name(p.name)}</li>`).join('')}</ol><div class="actions"><button onclick="teamForm('${t.id}')" aria-label="Edit roster for ${esc(t.name)}">Edit</button><button class="danger" onclick="deleteTeam('${t.id}')" aria-label="Remove ${esc(t.name)}">Remove</button></div></article>`;}).join('')||'<div class="empty"><h3>No teams registered yet</h3><p>Add your first team.</p></div>'}</div>`;}
 
 function teamForm(id){const t=state.teams.find(t=>t.id===id);modal(`<h2>${t?'Edit':'Register'} team</h2><form id="team-form"><label>Team name<input name="team" required maxlength="70" value="${esc(t?.name||'')}" placeholder="e.g. FFK Phoenix"></label><p class="caption">Copy exact in-game names where possible. Duplicate names are flagged during matching.</p>${Array.from({length:5},(_,i)=>`<label style="margin-top:12px">Player ${i+1} ${i===4?'· optional substitute':''}<input name="p${i}" ${i<4?'required':''} maxlength="90" value="${esc(t?.players[i]?.name||'')}"></label>`).join('')}<div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary">Save team</button></div><p id="form-error" class="error"></p></form>`);$('#team-form').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target),name=f.get('team').trim(),names=Array.from({length:5},(_,i)=>f.get('p'+i).trim()).filter(Boolean);if(!name||names.length<4||new Set(names).size!==names.length)return $('#form-error').textContent='Enter a team name and at least four distinct players.';if(state.teams.some(x=>x.id!==id&&x.name.toLowerCase()===name.toLowerCase()))return $('#form-error').textContent='This team name is already registered.';const updated={...(t||{}),id:id||uid(),name,players:names.map(n=>({...t?.players.find(p=>p.name===n),id:t?.players.find(p=>p.name===n)?.id||uid(),name:n}))};const prior=structuredClone(state);if(t)state.teams[state.teams.findIndex(x=>x.id===id)]=updated;else state.teams.push(updated);try{await save();closeModal();render();toast('Roster saved');}catch(e){state=prior;$('#form-error').textContent=e.message;}};}
 
@@ -277,6 +267,7 @@ async function scan(skipConfirm=false){
   if(files.some(f=>f.size>15*1024*1024))return toast('Each screenshot must be smaller than 15 MB.');
   if(!window.WarOCRBatch)return toast('Unable to prepare results. Refresh the page and try again.');
   if(draft&&skipConfirm!==true&&!await confirmAction({title:'Replace current results?',message:'Your new screenshots will replace this unsaved match.',accept:'Replace results',cancel:'Keep results'}))return;
+  const previousDraft=draft;scanControl=new AbortController();const signal=scanControl.signal;
   busy=true;setMatchLoading(true);$('#scan').disabled=true;$('#manual').disabled=true;$('#screenshots').disabled=true;$('#ocr-progress').hidden=false;
   const previousBounds=files.map(f=>images.find(im=>im.fileKey===f.name+':'+f.size)?.bounds);
   clearImages();draft={id:uid(),name:$('#match-name').value,map:$('#match-map').value,stage:$('#war-stage')?.value||undefined,rows:blankRows()};
@@ -285,17 +276,18 @@ async function scan(skipConfirm=false){
     progress[index]=Math.max(progress[index],Math.min(1,value));
     const overall=progress.reduce((sum,n)=>sum+n,0)/files.length;
     $('#ocr-progress').value=overall;$('#ocr-status').textContent='Reading screenshots · '+Math.round(overall*100)+'%';
+    markScanItem(index,progress[index]);const bar=$('#scan-meter-bar');if(bar)bar.style.width=Math.max(4,overall*100)+'%';
   };
   try{
     await WarOCRLearning.load().catch(e=>console.warn('Reviewed OCR examples unavailable:',e));
     const localOCR=await api('ocr/status').catch(()=>({available:false}));
     images=files.map((file,i)=>{const url=URL.createObjectURL(file),image=new Image();image.src=url;return {url,image,bounds:previousBounds[i],fileKey:file.name+':'+file.size};});
-    await Promise.all(images.map(source=>source.image.decode()));showSources();
+    await Promise.all(images.map(source=>source.image.decode()));showSources();showScanCard(files);
     const candidates=typeof WarTournament==='undefined'?state.teams:WarTournament.availableTeams(state,draft.stage);
     let rowsByScreenshot=null;
     if(localOCR.scan){
-      try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress);}
-      catch(e){console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
+      try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress,signal);}
+      catch(e){if(e.name==='AbortError')throw e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
     }
     if(!rowsByScreenshot&&!window.Tesseract)throw Error('The in-browser reader could not load (it needs an internet connection). Use a server with the screenshot reader installed, or enter results by hand.');
     if(!rowsByScreenshot)rowsByScreenshot=await WarOCRBatch.run(images,{
@@ -306,18 +298,27 @@ async function scan(skipConfirm=false){
       },
       onWorkerFailure:e=>console.warn('Using available screenshot readers:',e),
       process:async(worker,source,index)=>{
+        if(signal.aborted)throw new DOMException('Cancelled','AbortError');
         const rows=await WarOCR.extract(worker,source.image,candidates,(width,height)=>{const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;return canvas;},(_text,value)=>updateProgress(index,value),{
           bounds:source.bounds,compare:localOCR.available?async(image,boxes)=>(await api('ocr',{image,boxes})).readings:undefined
         });
         source.layout=rows.layout;source.rows=structuredClone(rows);showSources();updateProgress(index,1);return rows;
       }
     });
+    if(signal.aborted)throw new DOMException('Cancelled','AbortError');
     // Completion order never changes screenshot precedence or disagreement handling.
     rowsByScreenshot.forEach(rows=>rows.forEach(row=>WarOCR.merge(draft.rows[row.placement-1],row)));
     draft.rows.forEach(row=>{applySubstitutes(row);if(!row.teamId)row.warnings.push('Team could not be matched confidently');if(row.players.some(p=>p.kills===null))row.warnings.push('Missing or uncertain kill counts');if(row.players.some(p=>!p.playerId))row.warnings.push('Some screenshot names do not match this registered roster');});
     const sum=reviewSummary();
     $('#ocr-status').textContent=`Results ready · ${sum.read} of ${sum.total} kill counts read · ${sum.teams} of 12 teams matched · ${sum.ready} ready to confirm, ${sum.look} to check`;redrawReview();
   }catch(e){
+    if(e.name==='AbortError'||signal.aborted){
+      draft=previousDraft;setMatchLoading(false);
+      $('#ocr-status').textContent=previousDraft?'Reading cancelled. Your earlier results are unchanged.':'Reading cancelled.';
+      if(draft)redrawReview();else $('#review').innerHTML='';
+      toast(previousDraft?'Reading cancelled. Your earlier results are unchanged.':'Reading cancelled.');
+      return;
+    }
     console.error('Screenshot processing failed',e);$('#ocr-status').textContent='Unable to prepare results. Try clearer screenshots or enter results manually.';toast('Unable to prepare results. Try again or enter results manually.');
   }finally{
     busy=false;setMatchLoading(false);$('#scan').disabled=false;$('#manual').disabled=false;$('#screenshots').disabled=false;showSources();
@@ -341,7 +342,7 @@ async function deleteMatch(){
   finally{busy=false;}
 }
 
-function results(){if(selected==="__overall__"&&state.matches.length)return overallResults();if(!state.matches.length)return header('The scoreboard','Match results')+'<div class="panel empty"><h2>No matches recorded</h2><p>Your verified match tables and player leaderboards will appear here.</p><button class="primary" onclick="go(\'upload\')">Add the first match</button></div>';const m=state.matches.find(m=>m.id===selected)||state.matches.at(-1);selected=m.id;const rows=rankedRows(m),players=m.rows.flatMap(r=>r.players.map(p=>({...p,teamName:r.teamName}))).sort((a,b)=>b.kills-a.kills);return header('Verified match results',esc(m.name),'<div class="actions"><button onclick="deleteMatch()">Delete match</button><button onclick="openPoster()">Scoreboard graphic</button><button onclick="downloadCSV()">Export CSV ↓</button><button class="primary" onclick="printResults()">Print / save PDF ↗</button></div>')+`<div class="form-grid no-print"><label>Match<select id="match-select"><option value="__overall__">Overall points table</option>${state.matches.map(x=>`<option value="${x.id}" ${m.id===x.id?'selected':''}>${esc(x.name)} · ${esc(x.map)}</option>`).join('')}</select></label><div class="notice">${esc(m.map)} · 12 teams<br>1 kill = 1 point. Host resolves any remaining ties.</div></div><div class="tabs"><button class="${tab==='teams'?'active':''}" onclick="tab='teams';render()">Team standings</button><button class="${tab==='players'?'active':''}" onclick="tab='players';render()">Player kill leaderboard</button></div><section class="panel table-wrap">${tab==='teams'?`<table><thead><tr><th>Rank</th><th>Team</th><th>Finish</th><th>Kills</th><th>Placement pts</th><th>Adjustment</th><th>Total pts</th><th class="no-print">Manage</th></tr></thead><tbody>${rows.map((r,i)=>{const s=score(r),prev=i?score(rows[i-1]):null,tied=prev&&prev.total===s.total&&prev.kills===s.kills&&rows[i-1].placement===r.placement;return `<tr><td class="rank">${tied?'TIE':String(i+1).padStart(2,'0')}</td><td><strong>${esc(r.teamName)}</strong>${r.placement===1?' <span class="badge">BOOYAH</span>':''}</td><td>#${r.placement}</td><td>${s.kills}</td><td>${s.placement}</td><td>${s.adjustment>0?'+':''}${s.adjustment}</td><td class="total">${s.total}</td><td class="no-print"><button onclick="details('${r.teamId}')">Players / penalties</button></td></tr>`;}).join('')}</tbody></table>`:`<table><thead><tr><th>Rank</th><th>Player</th><th>Team</th><th>Kills</th></tr></thead><tbody>${players.map((p,i)=>`<tr><td class="rank">${i&&players[i-1].kills===p.kills?players.findIndex(x=>x.kills===p.kills)+1:i+1}</td><td><strong>${esc(p.name)}</strong>${p.isSubstitute?' <span class="badge">SUB</span>':''}</td><td>${esc(p.teamName)}</td><td class="total">${p.kills}</td></tr>`).join('')}</tbody></table>`}</section><p class="caption">TEAM RANKING: TOTAL POINTS → KILLS → BOOYAHS → PLACEMENT POINTS</p>`;}
+function results(){if(selected==="__overall__"&&state.matches.length)return overallResults();if(!state.matches.length)return header('The scoreboard','Standings')+'<div class="panel empty"><h2>No matches recorded</h2><p>Your verified match tables and player leaderboards will appear here.</p><button class="primary" onclick="go(\'upload\')">Add the first match</button></div>';const m=state.matches.find(m=>m.id===selected)||state.matches.at(-1);selected=m.id;const rows=rankedRows(m),players=m.rows.flatMap(r=>r.players.map(p=>({...p,teamName:r.teamName}))).sort((a,b)=>b.kills-a.kills);return header('Verified match results',esc(m.name),'<div class="actions"><button onclick="deleteMatch()">Delete match</button><button onclick="openPoster()">Scoreboard graphic</button><button onclick="downloadCSV()">Export CSV ↓</button><button class="primary" onclick="printResults()">Print / save PDF ↗</button></div>')+`<div class="form-grid no-print"><label>Match<select id="match-select"><option value="__overall__">Overall points table</option>${state.matches.map(x=>`<option value="${x.id}" ${m.id===x.id?'selected':''}>${esc(x.name)} · ${esc(x.map)}</option>`).join('')}</select></label><div class="notice">${esc(m.map)} · 12 teams<br>1 kill = 1 point. Host resolves any remaining ties.</div></div><div class="tabs"><button class="${tab==='teams'?'active':''}" onclick="tab='teams';render()">Team standings</button><button class="${tab==='players'?'active':''}" onclick="tab='players';render()">Player kill leaderboard</button></div><section class="panel table-wrap">${tab==='teams'?`<table><thead><tr><th>Rank</th><th>Team</th><th>Finish</th><th>Kills</th><th>Placement pts</th><th>Adjustment</th><th>Total pts</th><th class="no-print">Manage</th></tr></thead><tbody>${rows.map((r,i)=>{const s=score(r),prev=i?score(rows[i-1]):null,tied=prev&&prev.total===s.total&&prev.kills===s.kills&&rows[i-1].placement===r.placement;return `<tr><td class="rank">${tied?'TIE':String(i+1).padStart(2,'0')}</td><td><strong>${esc(r.teamName)}</strong>${r.placement===1?' <span class="badge">BOOYAH</span>':''}</td><td>#${r.placement}</td><td>${s.kills}</td><td>${s.placement}</td><td>${s.adjustment>0?'+':''}${s.adjustment}</td><td class="total">${s.total}</td><td class="no-print"><button onclick="details('${r.teamId}')">Players / penalties</button></td></tr>`;}).join('')}</tbody></table>`:`<table><thead><tr><th>Rank</th><th>Player</th><th>Team</th><th>Kills</th></tr></thead><tbody>${players.map((p,i)=>`<tr><td class="rank">${i&&players[i-1].kills===p.kills?players.findIndex(x=>x.kills===p.kills)+1:i+1}</td><td><strong>${esc(p.name)}</strong>${p.isSubstitute?' <span class="badge">SUB</span>':''}</td><td>${esc(p.teamName)}</td><td class="total">${p.kills}</td></tr>`).join('')}</tbody></table>`}</section><p class="caption">TEAM RANKING: TOTAL POINTS → KILLS → BOOYAHS → PLACEMENT POINTS</p>`;}
 
 function details(teamId){const m=state.matches.find(m=>m.id===selected),r=m.rows.find(r=>r.teamId===teamId);modal(`<h2>${esc(r.teamName)}</h2>${r.players.map(p=>`<div class="match-item"><span>${esc(p.name)}${p.isSubstitute?' <span class="badge">SUB</span>':''}</span><strong>${p.kills} kills</strong></div>`).join('')}<h3 style="margin-top:24px">Point adjustments</h3>${r.adjustments.map(a=>`<p>${a.value>0?'+':''}${a.value} pts · ${esc(a.reason)}<br><small>${new Date(a.at).toLocaleString('en-IN')}</small></p>`).join('')||'<p>No adjustments applied.</p>'}<form id="adjust"><div class="form-grid"><label>Points (+ or −)<input name="value" type="number" required min="-999" max="999" step="1" placeholder="−5"></label><label>Reason<input name="reason" required maxlength="200" placeholder="Explain the host decision"></label></div><div class="actions"><button type="button" onclick="closeModal()">Close</button><button class="primary">Apply adjustment</button></div><p id="adjust-error" class="error"></p></form>`);$('#adjust').onsubmit=async e=>{e.preventDefault();const value=Number(e.target.value.value),reason=e.target.reason.value.trim();if(!Number.isInteger(value)||!value||!reason)return $('#adjust-error').textContent='Enter non-zero whole points and a reason.';r.adjustments.push({value,reason,at:new Date().toISOString()});try{await save();closeModal();render();toast('Adjustment recorded');}catch(e){r.adjustments.pop();$('#adjust-error').textContent=e.message;}};}
 
@@ -352,10 +353,23 @@ async function logout(){if(busy)return toast('Wait for reading to finish.');if(d
 
 
 
+let scanControl=null,scanTimer=null;
 function setMatchLoading(active){
-  const overlay=document.querySelector('#match-loading');
-  if(overlay){overlay.hidden=!active;document.querySelector('#app').inert=active;}
   document.querySelector('#review')?.setAttribute('aria-busy',String(active));
+  if(!active){clearInterval(scanTimer);scanTimer=null;scanControl=null;document.querySelector('#scan-card')?.remove();}
+}
+// Reading progress stays on the page: one line per screenshot, elapsed time, and a way out.
+function showScanCard(files){
+  const host=$('#review');if(!host)return;const started=Date.now();
+  host.innerHTML=`<section class="scan-card" id="scan-card"><div class="scan-card-head"><div><h2>Reading ${files.length} screenshot${files.length===1?'':'s'}</h2><p id="scan-card-note" aria-live="polite">Usually 5 to 15 seconds per screenshot.</p></div><button type="button" id="scan-cancel">Cancel</button></div><div class="scan-meter" aria-hidden="true"><span id="scan-meter-bar"></span></div><ol class="scan-list">${files.map((f,i)=>`<li id="scan-item-${i}" class="is-waiting">${images[i]?.url?`<img src="${images[i].url}" alt="">`:''}<span class="scan-name">${esc(f.name)}</span><span class="scan-state">Waiting</span></li>`).join('')}</ol></section>`;
+  $('#scan-cancel').onclick=()=>{scanControl?.abort();$('#scan-cancel').disabled=true;$('#scan-card-note').textContent='Stopping after the current step…';};
+  clearInterval(scanTimer);scanTimer=setInterval(()=>{const note=$('#scan-card-note'),seconds=Math.round((Date.now()-started)/1000);if(note&&!$('#scan-cancel')?.disabled)note.textContent=`${seconds} s so far · usually 5 to 15 seconds per screenshot`;},1000);
+  host.querySelector('#scan-card').scrollIntoView({block:'nearest'});
+}
+function markScanItem(index,value){
+  const item=document.getElementById('scan-item-'+index);if(!item)return;
+  const state=value>=1?'is-done':value>0?'is-active':'is-waiting';if(item.classList.contains(state))return;
+  item.className=state;item.querySelector('.scan-state').textContent=value>=1?'Done':value>0?'Reading…':'Waiting';
 }
 
 function openMatchManager(){

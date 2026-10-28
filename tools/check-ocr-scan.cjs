@@ -4,8 +4,8 @@ const batch=require('../public/ocr-batch.js'),ocr=require('../public/ocr.js');
 const fields=new Map();for(const id of ['#scan','#manual','#screenshots','#ocr-progress','#ocr-status','#match-name','#match-map'])fields.set(id,{disabled:false,hidden:true,value:id==='#match-name'?'Test':'Bermuda',textContent:''});
 fields.get('#screenshots').files=[{name:'first',size:10},{name:'second',size:10}];
 let nextURL=0,started=0,closed=0,inFlight=0,maxInFlight=0;const merges=[],completed=[];
-const context=vm.createContext({console,structuredClone,setTimeout,clearTimeout,crypto:require('node:crypto').webcrypto,
- document:{querySelector:s=>fields.get(s),createElement:()=>({})},window:{addEventListener(){},Tesseract:true,WarOCRBatch:true},navigator:{hardwareConcurrency:8,deviceMemory:8},
+const context=vm.createContext({console,structuredClone,setTimeout,clearTimeout,setInterval,clearInterval,AbortController,DOMException,crypto:require('node:crypto').webcrypto,
+ document:{querySelector:s=>fields.get(s),getElementById:()=>null,createElement:()=>({})},window:{addEventListener(){},Tesseract:true,WarOCRBatch:true},navigator:{hardwareConcurrency:8,deviceMemory:8},
  Image:class{async decode(){}},URL:{createObjectURL:()=>String(nextURL++),revokeObjectURL(){}},
  Tesseract:{createWorker:async()=>{started++;return {setParameters:async()=>{},terminate:async()=>closed++};}},
  WarOCRBatch:batch,WarOCRLearning:{load:async()=>{}},

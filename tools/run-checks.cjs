@@ -5,7 +5,7 @@
 const {spawnSync}=require('node:child_process'),path=require('node:path');
 const python=process.env.PYTHON||(process.platform==='win32'?'python':'python3');
 const logic=['check-comfort','check-graphs','check-overall','check-workspace','check-tournament','check-set-membership','check-ocr-batch','check-ocr-scan','check-ram-ocr'];
-const browser=['check-comfort-forms','check-comfort-browser','check-ocr-learning','check-brand-render'];
+const browser=['check-comfort-forms','check-scan-progress','check-comfort-browser','check-ocr-learning','check-brand-render'];
 const pythonChecks=['check-default-rosters','check-match-deletion','check-tournament-locks','check-security-policy','check-ops','check-ocr-reasoning','check-ocr-accuracy'];
 const jobs=[...logic.map(n=>[n,'node',[path.join(__dirname,n+'.cjs')]]),...pythonChecks.map(n=>[n,python,[path.join(__dirname,n+'.py')]])];
 if(process.env.CHECK_BROWSER)jobs.push(...browser.map(n=>[n,'node',[path.join(__dirname,n+'.cjs')]]));

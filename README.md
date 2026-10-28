@@ -49,9 +49,13 @@ These backups sit on the same disk as the database, so they protect against mist
 
 Requests larger than 2 MB (14 MB for a screenshot) are rejected before they are read. After repeated wrong passwords an address is locked out for 10 minutes, and every address is limited to 240 requests a minute (12 screenshot reads). Sign-ins are stored in the database, so a restart no longer signs everyone out, and only a hash of each session token is stored. The session cookie is `HttpOnly`, `SameSite=Strict` and gets `Secure` automatically on HTTPS, and pages are served with HSTS (on HTTPS), `X-Frame-Options`, a referrer policy and a content security policy. Host links use a separate read-only key that cannot call organizer APIs.
 
+### Works offline at the venue
+
+Icons are built into the app (`public/icons.js`), so they show without internet. The text fonts still come from Google Fonts when online; without internet the desk uses the system font and nothing waits on the download. Only the browser fallback reader needs internet on first use.
+
 ## FFK War tournament
 
-**Reset the war** appears at the top of War manager. After confirmation, it clears saved BR results, tournament settings/set membership, qualifiers, CS scores/history and the local unfinished draft. Registered teams, players, learned OCR corrections and organizer access are retained. Canceling or a failed save leaves the current war and draft intact.
+**Reset the war** sits in War manager under *Tools: teams, saved matches and reset*, away from everyday buttons. After confirmation, it clears saved BR results, tournament settings/set membership, qualifiers, CS scores/history and the local unfinished draft. Registered teams, players, learned OCR corrections and organizer access are retained. Canceling or a failed save leaves the current war and draft intact.
 
 The default roster also includes **FFK VINI** with FFK VINI, FFK BALA, FFK HAKAI and FFK PADHU. Existing VINI teams retain their IDs and player order; bare requested names gain the FFK prefix. The incremental default is applied once without resetting saved matches or tournament assignments. On a fresh install this extra roster stays outside the original two poster lists until selected for a war.
 
@@ -69,9 +73,16 @@ Ranking uses points, kills, wins, then placement points. Ties across the qualifi
 
 ## Workflow
 
-The compact workspace guides each match through Upload → Check results → Save & export. Drag screenshots into the upload area or choose files. Review starts with unconfirmed teams and places incomplete results first; **Confirm complete teams** clears reviewed teams from the queue. Screenshot crops sit beside player and kill controls, and source settings collapse once review starts. Use **All teams** to revisit confirmed results.
+The workspace guides each match through Upload → Check results → Save & export. Drag screenshots into the upload area or choose files, then press Read screenshots. Reading progress stays on the page: one line per screenshot, the time so far, and a Cancel button. Cancelling keeps any earlier unsaved results.
 
-Team roster search includes player names. Review includes a team filter, and saved matches can be filtered by name or map. Success notices dismiss automatically; errors remain visible until dismissed. Both use the current monochrome brand styling.
+**Checking results** shows all 12 placements on one page, one compact row each. Every player shows the screenshot crop of their name and kill count right beside the dropdown and the number, so you compare without opening anything. Each row says what it is: *Looks right* (green), *Check* (amber, with the reason, such as "1 kill count missing" or "1 substitute: make sure it is not a roster player"), or *Confirmed*. Status is shown with an icon and words, not only colour. Row totals (kills and points) update as you type.
+
+- **Confirm N that look right** confirms every green row at once; **Undo** reverses that bulk action.
+- Type a kill count straight in; <kbd>↑</kbd>/<kbd>↓</kbd> change it. <kbd>Enter</kbd> confirms the team and jumps to the next one that is not confirmed. **Next to check** jumps to the next amber row.
+- Confirmed rows collapse to one line; **Change** reopens one. **Hide confirmed** leaves only what still needs you.
+- **Save results** unlocks when all 12 are confirmed and says how many are left until then.
+
+Teams are listed one row per team with the set they play in, their players, and visible Edit and Remove buttons. Registering a team is a single form: the name and four players, with an optional substitute. Team search includes player names. Review includes a team filter, and saved matches can be filtered by name or map. Success notices dismiss automatically; errors remain visible until dismissed. Both use the current monochrome brand styling.
 
 Draft values and available evidence crops save automatically in this browser. After refreshing or signing in again, choose **Resume match** on the dashboard. Full source images must be reselected to rerun OCR or adjust panels; resumed crops remain available for review. If browser storage is full, text values are saved without crops when possible; if storage is unavailable, the draft warns you to keep the tab open. Drafts and learned OCR examples belong to this browser and site address.
 

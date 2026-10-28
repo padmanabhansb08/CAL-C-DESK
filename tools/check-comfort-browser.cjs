@@ -84,11 +84,11 @@ const server=http.createServer((req,res)=>{
     await page.getByRole('button',{name:'View the champion',exact:true}).click();
     const beforeReset=structuredClone(remote);
     await page.evaluate(()=>{draft={id:'reset-draft',name:'Unfinished',map:'Bermuda',rows:[]};window.dispatchEvent(new Event('pagehide'));});
-    await page.locator('.guide-reset').click();await page.locator('.action-confirmation').getByRole('button',{name:'Keep current war',exact:true}).click();assert.deepEqual(remote,beforeReset);
+    await page.locator('.guide-tools>summary').evaluate(el=>el.parentElement.open=true);await page.locator('.guide-reset').click();await page.locator('.action-confirmation').getByRole('button',{name:'Keep current war',exact:true}).click();assert.deepEqual(remote,beforeReset);
     assert.equal(await page.evaluate(()=>draft.id),'reset-draft','Cancel preserves draft');
-    failReset=true;await page.locator('.guide-reset').click();await page.locator('.action-confirmation').getByRole('button',{name:'Reset the war',exact:true}).click();
+    failReset=true;await page.locator('.guide-tools>summary').evaluate(el=>el.parentElement.open=true);await page.locator('.guide-reset').click();await page.locator('.action-confirmation').getByRole('button',{name:'Reset the war',exact:true}).click();
     await page.getByText('Reset failed for test',{exact:true}).waitFor();assert.deepEqual(remote,beforeReset);assert.equal(await page.evaluate(()=>draft.id),'reset-draft','Failed reset preserves draft');
-    failReset=false;await page.locator('.guide-reset').click();await page.locator('.action-confirmation').getByRole('button',{name:'Reset the war',exact:true}).click();
+    failReset=false;await page.locator('.guide-tools>summary').evaluate(el=>el.parentElement.open=true);await page.locator('.guide-reset').click();await page.locator('.action-confirmation').getByRole('button',{name:'Reset the war',exact:true}).click();
     await page.getByRole('heading',{name:'Start Set A with its screenshots.',exact:true}).waitFor();
     assert.equal(remote.matches.length,0);assert.deepEqual(remote.teams,beforeReset.teams);assert.deepEqual(remote.war.qualified,{});assert.deepEqual(remote.war.groups,{A:[],B:[]});assert.deepEqual(remote.war.cs,{});
     assert.deepEqual(remote.war.targets,{A:6,B:6,C:6},'Reset must restore six matches in every BR set');

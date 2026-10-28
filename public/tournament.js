@@ -109,7 +109,7 @@
     finally{working=false;surface?.removeAttribute('aria-busy');buttons.forEach(button=>{if(button.isConnected)button.disabled=false;});}
   }
   // Completed sets are immutable until the organizer explicitly reopens them.
-  api=async function(path,data){
+  api=async function(path,data,options){
     if(path==='state'&&data){
       // Read locks without resetting the workspace's last-seen revision.
       const response=await fetch('/api/state');
@@ -121,7 +121,7 @@
     if(path==='matches/delete'){
       const match=state.matches.find(m=>m.id===data.id);if(match?.stage&&locked(match.stage))throw Error('Reopen Set '+match.stage+' in War manager before deleting this match.');
     }
-    return prior.api(path,data);
+    return prior.api(path,data,options);
   };
   intake=function(){
     const current=draft?.stage||'',w=war();

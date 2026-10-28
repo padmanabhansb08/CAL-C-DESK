@@ -9,13 +9,14 @@
 <title>FFK / War Desk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Noto+Sans+Tamil:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Noto+Sans+Tamil:wght@400;500;600&display=swap" media="print" onload="this.media=\'all\'">
 <link rel="stylesheet" href="design-system.css?v=3">
 <link rel="stylesheet" href="style.css?v=5">
 <link rel="stylesheet" href="workspace.css?v=3">
 <link rel="stylesheet" href="brand.css?v=10">
 <link rel="stylesheet" href="usability.css?v=5">
 <link rel="stylesheet" href="simple-flow.css?v=18">
+<script src="icons.js?v=1"></script>
 <script src="vendor/tesseract.min.js" defer></script>
 <script src="digit-templates.js?v=2" defer></script>
 <script src="layout.js?v=1" defer></script>
@@ -40,16 +41,10 @@
 <link rel="stylesheet" href="comfort-forms.css?v=2">
 <link rel="stylesheet" href="comfort.css?v=3">
 <link rel="stylesheet" href="login.css?v=3">
-<script>window.addEventListener("load",function(){try{document.fonts.load("20px \"Material Symbols Outlined\"").then(function(f){if(!f.length)document.documentElement.classList.add("no-icon-font")}).catch(function(){document.documentElement.classList.add("no-icon-font")})}catch(e){}})</script></head>
+<link rel="stylesheet" href="desk.css?v=1">
+</head>
 <body>
 <div id="app"></div>
 <div id="toast" role="status"></div>
 <dialog id="modal"></dialog>
-<div id="match-loading" class="match-loading" role="status" aria-live="polite" hidden>
-  <div class="match-loading-card">
-    <div class="thinking-dots" aria-hidden="true"><span></span><span></span><span></span></div>
-    <h2>Preparing your results</h2>
-    <p>This may take a moment.</p>
-  </div>
-</div>
 </body></html>
