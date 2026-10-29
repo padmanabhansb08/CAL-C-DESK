@@ -15,7 +15,9 @@ function uiIcon(name, options = {}) {
 }
 if (typeof window !== 'undefined') window.uiIcon = uiIcon;
 
-let state={teams:[],matches:[]}, page='overview', selected=null, tab='teams', draft=null, images=[], busy=false, rosterQuery='';
+// The workspace reopens where the organizer left it. Add results is never restored: it needs a deliberate start.
+function lastPage(){try{const saved=localStorage.getItem('ffk-last-page-v1');return ['war','roster','results'].includes(saved)?saved:'war';}catch{return 'war';}}
+let state={teams:[],matches:[]}, page=lastPage(), selected=null, tab='teams', draft=null, images=[], busy=false, rosterQuery='';
 
 // Heavy tools load on first use, in order: the screenshot reader on the results check page, the export
 // tools when Export is chosen, and the in-browser reader only when the server cannot read screenshots.
@@ -105,7 +107,7 @@ function modal(html,options={}){
 
 function closeModal(){$('#modal').close();}
 
-async function go(next){if(busy){toast('Wait for screenshot reading to finish.','warning');return;}if(page==='upload'&&draft&&next!=='upload'&&!await confirmAction({title:'Leave this match?',message:'Your unsaved changes will be lost.',accept:'Leave match',cancel:'Stay here'}))return;page=next;render();}
+async function go(next){if(busy){toast('Wait for screenshot reading to finish.','warning');return;}if(page==='upload'&&draft&&next!=='upload'&&!await confirmAction({title:'Leave this match?',message:'Your unsaved changes will be lost.',accept:'Leave match',cancel:'Stay here'}))return;if(next==='overview')next='war';page=next;try{localStorage.setItem('ffk-last-page-v1',next);}catch{}render();}
 
 window.addEventListener('beforeunload',e=>{if(busy||(draft&&(!window.isMatchDraftSaved||!window.isMatchDraftSaved()))){e.preventDefault();e.returnValue='';}});
 
@@ -170,18 +172,18 @@ function auth(setup,needsToken){
 }
 
 // The workspace shell, rendered once in its final form: sidebar, top bar and the current page.
-const NAV=[['overview','Home','home'],['war','War manager','emoji_events'],['roster','Teams','groups'],['upload','Add results','upload_file'],['results','Standings','leaderboard']];
+const NAV=[['war','Tournament','emoji_events'],['upload','Add results','upload_file'],['roster','Teams','groups'],['results','Standings','leaderboard']];
 const SOCIAL_ICON={instagram:'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0M17.5 6.5h.01',youtube:'M9 8l7 4-7 4zM3 5h18v14H3z'};
 const socialLinks=()=>`<div class="channel-socials">${[['instagram','https://www.instagram.com/ffk_prasanth/','Instagram'],['youtube','https://www.youtube.com/@FFK_Prasanth','YouTube']].map(([k,href,label])=>`<a href="${href}" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on ${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SOCIAL_ICON[k]}"/></svg></a>`).join('')}</div>`;
 let renderedPage=null;
 function render(){
   const title=(NAV.find(([id])=>id===page)||[0,'Workspace'])[1],signout=`<button type="button" class="signout" onclick="logout()">${uiIcon('logout',{size:'sm'})}<span>Sign out</span></button>`;
-  $('#app').innerHTML=`<div class="shell channel-shell comfort-shell" data-page="${page}"><aside class="sidebar"><div class="brand channel-brand">${page==='overview'?'<span class="channel-monogram">FFK</span>':'<img class="channel-profile" src="assets/channel-avatar.jpg" alt="FFK Prasanth channel profile">'}<span class="channel-wordmark">FFK<br>PRASANTH<small>WAR DESK</small></span></div>
+  $('#app').innerHTML=`<div class="shell channel-shell comfort-shell" data-page="${page}"><aside class="sidebar"><div class="brand channel-brand">${page==='war'?'<span class="channel-monogram">FFK</span>':'<img class="channel-profile" src="assets/channel-avatar.jpg" alt="FFK Prasanth channel profile">'}<span class="channel-wordmark">FFK<br>PRASANTH<small>WAR DESK</small></span></div>
     <nav class="nav" aria-label="Main">${NAV.map(([id,label,icon])=>`<button type="button" class="${page===id?'active':''}" onclick="${id==='upload'?'navAddResults()':`go('${id}')`}"${page===id?' aria-current="page"':''}><span class="nav-icon">${uiIcon(icon,{size:'md'})}</span><span class="comfort-nav-label">${label}</span></button>`).join('')}</nav>
     <button type="button" class="host-access-button" onclick="openHostAccess()">${uiIcon('manage_accounts',{size:'md'})}<span>Host desk</span></button>
     <div class="sidebar-footer">${socialLinks()}${signout}</div></aside>
     <main class="main"><header class="topbar"><span class="comfort-top-title"><span>FFK WAR DESK</span><strong>${title}</strong></span><div class="topbar-right"><button type="button" class="sync-button" onclick="refreshWorkspace(true)" aria-label="Refresh saved data" title="Refresh saved data"><span id="sync-status">Up to date</span> ↻</button><details class="mobile-account"><summary aria-label="Channel and account menu">•••</summary><div class="mobile-account-panel"><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openHostAccess()">${uiIcon('manage_accounts',{size:'sm'})}<span>Host desk</span></button>${socialLinks()}${signout}</div></details></div></header>
-    <div class="content">${page==='war'?renderWar():page==='overview'?overview():page==='roster'?roster():page==='upload'?(window.WarOCR?intake():'<div class="panel empty" role="status"><p>Loading the screenshot tools…</p></div>'):results()}</div></main></div>`;
+    <div class="content">${page==='war'?renderWar():page==='roster'?roster():page==='upload'?(window.WarOCR?intake():'<div class="panel empty" role="status"><p>Loading the screenshot tools…</p></div>'):results()}</div></main></div>`;
   if(page==='upload'&&!window.WarOCR){loadModules('reader').then(()=>{if(page==='upload')render();}).catch(e=>{const box=document.querySelector('.content .empty p');if(box)box.textContent=e.message;});return;}
   bind();
   // A new page starts at the top with focus on its heading, so keyboard and screen-reader users land there.
@@ -439,7 +441,7 @@ function details(teamId){
     <form id="correct" class="details-section"><h3>Players and kills</h3>
       ${r.players.map((p,j)=>`<div class="correct-row"><label for="correct-k${j}">${esc(p.name)}${p.isSubstitute?' <span class="badge">SUB</span>':''}</label><input id="correct-k${j}" name="k${j}" type="number" inputmode="numeric" min="0" max="99" step="1" required value="${p.kills}" ${locked?'disabled':''}></div>`).join('')}
       <div class="correct-row"><label for="correct-place">Finish</label><select id="correct-place" name="placement" ${locked?'disabled':''}>${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${r.placement===i+1?'selected':''}>#${i+1}${i+1===r.placement?'':' · swaps with '+esc(m.rows.find(x=>x.placement===i+1)?.teamName||'')}</option>`).join('')}</select></div>
-      ${locked?`<p class="notice">Set ${esc(m.stage)} is locked. Reopen it in War manager to correct this result.</p>`:`<label>Reason for the correction<input name="reason" maxlength="200" placeholder="e.g. Kill feed review showed 6, not 5"></label><div class="actions"><button type="submit">Save correction</button></div>`}
+      ${locked?`<p class="notice">Set ${esc(m.stage)} is locked. Reopen it in Tournament to correct this result.</p>`:`<label>Reason for the correction<input name="reason" maxlength="200" placeholder="e.g. Kill feed review showed 6, not 5"></label><div class="actions"><button type="submit">Save correction</button></div>`}
       <p id="correct-error" class="error" role="alert"></p>
       ${history.length?`<details class="correction-log"><summary>${history.length} earlier correction${history.length===1?'':'s'}</summary>${history.map(c=>`<p>${esc(c.changes.join(' · '))}<br><small>${esc(c.reason)} · ${new Date(c.at).toLocaleString('en-IN')}</small></p>`).join('')}</details>`:''}
     </form>

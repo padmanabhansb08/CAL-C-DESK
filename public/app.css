@@ -4132,7 +4132,7 @@ dialog button:focus-visible {
     padding: 0 5px;
     height: 76px;
     border-top: 1px solid var(--c-line-strong);
-    background: #141216f5;
+    background: var(--c-black);
     padding-bottom: env(safe-area-inset-bottom);
   }
   .comfort-shell .nav {
@@ -5993,3 +5993,81 @@ html,.sidebar,.main,.content,.table-wrap{scrollbar-width:thin;scrollbar-color:va
 .war-table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden}
 .war-section,.home-section,.home,.war-workspace,.home-grid>*{min-width:0;max-width:100%}
 .war-table-wrap{position:relative}
+
+/* ── Tournament page: summary first, then what needs me, then the stage ─────────────── */
+.page-head h1{font-size:15px;font-weight:600;color:var(--c-text-3);letter-spacing:0}
+.page-meta{margin:6px 0 0;font-size:22px;line-height:1.25;font-weight:700;color:var(--c-text);letter-spacing:-.005em}
+.war-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:0 0 var(--space-5);border:1px solid var(--c-line);border-radius:var(--r-lg);background:var(--c-surface)}
+.war-facts>div{padding:var(--space-3) var(--space-4);min-width:0}
+.war-facts>div+div{border-left:1px solid var(--c-line)}
+.war-facts dt{font-size:13px;color:var(--c-text-3);font-weight:500}
+.war-facts dd{margin:2px 0 0;font-size:24px;line-height:1.2;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.war-facts small{display:block;margin-top:2px;font-size:13px;color:var(--c-text-3)}
+.war-attention{margin:0 0 var(--space-5);border:1px solid rgb(var(--c-amber-rgb) / 0.5);border-radius:var(--r-lg);background:rgb(var(--c-amber-rgb) / 0.06);padding:var(--space-3) var(--space-4)}
+.war-attention h2{margin:0 0 var(--space-2);font-size:15px;font-weight:600;color:var(--c-amber)}
+.war-attention h2 span{margin-left:6px;font-variant-numeric:tabular-nums}
+.war-attention ul{list-style:none;margin:0;padding:0}
+.war-attention li{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);padding:var(--space-2) 0;border-top:1px solid rgb(var(--c-amber-rgb) / 0.22)}
+.war-attention li:first-child{border-top:0}
+.war-attention li>span{color:var(--c-text);font-size:15px;min-width:0}
+.war-count{justify-content:flex-start;padding-top:var(--space-3);border-top:1px solid var(--c-line)}
+.war-count input{width:88px}
+.fx-team{grid-template-columns:28px minmax(0,1fr) auto auto}
+.fx-note{font-size:12px;font-weight:600;color:var(--c-text-3);white-space:nowrap}
+.fx-team.is-winner .fx-note{color:var(--c-gold)}
+.fx-team.is-out{opacity:1}
+.fx-team.is-out .fx-name,.fx-team.is-out .fx-score{color:var(--c-text-3)}
+.fx-note.is-second{color:var(--c-amber)}
+
+/* Selected and informational states are neutral; red is only ever the action. */
+.comfort-set-context{background:var(--c-surface-2)!important;border-color:var(--c-line-strong)!important}
+@media (max-width:760px){
+  .comfort-shell .nav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .comfort-shell .sidebar{background:var(--c-black)}
+  .comfort-shell .nav button.active{border-top-color:var(--c-text)!important;background:var(--c-surface-2)}
+}
+
+/* ── Phone: one obvious task per screen ───────────────────────────────────────────────── */
+@media (max-width:760px){
+  .page-meta{font-size:19px}
+  .war-facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .war-facts>div:nth-child(3){border-left:0}
+  .war-facts>div:nth-child(n+3){border-top:1px solid var(--c-line)}
+  .war-facts dd{font-size:20px}
+  /* The next action stays in reach above the tab bar. */
+  .comfort-shell[data-page="war"] .page-actions{position:fixed;left:0;right:0;bottom:calc(76px + env(safe-area-inset-bottom));z-index:30;padding:10px 16px;background:var(--c-bg);border-top:1px solid var(--c-line)}
+  .comfort-shell[data-page="war"] .page-actions button{width:100%;min-height:48px;font-size:16px;justify-content:center}
+  .comfort-shell[data-page="war"] .content{padding-bottom:200px}
+  /* The stage strip becomes a compact four-step progress bar. */
+  .stage-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .stage:nth-child(n){border-left:0;border-top:0}
+  .stage+.stage{border-left:1px solid var(--c-line)}
+  .stage>button,.stage-item{flex-direction:column;justify-content:center;gap:6px;min-height:68px;padding:10px 4px;text-align:center}
+  .stage-text{align-items:center}
+  .stage-text strong{font-size:13px}
+  .stage-text small{display:none}
+  .stage-marker{flex-basis:22px;width:22px;height:22px}
+  /* Standings keep only what decides the cutoff: rank, team, kills, points, status. */
+  .war-table{min-width:0}
+  .war-table .col-extra{display:none}
+  .war-table th,.war-table td{padding:10px 8px}
+  .war-table-wrap{overflow:visible}
+  .war-table .team-cell{white-space:normal;line-height:1.3}
+  .war-attention li{flex-wrap:wrap}
+  .fixture.is-final{padding:var(--space-4)}
+  .champion{flex-direction:column;align-items:flex-start}
+}
+
+/* The Tournament tables win over the older channel-shell table rules: no boxes inside boxes, no shouting headers. */
+.channel-shell .table-wrap.war-table-wrap{border:0;border-radius:0;background:transparent}
+.channel-shell .war-table-wrap .war-table th{background:transparent;text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--c-text-3);position:static}
+.channel-shell .war-table-wrap .war-table td{background:transparent}
+.channel-shell .war-table-wrap .war-table tr:hover td{background:var(--c-surface-2)}
+@media (max-width:760px){
+  .channel-shell .war-table-wrap .war-table{min-width:0;width:100%}
+  .channel-shell .war-table-wrap .war-table .col-extra{display:none}
+}
+.channel-shell .war-table-wrap .war-table{border-spacing:0}
+.channel-shell .war-table-wrap .war-table th:first-child,.channel-shell .war-table-wrap .war-table td:first-child,
+.channel-shell .war-table-wrap .war-table th:nth-child(2),.channel-shell .war-table-wrap .war-table td:nth-child(2){position:static;box-shadow:none;background:transparent}
+.channel-shell .war-table-wrap .war-table tr:hover td:first-child,.channel-shell .war-table-wrap .war-table tr:hover td:nth-child(2){background:var(--c-surface-2)}

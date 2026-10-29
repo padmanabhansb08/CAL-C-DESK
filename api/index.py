@@ -321,7 +321,7 @@ def api_state_post():
                     or old_members != new_members
                     or old_war["qualified"][stage] != new_war["qualified"][stage]
                 ):
-                    return err("Reopen Set " + stage + " in War manager before changing its results or qualifiers.", 409)
+                    return err("Reopen Set " + stage + " in Tournament before changing its results or qualifiers.", 409)
 
             problem = validate.check_update(previous, data)
             if problem:
@@ -433,7 +433,7 @@ def api_matches_delete():
             current = json.loads(row[0]) if row else {"teams": [], "matches": []}
             target = next((m for m in current["matches"] if m.get("id") == match_id), None)
             if target and current.get("war", {}).get("qualified", {}).get(target.get("stage")):
-                return err("Reopen this set in War manager before deleting its results.", 409)
+                return err("Reopen this set in Tournament before deleting its results.", 409)
             remaining = [m for m in current["matches"] if m.get("id") != match_id]
             if len(remaining) == len(current["matches"]):
                 return err("This match has already been removed. Refresh the page.", 404)

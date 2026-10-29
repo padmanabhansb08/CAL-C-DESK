@@ -84,7 +84,7 @@
       if(button)button.onclick=async()=>{
         const set=draft?.stage||document.querySelector('#war-stage')?.value;
         if(set&&!allowed(set))return toast(set==='C'?'Confirm qualifiers from A and B before Set C.':'Register at least 12 available teams for this set.','error');
-        if(set&&matches(state,set).length>=war().targets[set])return toast('Planned match count reached. Update it in War manager first.','error');
+        if(set&&matches(state,set).length>=war().targets[set])return toast('Planned match count reached. Update it in Tournament first.','error');
         return run();
       };
     }
@@ -107,11 +107,11 @@
       if(response.status===401){sessionExpired();const e=Error('Your sign-in has ended. Sign in again; your match draft is kept.');e.status=401;e.expired=true;throw e;}
       if(!response.ok)throw Error(old.error||'Could not check tournament locks.');
       for(const set of sets)if(old.war?.qualified[set]&&data.war?.qualified[set]){
-        if(JSON.stringify(matches(old,set))!==JSON.stringify(matches(data,set))||JSON.stringify(members(old.war,set))!==JSON.stringify(members(data.war,set)))throw Error('Set '+set+' is locked. Reopen qualification in War manager before changing its results or teams.');
+        if(JSON.stringify(matches(old,set))!==JSON.stringify(matches(data,set))||JSON.stringify(members(old.war,set))!==JSON.stringify(members(data.war,set)))throw Error('Set '+set+' is locked. Reopen qualification in Tournament before changing its results or teams.');
       }
     }
     if(path==='matches/delete'){
-      const match=state.matches.find(m=>m.id===data.id);if(match?.stage&&locked(match.stage))throw Error('Reopen Set '+match.stage+' in War manager before deleting this match.');
+      const match=state.matches.find(m=>m.id===data.id);if(match?.stage&&locked(match.stage))throw Error('Reopen Set '+match.stage+' in Tournament before deleting this match.');
     }
     return prior.api(path,data,options);
   };
@@ -119,7 +119,7 @@
     if(draft?.stage){
       const set=draft.stage;
       if(!allowed(set))return toast('This set is locked or does not have 12 available teams.','error');
-      if(matches(state,set).length>=war().targets[set])return toast('The planned match count is reached. Increase it in War manager first.','error');
+      if(matches(state,set).length>=war().targets[set])return toast('The planned match count is reached. Increase it in Tournament first.','error');
       try{registerResult({...state,war:structuredClone(war())},draft);}catch(e){return toast(e.message,'error');}
     }
     return prior.finalize();

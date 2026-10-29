@@ -67,7 +67,7 @@ async function run(){
     assert.equal(await page.evaluate(()=>document.activeElement.id),'form-error','Failed save should focus the inline error');
     await page.getByRole('button',{name:'Save roster',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#modal').open);
     assert.equal(await page.evaluate(()=>state.teams[0].name),'FFK Retry Team','Retry should save the edited team');
-    await page.locator('.nav').getByRole('button',{name:'War manager'}).click();
+    await page.locator('.nav').getByRole('button',{name:'Tournament'}).click();
     await page.getByRole('button',{name:'Add Set A match 1'}).click();
     assert.equal(await page.locator('#war-stage').inputValue(),'A');
     assert.equal(await page.locator('#match-map').inputValue(),'Bermuda');

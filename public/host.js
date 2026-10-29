@@ -13,7 +13,7 @@
   const staged=state.matches.filter(m=>m.stage);return staged.at(-1)?.stage||'all';
  }
  const stage=()=>mode==='auto'?activeStage():mode;
- // Only the matches of the chosen stage count; every set starts from zero, as in War manager.
+ // Only the matches of the chosen stage count; every set starts from zero, as in Tournament.
  function stageState(set){return set==='all'||set==='finals'?state:{...state,matches:state.matches.filter(m=>m.stage===set)};}
  function metrics(items){return items.map(([label,value])=>`<div class="metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('');}
  function spotlight(){const t=stats.teams.find(t=>t.teamId===chosen)||stats.teams[0];if(!t){$('#team-detail').textContent='Team stats appear after the first saved match.';return;}chosen=t.teamId;
