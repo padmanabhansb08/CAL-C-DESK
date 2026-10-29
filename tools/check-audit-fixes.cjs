@@ -185,10 +185,10 @@ async function run(){
     // #11 Hold means hold, even for a refresh already in flight; #36 the broadcast follows the stage.
     const host=await context.newPage();host.on('pageerror',e=>pageErrors.push('host: '+e.message));
     await host.goto(origin+'/host.html#key=k');await host.waitForFunction(()=>document.querySelector('#match-context').textContent.includes('saved'));
-    assert.equal((await host.locator('h1').textContent()).trim(),'Set B · Qualifier standings','#36 follows the latest tournament stage');
+    assert.equal((await host.locator('h1').textContent()).trim(),'Set A · Qualifier standings','#36 follows the current unqualified stage');
     const context0=await host.locator('#match-context').textContent();
     let release;hostDelay=new Promise(r=>release=r);
-    fixture.matches.push(match(4,B,'B'));
+    fixture.matches.push(match(4,A,'A'));
     await host.click('#refresh');await host.waitForTimeout(200);await host.click('#freeze');release();hostDelay=null;await host.waitForTimeout(400);
     assert.equal(await host.locator('#match-context').textContent(),context0,'#11 a held screen does not change');
     await host.click('#freeze');await host.waitForFunction(c=>document.querySelector('#match-context').textContent!==c,context0);

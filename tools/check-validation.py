@@ -54,7 +54,7 @@ refused(lambda s: s['war']['qualified'].update(A=['ghost'] * 6), 'qualifiers mus
 refused(lambda s: s['war']['qualified'].update(A=[f't{i}' for i in range(12, 18)]), 'qualifiers must be 6 different teams')
 refused(lambda s: s['war']['groups'].update(B=s['war']['groups']['A']), 'both Set A and Set B')
 refused(lambda s: s['matches'].append(match(3, [f't{i}' for i in range(12)], 'A')), 'more saved matches than planned')
-refused(lambda s: s['matches'][1]['rows'][0].update(teamId='t0'), 'not in Set B')
+refused(lambda s: s['matches'][1]['rows'][0].update(teamId='t0', players=copy.deepcopy(s['matches'][0]['rows'][0]['players'])), 'not in Set B')
 refused(lambda s: s['matches'][0]['rows'][0]['adjustments'].extend([{'id': 'a1', 'value': -5, 'reason': 'late'}, {'id': 'a1', 'value': -5, 'reason': 'late'}]), 'recorded twice')
 refused(lambda s: s['matches'][0]['rows'][0]['adjustments'].append({'value': 0, 'reason': 'x'}), 'non-zero')
 refused(lambda s: s['teams'][1].update(name='ffk team 0'), 'used twice')
@@ -63,6 +63,9 @@ refused(lambda s: s['teams'][1].update(name='ffk team 0'), 'used twice')
 qualified = copy.deepcopy(good)
 qualified['war']['qualified'] = {'A': [f't{i}' for i in range(6)], 'B': [f't{i}' for i in range(12, 18)],
                                  'C': ['t0', 't1', 't12', 't13']}
+# The final-four fixture must have a completed semi-final, with these seeds actually on top.
+c_teams = ['t0', 't1', 't12', 't13', 't2', 't3', 't4', 't5', 't14', 't15', 't16', 't17']
+qualified['matches'].append(match(3, c_teams, 'C'))
 assert validate.problems(qualified) == [], validate.problems(qualified)
 
 
@@ -90,6 +93,93 @@ assert validate.check_update(legacy, copy.deepcopy(legacy)) is None
 worse = copy.deepcopy(legacy)
 worse['teams'].append(None)
 assert validate.check_update(legacy, worse)
+
+# A legacy problem is local to its field and value, not a reusable free pass for its message.
+worse = copy.deepcopy(legacy)
+worse['matches'][0]['rows'][1]['players'][0]['kills'] = -5
+assert validate.check_update(legacy, worse), 'a second bad kill field cannot hide behind the old message'
+worse = copy.deepcopy(legacy)
+worse['matches'][0]['rows'][0]['players'][0]['kills'] = -90
+assert validate.check_update(legacy, worse), 'an existing invalid value cannot be replaced by another invalid value'
+fixed = copy.deepcopy(legacy)
+fixed['matches'][0]['rows'][0]['players'][0]['kills'] = 2
+assert validate.check_update(legacy, fixed) is None
+deleted = copy.deepcopy(legacy)
+deleted['matches'].pop(0)
+assert validate.check_update(legacy, deleted) is None, 'deleting the invalid result repairs it'
+reordered = copy.deepcopy(legacy)
+reordered['matches'][0]['rows'].reverse()
+assert validate.check_update(legacy, reordered) is None, 'moving a historic row does not create a new invalid value'
+
+# JSON shapes must produce a reason, never an unhashable-ID/.get exception.
+malformed = [
+    lambda s: s['matches'][0].update(id=[]),
+    lambda s: s['matches'][0]['rows'][0].update(placement=[]),
+    lambda s: s['matches'][0]['rows'][0].update(teamId={}),
+    lambda s: s['war']['groups'].update(A=[{}]),
+    lambda s: s['war'].update(groups=[]),
+    lambda s: s['war'].update(qualified=[]),
+    lambda s: s['war'].update(cs=[]),
+    lambda s: s['war'].update(cs={'q1': []}),
+    lambda s: s.update(war=['bad']),
+    lambda s: s['matches'][0]['rows'][0]['adjustments'].append({'id': [], 'value': -5, 'reason': 'x'}),
+]
+for mutate in malformed:
+    candidate = copy.deepcopy(good)
+    mutate(candidate)
+    assert validate.check_update(good, candidate), candidate
+
+# Players must have names and belong to their team, except explicit match-only substitutes.
+refused(lambda s: s['matches'][0]['rows'][0]['players'][0].update(name='   '), 'incomplete')
+refused(lambda s: s['matches'][0]['rows'][0]['players'][0].update(playerId='invented'), 'does not belong')
+refused(lambda s: s['matches'][0]['rows'][0]['players'][0].update(playerId='p12-0'), 'does not belong')
+refused(lambda s: s['teams'][0].update(players=[]), 'invalid player list')
+refused(lambda s: s['teams'][0]['players'].extend([{'id': 'p-extra-1', 'name': 'Extra 1'}, {'id': 'p-extra-2', 'name': 'Extra 2'}]), 'invalid player list')
+sub = copy.deepcopy(good)
+sub['matches'][0]['rows'][0]['players'][0].update(playerId='sub-match-1', name='Guest', isSubstitute=True)
+assert validate.check_update(good, sub) is None
+replaced = copy.deepcopy(good)
+replaced['teams'][0]['players'][0] = {'id': 'new-person', 'name': 'New person'}
+assert validate.check_update(good, replaced) is None, 'historic kills stay with a replaced roster player'
+new_match = copy.deepcopy(replaced)
+new_match['matches'].append(match(9, [f't{i}' for i in range(12)]))
+assert 'does not belong' in validate.check_update(replaced, new_match), 'removed players are not silently re-used in new matches'
+
+# Completion, ranking and tie decisions are enforced on the server, not just in the browser.
+early = copy.deepcopy(good)
+early['war']['targets']['A'] = 6
+early['war']['qualified']['A'] = [f't{i}' for i in range(6)]
+assert 'Save exactly' in validate.check_update(good, early)
+wrong = copy.deepcopy(good)
+wrong['war']['qualified']['A'] = [f't{i}' for i in range(6, 12)]
+assert 'standings' in validate.check_update(good, wrong)
+wrong = copy.deepcopy(good)
+wrong['war']['qualified']['A'] = [f't{i}' for i in reversed(range(6))]
+assert 'order' in validate.check_update(good, wrong)
+tie = copy.deepcopy(good)
+tie['war']['targets']['A'] = 2
+tie_ids = [f't{i}' for i in range(12)]
+tie_ids[5], tie_ids[6] = tie_ids[6], tie_ids[5]
+tie['matches'].append(match(4, tie_ids, 'A'))
+tie['war']['qualified']['A'] = [f't{i}' for i in range(6)]
+assert 'host reason' in validate.check_update(good, tie)
+tie['war']['decisions']['A'] = {'choices': ['t5'], 'reason': 'Host tie decision'}
+assert validate.check_update(good, tie) is None
+tie['war']['decisions']['A']['choices'] = ['t7']
+assert 'host reason' in validate.check_update(good, tie)
+for value in (None, 'single-elimination', 'anything'):
+    bypass = copy.deepcopy(champion)
+    bypass['war']['csFormat'] = value
+    assert 'format' in validate.check_update(qualified, bypass), 'changing format must not bypass bracket checks'
+old_format = copy.deepcopy(champion)
+old_format['war'].pop('csFormat')
+assert validate.check_update(old_format, copy.deepcopy(old_format)) is None, 'unchanged old knockout history still saves'
+changed_format = copy.deepcopy(old_format)
+changed_format['war']['cs']['final']['winner'] = 'invented-champion'
+assert validate.check_update(old_format, changed_format), 'old format cannot hide a changed fictional champion'
+changed_format = copy.deepcopy(old_format)
+changed_format['war']['cs']['unknown'] = {'winner': 'invented-champion'}
+assert validate.check_update(old_format, changed_format), 'old format cannot hide an added fixture'
 
 # --- through the real server
 import server  # noqa: E402
@@ -135,6 +225,12 @@ with tempfile.TemporaryDirectory() as folder:
     status, body, _ = post('/api/state', bad, cookie)
     assert status == 422 and 'Not saved' in body['error'], (status, body)
     assert json.loads(server.get('state')) == good, 'a refused save stores nothing'
+    for mutate in malformed:
+        candidate = copy.deepcopy(good)
+        mutate(candidate)
+        status, body, _ = post('/api/state', candidate, cookie)
+        assert status == 422 and 'Not saved' in body['error'], (status, body)
+        assert json.loads(server.get('state')) == good
     host.shutdown()
     host.server_close()
 

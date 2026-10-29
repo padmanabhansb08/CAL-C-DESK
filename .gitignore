@@ -10,3 +10,8 @@ __pycache__/
 node_modules/
 war.sqlite3
 war.sqlite3-*
+Claude outputs/
+_to_delete/
+audit-artifacts/
+server.log
+

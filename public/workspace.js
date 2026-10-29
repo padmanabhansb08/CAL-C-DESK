@@ -95,7 +95,7 @@
   // ---- Results check: one compact row per placement, screenshot evidence always beside the numbers, keyboard-first.
   // oneAtATime: show only the current placement (the default on phones, where twelve full rows make a
   // ten-thousand-pixel page). The jump list and progress stay pinned above it.
-  let hideConfirmed=false,lastBulk=null,lastConfirmed=null,oneAtATime=null,currentRow=0;
+  let hideConfirmed=false,lastBulk=null,lastConfirmed=null,oneAtATime=null,oneAtATimeExplicit=false,currentRow=0,reviewDraftIdentity=null;
   const reduceMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
   const shortName=name=>String(name||'').replace(/^FFK\s+/i,'').trim()||String(name||'');
   const teamOf=r=>state.teams.find(t=>t.id===r.teamId);
@@ -191,7 +191,11 @@
     return `<div><strong>${c.confirmed}/${total} teams confirmed</strong><span id="draft-status" class="caption">Saved automatically on this device</span></div><div class="actions"><button type="button" onclick="discard()" class="danger">Discard draft</button><button type="button" class="primary" onclick="finalize()" ${left?'disabled':''}>${left?`Save results · ${left} to confirm`:'Save results →'}</button></div>`;
   }
   review=function(){
-    if(oneAtATime===null){oneAtATime=matchMedia('(max-width: 760px)').matches;const first=draft.rows.findIndex(r=>!r.confirmed);currentRow=first<0?0:first;}
+    // Keep the current placement when navigating the same draft, but never carry progress/Undo
+    // controls over from the previous match. Resumed drafts start at their first unconfirmed team.
+    const identity=draft.id||draft;
+    if(identity!==reviewDraftIdentity){reviewDraftIdentity=identity;const first=draft.rows.findIndex(r=>!r.confirmed);currentRow=first<0?0:first;lastBulk=null;lastConfirmed=null;hideConfirmed=false;if(!oneAtATimeExplicit)oneAtATime=matchMedia('(max-width: 760px)').matches;}
+    if(oneAtATime===null)oneAtATime=matchMedia('(max-width: 760px)').matches;
     const manual=draft.entry==='manual';
     return `<div class="desk-review${manual?' desk-review--manual':''}" id="desk-review"><div class="desk-bar">${deskBar()}</div>
       ${manual?'':'<section class="source-tray" id="sources" aria-label="Screenshots for this match" hidden></section>'}
@@ -241,7 +245,7 @@
     const undo=$('#desk-undo-bulk');if(undo)undo.onclick=()=>{(lastBulk||[]).forEach(i=>{draft.rows[i].confirmed=false;});const n=lastBulk?.length||0;lastBulk=null;redrawReview();toast(n+' confirmation'+(n===1?'':'s')+' undone.');};
     const next=$('#desk-next-check');if(next)next.onclick=()=>{const i=draft.rows.findIndex(r=>stateOf(r)==='check');if(i>=0)focusNeed(i);};
     const hide=$('#desk-hide-confirmed');if(hide)hide.onchange=()=>{hideConfirmed=hide.checked;redrawReview();};
-    const one=$('#desk-one');if(one)one.onchange=()=>{oneAtATime=one.checked;redrawReview();focusNeed(currentRow);};
+    const one=$('#desk-one');if(one)one.onchange=()=>{oneAtATime=one.checked;oneAtATimeExplicit=true;redrawReview();focusNeed(currentRow);};
     document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>focusNeed(+b.dataset.jump));
     const undoOne=$('#desk-undo-one');if(undoOne)undoOne.onclick=()=>{const i=lastConfirmed;draft.rows[i].confirmed=false;lastConfirmed=null;redrawReview();focusNeed(i);toast('Placement '+draft.rows[i].placement+' is open again.');};
   }
