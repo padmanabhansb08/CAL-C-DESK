@@ -95,7 +95,7 @@
     const buttons=[...document.querySelectorAll('.war-workspace button, #modal[open] button')].filter(button=>!button.disabled);
     buttons.forEach(button=>button.disabled=true);
     try{state.war=structuredClone(war());await fn();await save();render();toast(success);return true;}
-    catch(e){state=before;const error=document.querySelector('#guide-score-error')||document.querySelector('#war-feedback');if(error){error.hidden=false;error.textContent=e.message;}toast(e.message,'error');return false;}
+    catch(e){state=before;const error=document.querySelector('#score-error')||document.querySelector('#war-feedback');if(error){error.hidden=false;error.textContent=e.message;}toast(e.message,'error');return false;}
     finally{working=false;surface?.removeAttribute('aria-busy');buttons.forEach(button=>{if(button.isConnected)button.disabled=false;});}
   }
   // Completed sets are immutable until the organizer explicitly reopens them.

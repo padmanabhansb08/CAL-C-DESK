@@ -1,4 +1,4 @@
-const assert=require('node:assert/strict'),guide=require('../public/comfort.js'),tournament=require('../public/tournament.js');
+const assert=require('node:assert/strict'),guide=require('../public/war.js'),tournament=require('../public/tournament.js');
 const state={teams:Array.from({length:24},(_,i)=>({id:'team'+i})),matches:[]};
 assert.deepEqual(Array.from({length:7},(_,i)=>guide.mapForMatch(i+1)),['Bermuda','NexTerra','Purgatory','Kalahari','Solara','Bermuda','NexTerra']);
 assert.equal(guide.next(state),'A');state.war=tournament.initial();assert.equal(guide.next(state),'A');

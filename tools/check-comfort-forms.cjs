@@ -68,7 +68,7 @@ async function run(){
     await page.getByRole('button',{name:'Save roster',exact:true}).click();await page.waitForFunction(()=>!document.querySelector('#modal').open);
     assert.equal(await page.evaluate(()=>state.teams[0].name),'FFK Retry Team','Retry should save the edited team');
     await page.locator('.nav').getByRole('button',{name:'War manager'}).click();
-    await page.getByRole('button',{name:'Add Set A screenshots'}).click();
+    await page.getByRole('button',{name:'Add Set A match 1'}).click();
     assert.equal(await page.locator('#war-stage').inputValue(),'A');
     assert.equal(await page.locator('#match-map').inputValue(),'Bermuda');
     for(const [number,map] of [[2,'NexTerra'],[3,'Purgatory'],[4,'Kalahari'],[5,'Solara'],[6,'Bermuda']]){

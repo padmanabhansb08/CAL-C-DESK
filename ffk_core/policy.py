@@ -209,8 +209,8 @@ def security_headers(headers):
            # The app builds markup with inline handlers, so inline scripts stay allowed for now; everything
            # else (framing, plugins, <base> injection, form hijacking, foreign scripts) is closed.
            "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; "
-           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-           "font-src 'self' https://fonts.gstatic.com data:; "
+           "style-src 'self' 'unsafe-inline'; "
+           "font-src 'self' data:; "
            "img-src 'self' data: blob:; "
            "connect-src 'self' https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; "
            "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")

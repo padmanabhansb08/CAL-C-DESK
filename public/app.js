@@ -112,93 +112,31 @@ window.addEventListener('beforeunload',e=>{if(busy||(draft&&(!window.isMatchDraf
 async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup,session.setupRequiresToken);state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
 
 function auth(setup,needsToken){
-  const action=setup?'Create organizer access':'Sign in to War Desk';
-  const title=setup?'Set up your<br><span class="card-title-accent">war desk.</span>':'Welcome back,<br><span class="card-title-accent">organizer.</span>';
-  const intro=setup?'Create the organizer password. Only this password can change teams, results and penalties.':'Sign in to manage your tournament.';
-  $('#app').innerHTML=`<main class="login-page">
-    <div class="login-ambient" aria-hidden="true">
-      <div class="ambient-glow-left"></div>
-      <div class="ambient-glow-right"></div>
-      <div class="ambient-grid"></div>
-    </div>
-    <section class="login-showcase" aria-labelledby="login-showcase-title">
-      <div class="showcase-watermark-claws" aria-hidden="true"></div>
-      <div class="showcase-top-meta">
-        <p class="login-kicker">FFK WAR DESK <span class="kicker-sep">/</span> TOURNAMENT OPERATIONS</p>
-      </div>
-      <div class="showcase-hero-art">
-        <div class="mascot-frame">
-          <div class="mascot-glow" aria-hidden="true"></div>
-          <img class="mascot-img" src="assets/mascot-badge.png" alt="FFK Prasanth" width="508" height="424">
-        </div>
-      </div>
-      <div class="login-showcase-copy">
-        <p class="login-status"><i aria-hidden="true"></i> ORGANIZER ACCESS</p>
-        <h1 id="login-showcase-title" class="showcase-headline">${setup?'READY<br><span class="headline-accent">FOR WAR.</span>':'BACK IN<br><span class="headline-accent">COMMAND.</span>'}</h1>
-        <p class="showcase-subtext">Your tournament. Your operations.<br>One command center.</p>
-      </div>
+  const action=setup?'Create organizer password':'Sign in';
+  // One brand composition (the badge and the War Desk name), then a plain, quiet form.
+  $('#app').innerHTML=`<main class="login">
+    <section class="login-brand">
+      <img class="login-badge" src="assets/mascot-badge.png" alt="" width="508" height="424">
+      <p class="login-wordmark">FFK War Desk</p>
+      <p class="login-tagline">Results, standings and finals for FFK Prasanth tournaments.</p>
     </section>
-    <section class="login-panel-wrap" aria-label="Organizer sign in">
-      <header class="login-mobile-brand">
-        <div class="mobile-avatar-wrap">
-          <img class="mobile-avatar" src="assets/channel-avatar.jpg" alt="FFK Prasanth" width="48" height="48">
-          <span class="avatar-ring" aria-hidden="true"></span>
+    <section class="login-panel" aria-labelledby="login-heading">
+      <h1 id="login-heading">${setup?'Set up the organizer password':'Sign in'}</h1>
+      <p class="login-intro">${setup?'This password controls teams, results and qualification. Use at least 10 characters.':'Only the organizer can change teams, results and qualification.'}</p>
+      <form id="login" novalidate>
+        <label for="organizer-password" class="field-label">Organizer password</label>
+        <div class="login-password-field">
+          <input id="organizer-password" type="password" name="password" minlength="10" required autocomplete="${setup?'new-password':'current-password'}" aria-describedby="login-error">
+          <button class="login-password-toggle" type="button" aria-label="Show organizer password" aria-pressed="false">
+            <span class="material-symbols-outlined toggle-eye-icon eye-show icon-sm" aria-hidden="true">visibility</span>
+            <span class="material-symbols-outlined toggle-eye-icon eye-hide icon-sm" aria-hidden="true" hidden>visibility_off</span>
+            <span class="toggle-text" aria-hidden="true">Show</span>
+          </button>
         </div>
-        <div class="mobile-brand-meta">
-          <span class="mobile-brand-name">FFK PRASANTH</span>
-          <span class="mobile-brand-sub">WAR DESK · TOURNAMENT OPS</span>
-        </div>
-      </header>
-      <div class="login-card">
-        <div class="card-accent-strip" aria-hidden="true"></div>
-        <div class="login-card-header">
-          <div class="login-mark" aria-hidden="true">FFK<span>/</span></div>
-          <div class="login-mark-text">
-            <p class="login-mark-title">WAR DESK</p>
-            <span class="login-mark-badge">ESPORTS</span>
-          </div>
-        </div>
-        <div class="login-card-body">
-          <p class="login-overline"><span class="overline-dot" aria-hidden="true"></span>ORGANIZER CONSOLE</p>
-          <h2 class="card-title">${title}</h2>
-          <p class="login-intro">${intro}</p>
-          <form id="login" novalidate>
-            <div class="form-group">
-              <label for="organizer-password" class="field-label">Organizer password</label>
-              <div class="login-password-field">
-                <input id="organizer-password"
-                       type="password"
-                       name="password"
-                       minlength="10"
-                       required
-                       autocomplete="${setup?'new-password':'current-password'}"
-                       aria-describedby="login-help login-error"
-                       placeholder="Enter your password">
-                <button class="login-password-toggle"
-                        type="button"
-                        aria-label="Show organizer password"
-                        aria-pressed="false">
-                  <span class="material-symbols-outlined toggle-eye-icon eye-show icon-sm" aria-hidden="true">visibility</span>
-                  <span class="material-symbols-outlined toggle-eye-icon eye-hide icon-sm" aria-hidden="true" hidden>visibility_off</span>
-                  <span class="toggle-text" aria-hidden="true">Show</span>
-                </button>
-              </div>
-            </div>
-            ${setup&&needsToken?`<div class="form-group">
-              <label for="setup-token" class="field-label">Setup token</label>
-              <div class="login-password-field"><input id="setup-token" type="password" name="setupToken" autocomplete="off" required placeholder="From the SETUP_TOKEN server setting"></div>
-            </div>`:''}
-            <p id="login-help" class="login-help">${setup?'Use at least 10 characters. This password controls your organizer access.':'Only organizers can change teams, results, and qualification.'}</p>
-            <p id="login-error" class="login-error" role="alert" aria-live="polite"></p>
-            <button class="primary login-submit" type="submit">
-              <span class="submit-text">${action}</span>
-              <span class="submit-spinner" aria-hidden="true"></span>
-              <span class="material-symbols-outlined submit-arrow icon-sm" aria-hidden="true">arrow_forward</span>
-            </button>
-          </form>
-        </div>
-      </div>
-      <p class="login-legal">FFK PRASANTH <b>•</b> FREE FIRE TOURNAMENT DESK</p>
+        ${setup&&needsToken?`<label for="setup-token" class="field-label">Setup token</label><div class="login-password-field"><input id="setup-token" type="password" name="setupToken" autocomplete="off" required placeholder="From the SETUP_TOKEN server setting"></div>`:''}
+        <p id="login-error" class="login-error" role="alert" aria-live="polite"></p>
+        <button class="primary login-submit" type="submit"><span class="submit-text">${action}</span><span class="submit-spinner" aria-hidden="true"></span></button>
+      </form>
     </section>
   </main>`;
 
@@ -240,7 +178,6 @@ function render(){
   const title=(NAV.find(([id])=>id===page)||[0,'Workspace'])[1],signout=`<button type="button" class="signout" onclick="logout()">${uiIcon('logout',{size:'sm'})}<span>Sign out</span></button>`;
   $('#app').innerHTML=`<div class="shell channel-shell comfort-shell" data-page="${page}"><aside class="sidebar"><div class="brand channel-brand">${page==='overview'?'<span class="channel-monogram">FFK</span>':'<img class="channel-profile" src="assets/channel-avatar.jpg" alt="FFK Prasanth channel profile">'}<span class="channel-wordmark">FFK<br>PRASANTH<small>WAR DESK</small></span></div>
     <nav class="nav" aria-label="Main">${NAV.map(([id,label,icon])=>`<button type="button" class="${page===id?'active':''}" onclick="${id==='upload'?'navAddResults()':`go('${id}')`}"${page===id?' aria-current="page"':''}><span class="nav-icon">${uiIcon(icon,{size:'md'})}</span><span class="comfort-nav-label">${label}</span></button>`).join('')}</nav>
-    <div class="comfort-sidebar-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 3v6c0 4-8 9-8 9s-8-5-8-9V6z"/></svg><span>Made for the organizer.<small>One stage at a time.</small></span></div>
     <button type="button" class="host-access-button" onclick="openHostAccess()">${uiIcon('manage_accounts',{size:'md'})}<span>Host desk</span></button>
     <div class="sidebar-footer">${socialLinks()}${signout}</div></aside>
     <main class="main"><header class="topbar"><span class="comfort-top-title"><span>FFK WAR DESK</span><strong>${title}</strong></span><div class="topbar-right"><button type="button" class="sync-button" onclick="refreshWorkspace(true)" aria-label="Refresh saved data" title="Refresh saved data"><span id="sync-status">Up to date</span> ↻</button><details class="mobile-account"><summary aria-label="Channel and account menu">•••</summary><div class="mobile-account-panel"><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openHostAccess()">${uiIcon('manage_accounts',{size:'sm'})}<span>Host desk</span></button>${socialLinks()}${signout}</div></details></div></header>
@@ -249,7 +186,7 @@ function render(){
   bind();
   // A new page starts at the top with focus on its heading, so keyboard and screen-reader users land there.
   if(renderedPage!==page){window.scrollTo({top:0,behavior:'instant'});const heading=document.querySelector('.content h1');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}
-  renderedPage=page;
+  renderedPage=page;window.pageMounted?.(page);
 }
 // "Add results" goes straight to the next tournament match when one is due.
 function navAddResults(){
