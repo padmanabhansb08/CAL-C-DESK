@@ -14,5 +14,4 @@ function scoreboardPDF(canvas){
   return new Blob(parts,{type:'application/pdf'});
 }
 function downloadPosterPDF(){const canvas=document.querySelector('#poster-canvas');if(!canvas||!canvas.width)return;const match=resultMatch(),url=URL.createObjectURL(scoreboardPDF(canvas)),link=document.createElement('a');link.href=url;link.download=(match?.name||'FFK').replace(/[^a-z0-9]/gi,'-')+'-scoreboard.pdf';link.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
-function printResults(){if(selected==="__overall__"&&WarOverall.aggregate(state).rows.length>12){window.print();return;}if(tab==='teams')openPoster();else window.print();}
 

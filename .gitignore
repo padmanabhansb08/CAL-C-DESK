@@ -1,5 +1,6 @@
 
 .backups/
+backups/
 .env*
 .ocr-cache/
 .ocr-runtime/

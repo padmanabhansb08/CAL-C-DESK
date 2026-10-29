@@ -4,7 +4,6 @@
    talking points, team spotlight, top fraggers.
    ═══════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=DM+Sans:wght@400;500;600;700&display=swap');
 
 /* ── Reset & base ───────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
@@ -455,3 +454,22 @@ td.down { color: var(--error); }
 .broadcast td { font-size: 16px; padding: 8px 17px; }
 .broadcast .points { font-size: 23px; }
 .broadcast .standings footer { padding: 9px 19px; }
+
+/* Stage picker and the Clash Squad finals bracket. */
+.stage-picker{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--host-muted,#b8b3b3)}
+.stage-picker select{min-height:40px}
+.finals{margin:8px 0 28px}
+.finals-champion{display:flex;flex-direction:column;gap:6px;padding:22px 26px;margin-bottom:18px;border:1px solid #b8962e;border-radius:12px;background:linear-gradient(120deg,#2a1f05,#121012)}
+.finals-champion span{font-size:13px;letter-spacing:.14em;font-weight:700;color:#e8c766}
+.finals-champion strong{font-family:"Barlow Condensed",sans-serif;font-size:44px;line-height:1}
+.finals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.finals-fixture{border:1px solid #2f2a2d;border-radius:12px;padding:16px 18px;background:#141214}
+.finals-fixture h3{margin:0 0 10px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:#b8b3b3}
+.finals-fixture div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid #241f22;font-size:18px}
+.finals-fixture div.winner{color:#ffcd2e;font-weight:700}
+.finals-fixture b{font-variant-numeric:tabular-nums}
+.broadcast .finals-fixture div{font-size:24px}
+.material-symbols-outlined{display:inline-flex;align-items:center;justify-content:center;width:1em;height:1em;line-height:1;vertical-align:-.15em;font-size:20px}
+.material-symbols-outlined.icon-sm{font-size:17px}
+.material-symbols-outlined svg{width:1em;height:1em;display:block}
+.material-symbols-outlined[hidden]{display:none}

@@ -18,5 +18,9 @@ vm.runInContext("state={teams:Array.from({length:12},(_,i)=>({id:'team'+i,player
  assert.equal(vm.runInContext('draft.rows[0].players[0].kills',context),null,'Conflicting screenshots must remain flagged');
  assert.equal(vm.runInContext('busy',context),false);assert.equal(fields.get('#scan').disabled,false);assert.equal(fields.get('#ocr-progress').value,1);
  assert.equal(vm.runInContext('images[0].rows[0].players[0].kills',context),1);assert.equal(vm.runInContext('images[1].rows[0].players[0].kills',context),2);
- console.log('PASS: parallel scan wiring, original merge order, conflict review, evidence alignment, aggregate progress and worker/UI cleanup.');
+ // Panel boxes drawn on the 1392-wide editor scale to the image actually sent (a large photo is sent at 2400px).
+ const scaled=JSON.parse(vm.runInContext('JSON.stringify(scaleBounds([{x:696,y:100,width:348,height:200}],2400))',context))[0];
+ assert.deepEqual(Object.fromEntries(Object.entries(scaled).map(([k,v])=>[k,Math.round(v*1000)/1000])),{x:1200,y:172.414,width:600,height:344.828});
+ assert.equal(vm.runInContext('scaleBounds([],2400)',context),undefined);
+ console.log('PASS: parallel scan wiring, original merge order, conflict review, evidence alignment, aggregate progress and worker/UI cleanup, panel bounds scaled to the sent image.');
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -46,13 +46,13 @@ async function run(){
     assert.equal(await page.getByRole('button',{name:'Continue to players'}).count(),0,'No second step');
     await page.locator('[name="team"]').fill('FFK DEEPAK');
     for(let j=0;j<4;j++)await page.locator('[name="p'+j+'"]').fill('Test Starter '+j);
-    await page.getByRole('button',{name:'Register team',exact:true}).click();
+    await page.locator('#team-form').getByRole('button',{name:'Register team',exact:true}).click();
     assert(await page.locator('[name="team"]').evaluate(el=>el.validationMessage.includes('already registered')),'Duplicate team should be blocked');
     assert(await page.locator('#modal').evaluate(el=>el.open),'A blocked save keeps the form open');
     await page.locator('[name="team"]').fill('FFK Test Squad');
     await page.locator('[name="p0"]').fill('Test Starter 1');
     assert(await page.locator('[name="p0"]').evaluate(el=>!!el.validationMessage),'Duplicate player should be blocked');
-    await page.locator('[name="p0"]').fill('Test Starter 0');await page.getByRole('button',{name:'Register team',exact:true}).click();
+    await page.locator('[name="p0"]').fill('Test Starter 0');await page.locator('#team-form').getByRole('button',{name:'Register team',exact:true}).click();
     await page.waitForFunction(()=>!document.querySelector('#modal').open);
     assert.equal(await page.evaluate(()=>state.teams.length),25,'Existing team save handler should run');
     assert.equal(await page.locator('#modal').evaluate(el=>el.classList.contains('comfort-team-dialog')),false,'Team presentation should not leak to other dialogs');
@@ -74,7 +74,7 @@ async function run(){
     for(const [number,map] of [[2,'NexTerra'],[3,'Purgatory'],[4,'Kalahari'],[5,'Solara'],[6,'Bermuda']]){
       await page.locator('#match-name').fill('Set A · Match '+number);assert.equal(await page.locator('#match-map').inputValue(),map);
     }
-    await page.locator('#match-map').selectOption('Alpine');await page.evaluate(()=>ComfortForms.mount());assert.equal(await page.locator('#match-map').inputValue(),'Alpine','Remount must preserve manual map override');
+    await page.locator('#match-map').selectOption('Alpine');await page.locator('#match-name').fill('Set A · Match 6');assert.equal(await page.locator('#match-map').inputValue(),'Alpine','Re-typing the same match number must keep a manual map choice');
     await page.locator('#war-stage').selectOption('B');assert.equal(await page.locator('#match-name').inputValue(),'Set B · Match 1');
     await page.locator('#war-stage').selectOption('A');
     assert((await page.locator('#comfort-set-context').innerText()).includes('Set A'),'Tournament helper should follow the selected set');
@@ -83,7 +83,8 @@ async function run(){
     await page.evaluate(()=>{
       const canvas=document.createElement('canvas');canvas.width=600;canvas.height=80;
       const ctx=canvas.getContext('2d');ctx.fillStyle='#10151c';ctx.fillRect(0,0,600,80);ctx.font='22px sans-serif';ctx.fillStyle='white';ctx.fillText('Player OCR',12,35);ctx.fillStyle='#ffdd22';ctx.fillText('9',182,35);
-      draft.rows[0].players[0].rawName='Player OCR';draft.rows[0].players[0].kills=null;
+      // Behave like a screenshot-read draft (manual entry hides the evidence column).
+      delete draft.entry;draft.rows[0].players[0].rawName='Player OCR';draft.rows[0].players[0].kills=null;
       images=[{url:canvas.toDataURL(),image:canvas,rows:[{placement:1,players:[{ocrRegion:{name:[10,10,140,35],digits:[180,10,30,35],width:600,height:80}}]}]}];redrawReview();
     });
     const evidence=page.locator('#review-team-0 .desk-player').first();
@@ -96,8 +97,8 @@ async function run(){
     await page.evaluate(()=>{window.dispatchEvent(new Event('pagehide'));images=[];redrawReview();});
     assert(await page.locator('#review-team-0 .desk-player').first().locator('.evidence-crop').isVisible(),'Saved draft crop should work after sources are gone');
     assert(await page.evaluate(()=>!!JSON.parse(localStorage.getItem('ffk-match-draft-v1')).draft.rows[0].players[0].evidenceCrop),'Evidence must be persisted with the draft');
-    await page.evaluate(()=>{ComfortForms.mount();ComfortForms.mount();});
-    assert.equal(await page.locator('.desk-review').count(),1,'Mount should be idempotent');
+    await page.evaluate(()=>{redrawReview();redrawReview();});
+    assert.equal(await page.locator('.desk-review').count(),1,'Redrawing should be idempotent');
     assert.equal(await page.locator('.desk-row').count(),12,'All 12 placements are listed together');
     for(let i=0;i<12;i++){
       const row=page.locator('#review-team-'+i);

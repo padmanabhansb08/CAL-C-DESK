@@ -10,13 +10,13 @@
   function mapForMatch(number){const rotation=['Bermuda','NexTerra','Purgatory','Kalahari','Solara'];return rotation[(Math.max(1,Math.floor(Number(number)||1))-1)%rotation.length];}
   if(typeof module!=='undefined'){module.exports={next,progress,mapForMatch};return;}
   root.WarGuide={next,progress,mapForMatch};
-  let view=null,renderedPage=null,renderedStage=null;
+  let view=null;
   const w=()=>state.war||WarTournament.initial();
   const team=id=>state.teams.find(t=>t.id===id);
   const name=id=>team(id)?.name||'Awaiting qualifier';
   const label=set=>set==='C'?'Semi-final':set==='finals'?'CS finals':'Set '+set;
   const icon=(type)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${({arrow:'M5 12h14m-5-5 5 5-5 5',check:'m5 12 4 4L19 6',shield:'m12 3 8 3v6c0 4-8 9-8 9s-8-5-8-9V6z',cup:'M8 3h8v6a4 4 0 0 1-8 0V3m0 2H3v3a4 4 0 0 0 5 4m8-7h5v3a4 4 0 0 1-5 4m-4 1v7m-5 1h10',plus:'M12 5v14M5 12h14',file:'M14 2H5v20h14V7l-5-5zm0 0v6h5M8 12h8M8 16h6',swap:'M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4'})[type]||'M5 12h14'}"/></svg>`;
-  const action=(text,handler,primary=false,extra='')=>`<button class="guide-button ${primary?'guide-primary':''}" onclick="${handler}" ${extra}>${text}${primary?icon('arrow'):''}</button>`;
+  const action=(text,handler,primary=false,extra='')=>`<button type="button" class="guide-button ${primary?'guide-primary brand-main-action':''}" onclick="${handler}" ${extra}>${text}${primary?icon('arrow'):''}</button>`;
   function alert(message){const node=document.querySelector('#war-feedback');if(node){node.hidden=false;node.textContent=message;node.focus();}else toast(message,'error');}
   const withWar=()=>({...state,war:w()});
   function stageTabs(){
@@ -44,15 +44,14 @@
   window.warTab=set=>{view=set;render();};
   window.comfortContinue=()=>{view=next(state);go('war');};
   const oldNew=warNew;
-  window.warNew=set=>{
-    if(busy)return toast('Wait for the current results to finish.','error');
+  window.warNew=async set=>{
+    if(busy)return toast('Wait for the current results to finish.','warning');
     const p=progress(state,set);
     if(p.played>=p.target)return toast('All planned matches are saved. Confirm your qualifiers or change the match count.','error');
-    oldNew(set);
+    await oldNew(set);
     if(page==='upload'&&!draft&&document.querySelector('#war-stage')){
-      document.querySelector('#war-stage').value=set;
+      const stage=document.querySelector('#war-stage');stage.value=set;stage.dispatchEvent(new Event('change'));
       document.querySelector('#match-name').value='Set '+set+' · Match '+(p.played+1);
-      root.ComfortForms?.mount();
     }
   };
   function stageView(set){
@@ -130,48 +129,4 @@
     return `<div class="guide-home">${head('FFK PRASANTH / WAR DESK','Welcome to your war desk.','The next step is always right here.')}<section class="guide-home-hero"><div class="guide-home-copy"><span class="guide-kicker">${completed?'WAR COMPLETE':n==='setup'?'READY WHEN YOU ARE':'YOUR NEXT STEP'}</span><h2>${title}</h2><p>${copy}</p>${action(completed?'View the champion':n==='setup'?'Set up my war':n==='finals'?'Open CS finals':'Continue Set '+n,'comfortContinue()',true)}</div><div class="guide-home-art" aria-hidden="true"><span>FFK</span>${icon('cup')}<small>24 TEAMS · ONE CHAMPION</small></div></section>${resume}<div class="guide-home-stats"><div><span>Teams registered</span><strong>${state.teams.length}<small>24 play in the war</small></strong></div><div><span>BR results saved</span><strong>${state.matches.length}<small>verified matches</small></strong></div><div><span>Current stage</span><strong class="guide-current-stage">${completed?'Complete':n==='setup'?'Setup':label(n)}<small>${completed?'Champion confirmed':n==='setup'?'Prepare your teams':'One step at a time'}</small></strong></div></div>
     <div class="guide-home-grid"><section class="guide-card"><div class="guide-card-heading"><div><h2>Recent results</h2><p>${latest.length?'Your latest saved matches.':'Your first result will start the story.'}</p></div>${latest.length?action('View all',"go('results')"):''}</div>${latest.map(m=>`<button class="guide-match-row" onclick="comfortResult('${esc(m.id)}')"><span class="guide-match-icon">${icon('file')}</span><span><strong>${esc(m.name)}</strong><small>${m.stage?'Set '+m.stage+' · ':''}${esc(m.map)}</small></span><span>${icon('arrow')}</span></button>`).join('')||`<div class="guide-home-empty">${icon('file')}<h3>No results yet</h3><p>After a match, upload screenshots or enter the result manually. We’ll handle the table.</p></div>`}</section><section class="guide-how"><span class="guide-kicker">A SIMPLE WAY TO RUN THE WAR</span><h2>From first drop <br>to final score.</h2><ol><li><span>1</span><div><strong>Prepare the teams</strong><p>Confirm two sets of 12.</p></div></li><li><span>2</span><div><strong>Add results as you go</strong><p>Check the names and kills. Points follow.</p></div></li><li><span>3</span><div><strong>Advance. Play. Crown.</strong><p>Confirm qualifiers, then score the CS finals.</p></div></li></ol></section></div></div>`;
   };
-  const oldRender=render;
-  render=function(){oldRender();mount();};
-  function mount(){
-    const shell=document.querySelector('.channel-shell');if(!shell)return;shell.classList.add('comfort-shell');
-    const nav=shell.querySelector('.nav'),buttons=[...nav.querySelectorAll('button')];
-    const entries=[['overview','Home'],['war','War manager'],['roster','Teams'],['upload','Add results'],['results','Standings']];
-    for(const [id,text] of entries){const button=buttons.find(b=>b.getAttribute('onclick')===`go('${id}')`);if(!button)continue;
-      [...button.childNodes].filter(n=>n.nodeType===3).forEach(n=>n.remove());const span=document.createElement('span');span.className='comfort-nav-label';span.textContent=text;button.append(span);button.querySelector('small')?.remove();button.setAttribute('aria-current',page===id?'page':'false');nav.append(button);
-    }
-    if(!document.querySelector('.comfort-sidebar-note')){const note=document.createElement('div');note.className='comfort-sidebar-note';note.innerHTML=icon('shield')+'<span>Made for the organizer.<small>One stage at a time.</small></span>';nav.after(note);}
-    const top=shell.querySelector('.topbar');top.querySelector('.insights-ticker')?.remove();
-    if(!top.querySelector('.comfort-top-title')){const title=document.createElement('span');title.className='comfort-top-title';title.innerHTML=`<span>FFK WAR DESK</span><strong>${({overview:'Home',war:'War manager',roster:'Teams',upload:'Add results',results:'Standings'})[page]||'Workspace'}</strong>`;top.prepend(title);}
-    const sync=top.querySelector('.sync-button');if(sync){sync.setAttribute('aria-label','Refresh saved data');sync.title='Refresh saved data';}
-    const content=document.querySelector('.content');content?.querySelectorAll('.guide-primary').forEach(button=>{button.classList.remove('brand-outline-primary');button.classList.add('brand-main-action');});
-    if(page==='roster'){
-      const heading=content.querySelector('.heading h1');if(heading)heading.textContent='Your teams';
-      const intro=content.querySelector(':scope > p:not([id])');if(intro)intro.textContent='Keep team and player names up to date. Use the exact in-game names to make result checking easier.';
-      const register=content.querySelector('.heading .primary');if(register)register.textContent='＋ Register team';
-    }
-    const add=nav.querySelector('[onclick="go(\'upload\')"]');if(add&&!draft)add.onclick=()=>{
-      const set=next(state);if(['A','B','C'].includes(set)&&WarTournament.availableTeams(state,set).length>=12&&!progress(state,set).locked&&progress(state,set).played<progress(state,set).target)return warNew(set);
-      go('upload');
-    };
-    root.ComfortForms?.mount();
-    const stage=page==='war'?((view==='setup'?'A':view)||next(state)):null;
-    if(renderedPage!==page||(page==='war'&&renderedStage!==stage)){
-      window.scrollTo({top:0,behavior:'instant'});const title=content?.querySelector('h1');if(title){title.tabIndex=-1;title.focus({preventScroll:true});}
-    }
-    renderedPage=page;renderedStage=stage;
-  }
-  root.ComfortDesk={mount};
-  const oldAuth=auth;
-  auth=function(setup,...rest){
-    oldAuth(setup,...rest);const panel=document.querySelector('.auth'),form=document.querySelector('#login');if(!panel||!form)return;
-    panel.classList.add('comfort-auth');panel.querySelector('h1').textContent=setup?'Your war starts here.':'Welcome back.';
-    const intro=panel.querySelector('h1 + p');if(intro)intro.textContent=setup?'Create your organizer password. Then we’ll guide you through teams, matches and the finals.':'Sign in to your organizer desk. Your teams and saved results will be ready.';
-    const field=form.querySelector('input[type=password]'),label=field?.closest('label');if(!field||!label)return;
-    const wrapper=document.createElement('div');wrapper.className='comfort-password';field.before(wrapper);wrapper.append(field);
-    const reveal=document.createElement('button');reveal.type='button';reveal.textContent='Show';reveal.setAttribute('aria-label','Show organizer password');reveal.setAttribute('aria-pressed','false');
-    reveal.onclick=()=>{const shown=field.type==='password';field.type=shown?'text':'password';reveal.textContent=shown?'Hide':'Show';reveal.setAttribute('aria-label',shown?'Hide organizer password':'Show organizer password');reveal.setAttribute('aria-pressed',String(shown));};wrapper.append(reveal);
-    const helper=document.createElement('p');helper.className='comfort-auth-help';helper.textContent=setup?'Use at least 10 characters. Keep this password for your organizer access.':'Only the organizer can change teams, results and qualification.';label.after(helper);
-    const submit=form.querySelector('button.primary');if(submit)submit.textContent=setup?'Create organizer desk →':'Open my war desk →';
-  };
-  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('#modal')?.open)closeModal();});
 })(typeof window==='undefined'?globalThis:window);

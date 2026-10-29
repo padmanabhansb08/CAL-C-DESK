@@ -3,7 +3,11 @@
   const pad=n=>String(n).padStart(2,'0');
   function text(ctx,value,x,y,maxWidth,font='700 21px "Barlow Condensed", sans-serif',color='#111',align='center'){
     ctx.font=font;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillStyle=color;
-    let size=Number(font.match(/(\d+)px/)[1]);while(ctx.measureText(String(value)).width>maxWidth&&size>11){size--;ctx.font=font.replace(/\d+px/,size+'px');}ctx.fillText(String(value),x,y);
+    let size=Number(font.match(/(\d+)px/)[1]);while(ctx.measureText(String(value)).width>maxWidth&&size>11){size--;ctx.font=font.replace(/\d+px/,size+'px');}
+    // Still too wide at the smallest size: shorten with an ellipsis, and never draw outside the cell.
+    let label=String(value);if(ctx.measureText(label).width>maxWidth){while(label.length>1&&ctx.measureText(label+'…').width>maxWidth)label=label.slice(0,-1);label+='…';}
+    const left=align==='left'?x:align==='right'?x-maxWidth:x-maxWidth/2;
+    ctx.save();ctx.beginPath();ctx.rect(left,y-20,maxWidth,40);ctx.clip();ctx.fillText(label,x,y);ctx.restore();
   }
   async function render(canvas,rows,options={}){
     if(document.fonts)await document.fonts.ready;

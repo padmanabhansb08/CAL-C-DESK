@@ -175,6 +175,20 @@
     }
     rows.layout={mode:'reference',panels:layout.panels.map(p=>({side:p.side,top:p.top,bottom:p.bottom,rankBox:p.rankBox})),width:1392,height:790};return rows;
   }
+  // The reader's own doubts travel with the row until the organizer has looked at them.
+  // Unreadable and low-confidence kill counts are already visible as blank or uncertain numbers.
+  const SHOWN_ELSEWHERE=/kill count (unreadable|uncertain)/;
+  function serverFlags(panel){
+    if(Array.isArray(panel.flags))return panel.flags.filter(f=>f&&f.code&&f.text).map(f=>({code:String(f.code),player:Number.isInteger(f.player)?f.player:null,text:String(f.text)}));
+    return (panel.review||[]).filter(text=>!SHOWN_ELSEWHERE.test(text)).map(text=>({code:'review',player:null,text:String(text)}));
+  }
+  // Two screenshots of the same placement: "only part visible" and "cut off" doubts are settled when the
+  // other screenshot shows that part fully. Every other doubt is kept.
+  function mergeFlags(a=[],b=[]){
+    const settled=(flag,other)=>flag.code==='partial'?!other.some(f=>f.code==='partial'):flag.code==='clipped'?!other.some(f=>f.code==='clipped'&&f.player===flag.player):false;
+    const out=[];[...a.filter(f=>!settled(f,b)),...b.filter(f=>!settled(f,a))].forEach(f=>{if(!out.some(x=>x.code===f.code&&x.player===f.player&&x.text===f.text))out.push(f);});
+    return out;
+  }
   // Convert a /api/ocr/scan response (server-side OCR + reasoning) into the rows the review screen uses.
   function fromServerScan(scan){
     const rows=[];
@@ -189,13 +203,14 @@
         if(matched)player.isSubstitute=false;
         return player;
       });
-      rows.push({placement:panel.placement,teamId:panel.team?.id||'',players,matchConfidence:panel.team?.score||0,warnings:[]});
+      rows.push({placement:panel.placement,teamId:panel.team?.id||'',players,matchConfidence:panel.team?.score||0,warnings:[],flags:serverFlags(panel)});
     }
     rows.layout={mode:'server',panels:(scan.panels||[]).map(p=>({side:p.side,top:p.top,bottom:p.bottom})),width:scan.width,height:scan.height,warnings:scan.warnings||[]};
     return rows;
   }
   function merge(existing,incoming){
-    if(!existing._read){Object.assign(existing,incoming,{_read:true});return;}
+    if(!existing._read){Object.assign(existing,incoming,{_read:true,flags:incoming.flags||[]});return;}
+    existing.flags=mergeFlags(existing.flags,incoming.flags);
     if(existing.teamId&&incoming.teamId&&existing.teamId!==incoming.teamId){existing.teamId='';existing.warnings.push('Screenshots disagree on team identity');}
     else if(!existing.teamId&&incoming.teamId&&!existing.warnings.some(w=>w.includes('identity')))existing.teamId=incoming.teamId;
     incoming.players.forEach((p,i)=>{const old=existing.players[i],key=`Screenshots disagree on player ${i+1} kills`;
@@ -211,6 +226,6 @@
       if(p.playerId&&(!old.playerId||(p.matchScore||0)>(old.matchScore||0))){old.playerId=p.playerId;old.name=p.name;old.matchScore=p.matchScore;}
     });
   }
-  const api={fromServerScan,prepare,prepareOriginal,originalRegion,extract,matchTeam,merge,similarity,rosterSimilarity,playerSimilarity,rememberAliases,smallDigitConsensus,digitFeature,templateDigit,playerRegion};if(typeof module!=='undefined')module.exports=api;else root.WarOCR=api;
+  const api={fromServerScan,serverFlags,mergeFlags,prepare,prepareOriginal,originalRegion,extract,matchTeam,merge,similarity,rosterSimilarity,playerSimilarity,rememberAliases,smallDigitConsensus,digitFeature,templateDigit,playerRegion};if(typeof module!=='undefined')module.exports=api;else root.WarOCR=api;
 })(typeof window!=='undefined'?window:globalThis);
 

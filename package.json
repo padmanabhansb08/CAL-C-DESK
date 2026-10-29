@@ -6,7 +6,7 @@
   "scripts": {
     "start": "python server.py",
     "test": "node tools/run-checks.cjs",
-    "test:browser": "CHECK_BROWSER=1 node tools/run-checks.cjs"
+    "test:browser": "node tools/run-checks.cjs --browser"
   },
   "devDependencies": {
     "@napi-rs/canvas": "^0.1.65",

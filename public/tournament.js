@@ -71,21 +71,11 @@
   const core={initial,members,matches,standings,qualify,fixture,recordCS,established,availableTeams,registerResult,playoffFormat,playoffKeys,playoffLabels,playoffResults,migratePlayoffs,clearCS};
   if(typeof module!=='undefined'){root.WarOverall=require('./overall.js');module.exports=core;return;}
   root.WarTournament=core;
-  const prior={intake,finalize,overview,api,bind,bindReview};
-  let active='A',working=false;
+  const prior={finalize,api,bind};
+  let working=false;
   const war=()=>state.war||initial();
-  const name=id=>state.teams.find(t=>t.id===id)?.name||'Awaiting qualifier';
-  const option=(id,label,selected)=>`<option value="${esc(id)}" ${selected?'selected':''}>${esc(label)}</option>`;
   const locked=set=>!!war().qualified[set];
   function allowed(set){return sets.includes(set)&&!locked(set)&&availableTeams(state,set).length>=12&&(set!=='C'||members(war(),'C').length===12);}
-  bindReview=function(){
-    prior.bindReview();
-    if(!draft?.stage)return;
-    const ids=availableTeams(state,draft.stage).map(t=>t.id);
-    document.querySelectorAll('[data-team]').forEach(select=>Array.from(select.options).forEach(option=>{
-      if(option.value&&!ids.includes(option.value)){option.disabled=true;option.hidden=true;}
-    }));
-  };
   bind=function(){
     prior.bind();
     if(page!=='upload')return;
@@ -113,7 +103,9 @@
     if(path==='state'&&data){
       // Read locks without resetting the workspace's last-seen revision.
       const response=await fetch('/api/state');
-      const old=await response.json();if(!response.ok)throw Error(old.error||'Could not check tournament locks.');
+      const old=await response.json().catch(()=>({}));
+      if(response.status===401){sessionExpired();const e=Error('Your sign-in has ended. Sign in again; your match draft is kept.');e.status=401;e.expired=true;throw e;}
+      if(!response.ok)throw Error(old.error||'Could not check tournament locks.');
       for(const set of sets)if(old.war?.qualified[set]&&data.war?.qualified[set]){
         if(JSON.stringify(matches(old,set))!==JSON.stringify(matches(data,set))||JSON.stringify(members(old.war,set))!==JSON.stringify(members(data.war,set)))throw Error('Set '+set+' is locked. Reopen qualification in War manager before changing its results or teams.');
       }
@@ -123,11 +115,6 @@
     }
     return prior.api(path,data,options);
   };
-  intake=function(){
-    const current=draft?.stage||'',w=war();
-    const picker=`<label class="war-intake">Tournament set<select id="war-stage" ${draft?'disabled':''}>${option('','Practice / unassigned',!current)}${sets.map(set=>option(set,'Set '+set+(set==='C'?' · Semi-final':'')+(locked(set)?' · Locked':set==='C'&&members(w,set).length!==12?' · Awaiting qualifiers':''),set===current)).join('')}</select><small>The 12 teams in your first verified result become this set’s team list.</small></label>`;
-    return prior.intake().replace('<div class="form-grid">','<div class="form-grid">'+picker);
-  };
   finalize=async function(){
     if(draft?.stage){
       const set=draft.stage;
@@ -136,19 +123,6 @@
       try{registerResult({...state,war:structuredClone(war())},draft);}catch(e){return toast(e.message,'error');}
     }
     return prior.finalize();
-  };
-  overview=function(){return `<section class="war-shortcut"><div><span class="eyebrow">24 TEAMS / ONE CHAMPION</span><h2>FFK War tournament</h2><p>Set A + Set B → Set C → Clash Squad finals</p></div><button onclick="go('war')">Manage war →</button></section>`+prior.overview();};
-  window.warTab=set=>{active=set;render();};
-  window.warSaveGroups=()=>change(()=>{
-    const w=state.war;
-    if(w.qualified.A||w.qualified.B||state.matches.some(m=>m.stage))throw Error('Group allocation is locked once tournament results exist.');
-    const groups={A:[],B:[]};document.querySelectorAll('[data-war-team]').forEach(el=>{if(el.value)groups[el.value].push(el.dataset.warTeam);});
-    if(groups.A.length!==12||groups.B.length!==12)throw Error('Choose exactly 12 teams for A and 12 for B.');
-    w.groups=groups;
-  },'Team allocation saved');
-  window.warAutoGroups=()=>{
-    if(state.teams.length!==24)return toast('Automatic allocation needs exactly 24 registered teams. Use the selectors for a larger roster.','error');
-    document.querySelectorAll('[data-war-team]').forEach((el,i)=>el.value=i<12?'A':'B');
   };
   window.warTarget=set=>change(()=>{
     const value=Number(document.querySelector('#war-target').value);
@@ -178,23 +152,9 @@
     const a=document.querySelector('#'+key+'-a').value,b=document.querySelector('#'+key+'-b').value;
     if(a===''||b==='')throw Error('Enter both CS scores.');recordCS(state.war,key,Number(a),Number(b));
   });
-  window.warClearFinal=()=>change(()=>{delete state.war.cs.final;});
   window.warClearCS=async key=>{
     if(!await confirmAction({title:'Clear '+playoffLabels[key]+'?',message:'This clears its score and any later results that depend on it. Other opening-match results are kept.',accept:'Clear result',cancel:'Keep result'}))return false;
     return change(()=>clearCS(state.war,key),'Result cleared');
   };
-  window.warNew=set=>{if(!allowed(set))return toast('Register 12 available teams, or confirm the semi-final qualifiers first.','error');if(draft)return toast('Finish or discard your current match draft before starting a new set match.','error');go('upload');document.querySelector('#war-stage').value=set;};
-  window.renderWar=function(){
-    const w=war(),s={...state,war:w},ids=members(w,active),rows=standings(s,active),ms=matches(s,active),cut=active==='C'?4:6;
-    const edge=rows[cut-1],tie=equal(edge,rows[cut])?rows.filter(r=>equal(r,edge)):[];
-    const groupLocked=!!(w.qualified.A||w.qualified.B||state.matches.some(m=>m.stage));
-    return header('Tournament command','FFK WAR')+`<div class="war-path">${['A','B','C'].map(set=>`<button onclick="warTab('${set}')" class="${active===set?'active':''}"><span>${set==='C'?'SEMI-FINAL':'QUALIFIER'}</span><strong>SET ${set}</strong><small>${members(w,set).length}/12 teams · ${matches(s,set).length}/${w.targets[set]} BR matches${w.qualified[set]?' · Qualified':''}</small></button>`).join('')}<div><span>CLASH SQUAD</span><strong>FINALS</strong><small>${w.qualified.C?.length||0}/4 teams · ${w.cs.final?'Complete':'Knockout bracket'}</small></div></div>
-    <details class="panel war-allocation" ${w.groups.A.length?'':'open'}><summary>Team allocation · 12 in Set A + 12 in Set B</summary><p>Choose 24 registered teams. Save groups before recording tournament matches.</p><div class="war-team-grid">${state.teams.map(t=>`<label>${esc(t.name)}<select data-war-team="${esc(t.id)}" ${groupLocked?'disabled':''}>${option('','Not playing',!w.groups.A.includes(t.id)&&!w.groups.B.includes(t.id))}${option('A','Set A',w.groups.A.includes(t.id))}${option('B','Set B',w.groups.B.includes(t.id))}</select></label>`).join('')}</div>${!groupLocked?'<div class="actions"><button onclick="warAutoGroups()">Allocate first 12 / next 12</button><button onclick="warSaveGroups()">Save allocation</button></div>':'<p class="caption">Allocation locked by tournament results.</p>'}</details>
-    <section class="panel"><div class="panel-head"><div><span class="eyebrow">${active==='C'?'SEMI-FINAL · FRESH POINTS':'BATTLE ROYALE'}</span><h2>Set ${active} standings</h2></div><button onclick="warNew('${active}')" ${!allowed(active)?'disabled':''}>＋ Add match</button></div><div class="war-controls"><label>Planned BR matches<input id="war-target" type="number" min="1" max="99" value="${w.targets[active]}" ${locked(active)?'disabled':''}></label><button onclick="warTarget('${active}')" ${locked(active)?'disabled':''}>Save match count</button><p>${ms.length}/${w.targets[active]} saved · Top ${cut} advance · ${locked(active)?'Qualification locked':'Qualification pending'}</p></div>
-    <div class="table-wrap"><table><thead><tr><th>Rank</th><th>Team</th><th>Played</th><th>Kills</th><th>Wins</th><th>Points</th><th>Status</th></tr></thead><tbody>${ids.map(id=>rows.find(r=>r.teamId===id)||{teamId:id,teamName:name(id),rank:'—',matches:0,kills:0,wins:0,total:0}).sort((a,b)=>(Number(a.rank)||999)-(Number(b.rank)||999)).map(r=>`<tr class="${w.qualified[active]?.includes(r.teamId)?'war-qualified':''}"><td>${r.rank}</td><td>${esc(r.teamName)}</td><td>${r.matches}</td><td>${r.kills}</td><td>${r.wins}</td><td class="total">${r.total}</td><td>${w.qualified[active]?.includes(r.teamId)?'QUALIFIED':locked(active)?'Eliminated':Number(r.rank)<=cut?'Above cutoff':'—'}</td></tr>`).join('')||'<tr><td colspan="7">'+(active==='C'?'Confirm top 6 from A and B to populate this set.':'Save team allocation to begin.')+'</td></tr>'}</tbody></table></div><p class="caption">Points → kills → wins → placement points. Each set starts at zero. Remaining ties at the qualification cutoff require a host decision. CS seeds follow this table; equal records retain the displayed team-name order.</p>
-    ${tie.length&&!locked(active)?`<div class="notice"><strong>Qualification cutoff tie</strong><p>Choose the teams to advance from this tied group.</p>${tie.map(r=>`<label class="war-tie"><input type="checkbox" data-war-tie value="${esc(r.teamId)}">${esc(r.teamName)}</label>`).join('')}<label>Host decision reason<input id="war-tie-reason" maxlength="200" placeholder="Tiebreak match or host ruling"></label></div>`:''}
-    <div class="actions">${locked(active)?`<button onclick="warReopen('${active}')">Reopen qualification</button><span>Confirmed ${esc(new Date(w.decisions[active].at).toLocaleString('en-IN'))}${w.decisions[active].reason?' · '+esc(w.decisions[active].reason):''}</span>`:`<button class="primary" onclick="warQualify('${active}')" ${ids.length!==12||ms.length!==w.targets[active]?'disabled':''}>Confirm top ${cut} → ${active==='C'?'CS finals':'Set C'}</button>`}</div></section>
-    <details class="panel"><summary>Saved BR matches · assign to a set</summary><p>Existing matches remain unassigned until you choose a set. Only that set’s 12 teams may appear.</p>${state.matches.map(m=>`<div class="war-match"><span>${esc(m.name)}<small>${esc(m.map)} · ${m.stage?'Set '+m.stage:'Unassigned'}</small></span><select aria-label="Set for ${esc(m.name)}" data-war-link="${esc(m.id)}">${option('','Unassigned',!m.stage)}${sets.map(set=>option(set,'Set '+set,m.stage===set)).join('')}</select><button onclick="warLink('${esc(m.id)}')">Assign</button></div>`).join('')||'<p>No saved matches yet.</p>'}</details>
-    <section class="panel"><div class="panel-head"><div><span class="eyebrow">FINAL FOUR / CLASH SQUAD</span><h2>Play for the crown</h2></div>${w.cs.final?'<button onclick="warClearFinal()">Clear final result</button>':''}</div><p>Q1: Seed 1 vs 2 · Eliminator: Seed 3 vs 4 · Q2 and Grand Final follow. Enter round or series scores using your event rules.</p><div class="war-bracket">${playoffKeys.map((key,i)=>{const pair=fixture(w,key),r=playoffResults(w)[key],ready=pair.every(Boolean);return `<article class="war-fixture"><span class="eyebrow">${playoffLabels[key].toUpperCase()}</span>${pair.map((id,j)=>`<label class="${r?.winner===id?'war-winner':''}"><span>${esc(name(id))}</span><input id="${key}-${j?'b':'a'}" type="number" min="0" max="99" aria-label="${playoffLabels[key]} team ${j+1} score" value="${r?.scores[j]??''}" ${!ready?'disabled':''}></label>`).join('')}<button onclick="warScore('${key}')" ${!ready?'disabled':''}>${r?'Update':'Save'} result</button>${r?'<small>Winner: '+esc(name(r.winner))+'</small>':''}</article>`;}).join('')}</div>${w.cs.final?`<div class="war-champion"><span>FFK WAR CHAMPION</span><h2>${esc(name(w.cs.final.winner))}</h2></div>`:''}</section>`;
-  };
+  window.warNew=async set=>{if(!allowed(set))return toast('Register 12 available teams, or confirm the semi-final qualifiers first.','error');if(draft)return toast('Finish or discard your current match draft before starting a new set match.','error');try{await loadModules('reader');}catch(e){return toast(e.message,'error');}go('upload');const stage=document.querySelector('#war-stage');if(stage)stage.value=set;};
 })(typeof window==='undefined'?globalThis:window);

@@ -12,7 +12,13 @@ class LocalImage extends Image{set src(value){this.ready=new Promise((resolve,re
  assert.equal(canvas.width,2364);assert.equal(canvas.height,1194);assert.equal(JSON.stringify(rows),before);
  for(const name of ['POS','TEAM NAME','MATCH','PLACE','FINISH','TOTAL','WINS'])assert.ok(drawn.includes(name),name);
  for(const row of rows){assert.ok(drawn.includes(row.name));assert.ok(drawn.includes(String(row.kills).padStart(2,'0')));assert.ok(drawn.includes(String(row.total).padStart(2,'0')));}
- fs.writeFileSync(path.join(__dirname,'../restored-scoreboard-preview.png'),canvas.toBuffer('image/png'));
- console.log('PASS: 12 teams, seven columns, numeric values, labels and 2364×1194 export dimensions preserved.');
+ // A 70-character name (the longest a team may have) is shortened with an ellipsis, never drawn over MATCH/PLACE.
+ const long=[{...rows[0],name:'FFK '+'VERYLONGTEAMNAME'.repeat(5).slice(0,66)},...rows.slice(1)];drawn.length=0;
+ await sandbox.window.WarScoreboard.render(canvas,long,{date:'18/10/26',week:'03',match:'07',highlight:6});
+ const shown=drawn.find(text=>text.startsWith('FFK VERYLONG'));assert.ok(shown&&shown.endsWith('…')&&shown.length<70,'long names are shortened: '+shown);
+ // The preview goes to the ignored cache folder so running checks never changes tracked files.
+ fs.mkdirSync(path.join(__dirname,'../.ocr-cache'),{recursive:true});
+ fs.writeFileSync(path.join(__dirname,'../.ocr-cache/scoreboard-render-preview.png'),canvas.toBuffer('image/png'));
+ console.log('PASS: 12 teams, seven columns, numeric values, labels, long-name ellipsis and 2364×1194 export dimensions preserved.');
 })().catch(error=>{console.error(error);process.exitCode=1});
 
