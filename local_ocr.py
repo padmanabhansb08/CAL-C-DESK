@@ -32,7 +32,7 @@ def recognize(image, boxes):
     from rapidocr import RapidOCR
     raw = base64.b64decode(image.split(',', 1)[-1], validate=True)
     pil = Image.open(BytesIO(raw))
-    if pil.width * pil.height > 6_000_000:
+    if pil.width * pil.height > 6_000_000 or max(pil.width, pil.height) > 6000:
         raise ValueError('Screenshot is too large.')
     rgb = np.asarray(pil.convert('RGB'))
     output = []

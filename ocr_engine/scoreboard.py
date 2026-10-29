@@ -382,6 +382,7 @@ def _parse(page):
             panels.append({
                 'side': side_index, 'index': i,
                 'placement': ranks[i][0], 'placementSource': ranks[i][1],
+                'placementRead': ranks[i][2] if len(ranks[i]) > 2 else None,
                 'top': round(top_y), 'bottom': round(bottom_y),
                 'partial': kind, 'cells': cells,
             })
@@ -426,7 +427,13 @@ def _assign_ranks(panel_rows, centers, side_ranks, pitch, side_index, height, wa
             read_here = next((r for j, r in observed if j == i), None)
             value = base + i
             if 1 <= value <= 12:
-                result[i] = (value, 'read' if read_here == value else 'sequence')
+                if read_here is not None and read_here != value:
+                    # The row order outvoted a number that was actually read here. Keep the order's value,
+                    # but say so: either reading could be the wrong one.
+                    result[i] = (value, 'disputed', read_here)
+                    warnings.append(f'A placement number reads {read_here} where the row order says {value}; check placement {value}.')
+                else:
+                    result[i] = (value, 'read' if read_here == value else 'sequence')
         return result
     if side_index == 0:
         warnings.append('No placement numbers could be read; assuming the first panel is placement 1.')

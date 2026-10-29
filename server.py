@@ -1,17 +1,20 @@
 """FFK War Desk: one organizer, SQLite persistence, no API keys."""
 import base64, hmac, json, os, secrets, socket, sqlite3, threading, time
+from contextlib import contextmanager
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 import local_ocr
 import default_rosters
-from ffk_core import policy, backup, logs
+from ffk_core import policy, backup, logs, validate
 from ffk_core.scan_gate import ScanGate, Busy, TimedOut
 
 ROOT = Path(__file__).parent
 DB = Path(os.environ.get('DB_PATH', ROOT / 'war.sqlite3'))
 throttle = policy.Throttle()
 limiter = policy.RateLimiter()
-scan_gate = ScanGate(float(os.environ.get('SCAN_WAIT_SECONDS', '25')), float(os.environ.get('SCAN_TIMEOUT_SECONDS', '120')))
+# The reader runs in its own process so a stuck read can be stopped for real (SCAN_ISOLATE=0 uses a thread).
+scan_gate = ScanGate(float(os.environ.get('SCAN_WAIT_SECONDS', '25')), float(os.environ.get('SCAN_TIMEOUT_SECONDS', '120')),
+                     isolate=os.environ.get('SCAN_ISOLATE', '1') != '0')
 MAX_CONNECTIONS = int(os.environ.get('MAX_CONNECTIONS', '64'))
 log = logs.setup()
 
@@ -48,14 +51,31 @@ class WarDeskServer(ThreadingHTTPServer):
             self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
         super().server_bind()
 
-def connect():
+@contextmanager
+def _open(setup):
+    """One connection per use: committed (or rolled back) and always closed, so no file handle lingers."""
     DB.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(DB, timeout=30)
+    try:
+        setup(db)
+        yield db
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+def _full_setup(db):
     db.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
     db.execute('CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL)')
     default_rosters.initialize(db)
     db.commit()
-    return db
+
+
+def connect():
+    return _open(_full_setup)
 
 
 def init_db():
@@ -66,9 +86,7 @@ def init_db():
 
 def quick():
     """Light connection for per-request session checks (no roster bootstrap)."""
-    db = sqlite3.connect(DB, timeout=30)
-    db.execute('CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL)')
-    return db
+    return _open(lambda db: db.execute('CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, expires REAL NOT NULL)'))
 
 
 def session_valid(token):
@@ -100,6 +118,12 @@ def get(key):
 def put(key, value):
     with connect() as db:
         db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', (key, value))
+
+
+def put_if_absent(key, value):
+    """Store a setting only if it does not exist yet; True when this call stored it (atomic)."""
+    with connect() as db:
+        return db.execute('INSERT OR IGNORE INTO settings VALUES (?,?)', (key, value)).rowcount == 1
 
 class Handler(SimpleHTTPRequestHandler):
     timeout = 30  # a client that stalls mid-request is dropped instead of holding a thread
@@ -153,7 +177,7 @@ class Handler(SimpleHTTPRequestHandler):
             if not self.authorized() and not (expected and key and hmac.compare_digest(key, expected)):
                 return self.reply(401, {'error': 'Open a current host link from your organizer.'})
             current = json.loads(get('state') or '{"teams":[],"matches":[]}')
-            return self.reply(200, {'teams': current['teams'], 'matches': current['matches']})
+            return self.reply(200, policy.host_view(current))
         if self.path == '/api/session':
             setup = get('password') is None
             return self.reply(200, {'setup': setup, 'authenticated': self.authorized(),
@@ -215,8 +239,10 @@ class Handler(SimpleHTTPRequestHandler):
                 if not allowed:
                     return self.reply(403, {'error': message})
                 if len(password) < 10: return self.reply(400, {'error': 'Use at least 10 characters.'})
-                stored = policy.hash_password(password)
-                put('password', stored)
+                # Two first visits at once: only one password can be created; the other request loses.
+                if not put_if_absent('password', policy.hash_password(password)):
+                    return self.reply(409, {'error': 'The organizer password was just created on another device. Sign in with that password.'})
+                stored = get('password')
                 log.info('organizer password created ip=%s', ip)
             if not policy.verify_password(password, stored):
                 throttle.failed(ip)
@@ -254,9 +280,14 @@ class Handler(SimpleHTTPRequestHandler):
                 db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('state', json.dumps(current)))
             return self.reply(200, current)
         if self.path == '/api/ocr':
+            # The comparison reader shares the screenshot reader's queue and time limit.
             try:
-                result = local_ocr.recognize(data['image'], data['boxes'])
+                result = scan_gate.run(local_ocr.recognize, data['image'], data['boxes'])
                 return self.reply(200, {'readings': result})
+            except Busy:
+                return self.reply(429, {'error': 'Another screenshot is still being read. Trying again shortly.', 'busy': True})
+            except TimedOut:
+                return self.reply(504, {'error': 'The comparison reader took too long.'})
             except Exception as error:
                 return self.reply(400, {'error': 'Local OCR comparison unavailable: ' + str(error)})
         if self.path == '/api/ocr/scan':
@@ -274,8 +305,8 @@ class Handler(SimpleHTTPRequestHandler):
             except Busy:
                 return self.reply(429, {'error': 'Another screenshot is still being read. Trying again shortly.', 'busy': True})
             except TimedOut:
-                log.error('scan timed out')
-                return self.reply(504, {'error': 'Reading this screenshot took too long. Try a smaller image or crop it.'})
+                log.error('scan timed out; reader stopped')
+                return self.reply(504, {'error': 'Reading this screenshot took too long, so it was stopped. Try a smaller or cropped image, or enter results by hand.'})
             except (KeyError, ValueError, TypeError) as error:
                 return self.reply(400, {'error': 'Could not read this screenshot: ' + str(error)})
             except Exception as error:
@@ -306,6 +337,10 @@ class Handler(SimpleHTTPRequestHandler):
                     new_members = new_war.get('groups', {}).get(stage) if stage != 'C' else sum((new_war.get('qualified', {}).get(s, []) for s in ('A', 'B')), [])
                     if old_matches != new_matches or old_members != new_members or old_war['qualified'][stage] != new_war['qualified'][stage]:
                         return self.reply(409, {'error': 'Reopen Set ' + stage + ' in War manager before changing its results or qualifiers.'})
+                problem = validate.check_update(previous, data)
+                if problem:
+                    log.warning('state save refused: %s', problem)
+                    return self.reply(422, {'error': 'Not saved: ' + problem})
                 db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('state', json.dumps(data)))
             return self.reply(200, {'ok': True})
         self.reply(404, {'error': 'Not found'})

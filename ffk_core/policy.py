@@ -222,3 +222,10 @@ def security_headers(headers):
     if is_https(headers):
         out.append(('Strict-Transport-Security', 'max-age=31536000; includeSubDomains'))
     return out
+
+
+def host_view(current):
+    """Read-only data for the host desk: results plus the tournament progress needed to follow stages."""
+    war = current.get('war') or {}
+    return {'teams': current.get('teams', []), 'matches': current.get('matches', []),
+            'war': {k: war[k] for k in ('groups', 'qualified', 'targets', 'cs', 'csFormat') if k in war}}

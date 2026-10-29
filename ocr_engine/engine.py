@@ -62,25 +62,42 @@ class Page:
         self.rgb, self.words, self.width, self.height, self.scale = rgb, words, width, height, scale
 
 
+MAX_ASPECT = 4.0  # screenshots are landscape or portrait phone screens, never a long thin strip
+
+
+def working_scale(width, height):
+    """Scale to the reader's working width, checked against the limits *after* scaling.
+
+    The pixel limit applies to the image the reader will really hold in memory: a 100 x 10,000 strip
+    passes a simple size check but would grow to 1,500 x 150,000 (about 675 MB) when widened."""
+    if width < 1 or height < 1:
+        raise ValueError('Screenshot is empty.')
+    if max(width, height) / min(width, height) > MAX_ASPECT:
+        raise ValueError('Screenshot shape is not a screen (too long and narrow).')
+    scale = 1.0
+    if width < MIN_WORKING_WIDTH or width > MAX_WORKING_WIDTH:
+        scale = (MIN_WORKING_WIDTH if width < MIN_WORKING_WIDTH else MAX_WORKING_WIDTH) / width
+    if width * height > MAX_PIXELS or (width * scale) * (height * scale) > MAX_PIXELS:
+        raise ValueError('Screenshot is too large.')
+    return scale
+
+
 def load_image(image_bytes):
     import numpy as np
     from PIL import Image
-    pil = Image.open(BytesIO(image_bytes))
-    if pil.width * pil.height > MAX_PIXELS:
-        raise ValueError('Screenshot is too large.')
+    pil = Image.open(BytesIO(image_bytes))  # reads the header only; pixels are decoded after the checks
+    working_scale(pil.width, pil.height)
     return np.asarray(pil.convert('RGB'))
 
 
 def read_page(image_bytes):
     """Detect and recognise every text word, with word-level boxes."""
     rgb = load_image(image_bytes)
-    scale = 1.0
-    if rgb.shape[1] < MIN_WORKING_WIDTH or rgb.shape[1] > MAX_WORKING_WIDTH:
+    scale = working_scale(rgb.shape[1], rgb.shape[0])
+    if scale != 1.0:
         # Enlarge small screenshots (the detector needs usable glyphs) and shrink huge ones
         # (it was tuned for ordinary screen sizes); positions are mapped back afterwards.
         import cv2
-        target = MIN_WORKING_WIDTH if rgb.shape[1] < MIN_WORKING_WIDTH else MAX_WORKING_WIDTH
-        scale = target / rgb.shape[1]
         rgb = cv2.resize(rgb, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA)
     height, width = rgb.shape[:2]
     with _lock:

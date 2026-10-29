@@ -5,6 +5,7 @@ and locked read-modify-write of the war state. Server-side OCR is not available 
 the browser reader is used instead.
 """
 import hmac, json, os, secrets, sys, time
+from contextlib import contextmanager
 from flask import Flask, request, jsonify, make_response
 import psycopg2
 
@@ -18,7 +19,7 @@ try:
     import default_rosters_pg as default_rosters
 except ImportError:
     from api import default_rosters_pg as default_rosters
-from ffk_core import policy
+from ffk_core import policy, validate
 
 app = Flask(__name__)
 # Flask refuses oversized bodies itself, before any route code reads them.
@@ -29,8 +30,18 @@ STATE_LOCK = "ffk-war-state"
 
 # ---------- DB helpers ----------
 
+@contextmanager
 def connect():
-    return psycopg2.connect(DATABASE_URL)
+    """One connection per use: committed (or rolled back) and always closed."""
+    db = psycopg2.connect(DATABASE_URL)
+    try:
+        yield db
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 def ensure_tables():
@@ -42,6 +53,10 @@ def ensure_tables():
                 "CREATE TABLE IF NOT EXISTS login_attempts ("
                 "ip TEXT PRIMARY KEY, failures INT NOT NULL, window_start BIGINT NOT NULL, locked_until BIGINT NOT NULL)"
             )
+            # One row per failed sign-in, for the global ceiling. Independent of the per-address
+            # counters, which reset when an address is locked out.
+            cur.execute("CREATE TABLE IF NOT EXISTS login_failures (id BIGSERIAL PRIMARY KEY, at BIGINT NOT NULL)")
+            cur.execute("CREATE INDEX IF NOT EXISTS login_failures_at ON login_failures (at)")
         db.commit()
         default_rosters.initialize(db)
 
@@ -63,6 +78,16 @@ def db_put(key, value):
                 (key, value),
             )
         db.commit()
+
+
+def db_put_if_absent(key, value):
+    """Store a setting only if it does not exist yet; True when this call stored it (atomic)."""
+    with connect() as db:
+        with db.cursor() as cur:
+            cur.execute("INSERT INTO settings (key,value) VALUES (%s,%s) ON CONFLICT (key) DO NOTHING", (key, value))
+            created = cur.rowcount == 1
+        db.commit()
+        return created
 
 
 def lock_state(cur):
@@ -117,33 +142,33 @@ def retry_after(ip):
             cur.execute("SELECT locked_until FROM login_attempts WHERE ip=%s", (ip,))
             row = cur.fetchone()
             wait = max(0, row[0] - now) if row else 0
-            cur.execute(
-                "SELECT COALESCE(SUM(failures),0) FROM login_attempts WHERE window_start > %s", (now - 60,)
-            )
+            cur.execute("SELECT COUNT(*) FROM login_failures WHERE at > %s", (now - 60,))
             if cur.fetchone()[0] >= policy.GLOBAL_FAILURES_PER_MINUTE:
                 wait = max(wait, 60)
             return wait
 
 
 def record_failure(ip):
+    """Count one failed sign-in. Each statement is atomic, so concurrent failures are never lost."""
     now = int(time.time())
     with connect() as db:
         with db.cursor() as cur:
-            cur.execute("SELECT failures, window_start FROM login_attempts WHERE ip=%s", (ip,))
-            row = cur.fetchone()
-            failures, start = (row if row else (0, now))
-            if now - start > policy.WINDOW_SECONDS:
-                failures, start = 0, now
-            failures += 1
-            locked_until = 0
-            if failures >= policy.FAILURES_BEFORE_LOCK:
-                locked_until, failures = now + policy.LOCK_SECONDS, 0
+            cur.execute("INSERT INTO login_failures (at) VALUES (%s)", (now,))
+            cur.execute("DELETE FROM login_failures WHERE at < %s", (now - 3600,))
+            # Increment in the database itself: a new window starts after WINDOW_SECONDS.
             cur.execute(
-                "INSERT INTO login_attempts (ip,failures,window_start,locked_until) VALUES (%s,%s,%s,%s) "
-                "ON CONFLICT (ip) DO UPDATE SET failures=EXCLUDED.failures, "
-                "window_start=EXCLUDED.window_start, locked_until=EXCLUDED.locked_until",
-                (ip, failures, start, locked_until),
+                "INSERT INTO login_attempts (ip,failures,window_start,locked_until) VALUES (%s,1,%s,0) "
+                "ON CONFLICT (ip) DO UPDATE SET "
+                "failures = CASE WHEN %s - login_attempts.window_start > %s THEN 1 ELSE login_attempts.failures + 1 END, "
+                "window_start = CASE WHEN %s - login_attempts.window_start > %s THEN %s ELSE login_attempts.window_start END "
+                "RETURNING failures",
+                (ip, now, now, policy.WINDOW_SECONDS, now, policy.WINDOW_SECONDS, now),
             )
+            if cur.fetchone()[0] >= policy.FAILURES_BEFORE_LOCK:
+                cur.execute(
+                    "UPDATE login_attempts SET locked_until=%s, failures=0, window_start=%s WHERE ip=%s",
+                    (now + policy.LOCK_SECONDS, now, ip),
+                )
         db.commit()
 
 
@@ -298,6 +323,10 @@ def api_state_post():
                 ):
                     return err("Reopen Set " + stage + " in War manager before changing its results or qualifiers.", 409)
 
+            problem = validate.check_update(previous, data)
+            if problem:
+                return err("Not saved: " + problem, 422)
+
             cur.execute(
                 "INSERT INTO settings (key,value) VALUES (%s,%s) "
                 "ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value",
@@ -331,8 +360,10 @@ def api_login():
             return err(message, 403)
         if len(password) < 10:
             return err("Use at least 10 characters.")
-        stored = policy.hash_password(password)
-        db_put("password", stored)
+        # Two first visits at once: only one password can be created; the other request loses.
+        if not db_put_if_absent("password", policy.hash_password(password)):
+            return err("The organizer password was just created on another device. Sign in with that password.", 409)
+        stored = db_get("password")
 
     if not policy.verify_password(password, stored):
         record_failure(ip)
@@ -363,7 +394,7 @@ def api_host_state():
     if not is_authorized() and not (expected and key and hmac.compare_digest(key, expected)):
         return err("Open a current host link from your organizer.", 401)
     current = json.loads(db_get("state") or '{"teams":[],"matches":[]}')
-    return reply({"teams": current["teams"], "matches": current["matches"]})
+    return reply(policy.host_view(current))
 
 
 @app.route("/api/host/access", methods=["POST"])

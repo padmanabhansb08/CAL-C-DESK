@@ -135,4 +135,18 @@ bad = {'panels': [{'placement': 3, 'cells': [None] * 4, 'review': []}, {'placeme
                   {'placement': 6, 'cells': [None] * 4, 'review': []}], 'warnings': []}
 verify.verify_rows(bad)
 assert any('Placement 3 was assigned to 2 panels' in w for w in bad['warnings']) and any('4, 5' in w for w in bad['warnings'])
-print('PASS: label/digit pairing, column and panel grouping, placement inference, partial panels, fused words, name cleanup, roster assignment and verification.')
+# ---- 7. a placement number that disagrees with the row order is flagged, not silently replaced
+from types import SimpleNamespace
+from ocr_engine.scoreboard import _assign_ranks
+ranks = [SimpleNamespace(cy=100 + 80 * i, text=str(t)) for i, t in enumerate((1, 2, 9))]
+notes = []
+assigned = _assign_ranks([[], [], []], [100, 180, 260], ranks, 80, 0, 20, notes)
+assert [r[0] for r in assigned] == [1, 2, 3] and assigned[2][1] == 'disputed' and assigned[2][2] == 9, assigned
+assert any('reads 9' in n for n in notes), notes
+flagged = {'panels': [{'placement': 3, 'placementSource': 'disputed', 'placementRead': 9, 'cells': [None] * 4, 'review': []}], 'warnings': []}
+verify.verify_rows(flagged)
+assert [f['code'] for f in flagged['panels'][0]['flags']] == ['partial', 'placement_disputed'], flagged['panels'][0]['flags']
+high = {'panels': [{'placement': 1, 'cells': [{'kills': 99, 'killsConf': .99, 'killAlternatives': [], 'clipped': False}] + [{'kills': 1, 'killsConf': .99, 'killAlternatives': [], 'clipped': False}] * 3, 'review': []}], 'warnings': []}
+verify.verify_rows(high)
+assert {'code': 'high_kills', 'player': 0, 'text': 'Player 1: 99 kills is unusually high'} in high['panels'][0]['flags']
+print('PASS: label/digit pairing, column and panel grouping, placement inference, partial panels, fused words, name cleanup, roster assignment, verification, disputed placements and review flags.')
