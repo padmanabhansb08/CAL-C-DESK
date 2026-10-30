@@ -265,7 +265,7 @@ def api_session():
     return reply({
         "setup": setup,
         "authenticated": is_authorized(),
-        "setupRequiresToken": setup and policy.setup_requires_token(request.headers),
+        "setupRequiresToken": False,
     })
 
 
@@ -355,9 +355,6 @@ def api_login():
     stored = db_get("password")
 
     if not stored:
-        allowed, message = policy.setup_allowed(request.headers, data.get("setupToken"))
-        if not allowed:
-            return err(message, 403)
         if len(password) < 10:
             return err("Use at least 10 characters.")
         # Two first visits at once: only one password can be created; the other request loses.

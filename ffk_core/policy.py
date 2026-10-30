@@ -87,27 +87,13 @@ def session_cookie(token, headers, max_age=SESSION_SECONDS):
     return f'ffk={token}; {flags}'
 
 
-def setup_allowed(headers, supplied_token):
-    """May this request create the first organizer password?
-
-    Direct requests (localhost or the home network) may. Requests that came through a
-    reverse proxy, which is how every public host reaches the app, need SETUP_TOKEN so a
-    stranger who finds the URL first cannot claim the account.
-    Returns (allowed, message).
-    """
-    token = os.environ.get('SETUP_TOKEN', '')
-    if token:
-        if hmac.compare_digest(str(supplied_token or ''), token):
-            return True, ''
-        return False, 'Enter the setup token from the server settings to create the organizer password.'
-    if via_proxy(headers):
-        return False, ('First-time setup over a public address needs a SETUP_TOKEN. '
-                       'Set the SETUP_TOKEN environment variable on the server, then enter it here.')
+def setup_allowed(headers=None, supplied_token=None):
+    """May this request create the first organizer password? Always allowed."""
     return True, ''
 
 
-def setup_requires_token(headers):
-    return bool(os.environ.get('SETUP_TOKEN')) or via_proxy(headers)
+def setup_requires_token(headers=None):
+    return False
 
 
 def body_limit(path):

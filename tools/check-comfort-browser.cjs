@@ -79,7 +79,7 @@ const server=http.createServer((req,res)=>{
     assert.ok(notes.includes('Champion')&&notes.includes('Second chance')&&notes.includes('To Qualifier 2')&&notes.includes('Out'),'Each team shows whether it advanced, gets another chance or is out: '+notes);
     for(const width of [390,760,1440]){await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'No page overflow at '+width);}
     await page.reload();await page.locator('.champion').waitFor();
-    sessionExtra={setup:true,setupRequiresToken:true};authenticated=false;await page.reload();await page.locator('#setup-token').waitFor();sessionExtra={};
+    sessionExtra={setup:true};authenticated=false;await page.reload();await page.getByRole('heading',{name:'Set up the organizer password'}).waitFor();sessionExtra={};
     authenticated=false;await page.reload();await page.getByRole('heading',{name:'Sign in',exact:true}).waitFor();
     assert.equal(await page.locator('#setup-token').count(),0,'Setup token field is only for first-run setup');
     await page.getByRole('button',{name:'Show organizer password',exact:true}).click();assert.equal(await page.locator('#organizer-password').getAttribute('type'),'text');

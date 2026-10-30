@@ -76,18 +76,12 @@ with tempfile.TemporaryDirectory() as folder:
     status, _, _ = call('POST', '/api/login', {'password': 'x' * 10}, {'Content-Length': '2000001'})
     assert status in (413, 400)
 
-    # First-run setup: refused through a proxy without a token, allowed directly.
+    # First-run setup: allowed directly without requiring a setup token.
     status, body, _ = call('GET', '/api/session', headers={'X-Forwarded-For': '8.8.8.8'})
-    assert body['setup'] and body['setupRequiresToken']
-    status, body, _ = call('POST', '/api/login', {'password': 'a-long-password'}, {'X-Forwarded-For': '8.8.8.8'})
-    assert status == 403 and 'SETUP_TOKEN' in body['error']
-    assert server.get('password') is None
+    assert body['setup'] and not body['setupRequiresToken']
 
-    os.environ['SETUP_TOKEN'] = 'token-123'
-    status, body, _ = call('POST', '/api/login', {'password': 'a-long-password', 'setupToken': 'wrong'}, {'X-Forwarded-For': '8.8.8.8'})
-    assert status == 403
     server.session_create('expired', time.time() - 5)
-    status, body, cookie = call('POST', '/api/login', {'password': 'a-long-password', 'setupToken': 'token-123'},
+    status, body, cookie = call('POST', '/api/login', {'password': 'a-long-password'},
                                 {'X-Forwarded-For': '8.8.8.8', 'X-Forwarded-Proto': 'https'})
     assert status == 200 and 'Secure' in cookie and 'HttpOnly' in cookie, (status, cookie)
     with server.quick() as db:
@@ -96,7 +90,6 @@ with tempfile.TemporaryDirectory() as folder:
     token = cookie.split('ffk=')[1].split(';')[0]
     assert token not in stored and policy.hash_token(token) in stored, 'only the hash of a session token is stored'
     assert server.session_valid(token) and not server.session_valid('nope')
-    os.environ.pop('SETUP_TOKEN')
 
     # Security headers on pages and API replies; health reports the database.
     status, body, _ = call('GET', '/health')

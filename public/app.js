@@ -111,9 +111,9 @@ async function go(next){if(busy){toast('Wait for screenshot reading to finish.',
 
 window.addEventListener('beforeunload',e=>{if(busy||(draft&&(!window.isMatchDraftSaved||!window.isMatchDraftSaved()))){e.preventDefault();e.returnValue='';}});
 
-async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup,session.setupRequiresToken);state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
+async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup);state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
 
-function auth(setup,needsToken){
+function auth(setup){
   const action=setup?'Create organizer password':'Sign in';
   // One brand composition (the badge and the War Desk name), then a plain, quiet form.
   $('#app').innerHTML=`<main class="login">
@@ -135,7 +135,7 @@ function auth(setup,needsToken){
             <span class="toggle-text" aria-hidden="true">Show</span>
           </button>
         </div>
-        ${setup&&needsToken?`<label for="setup-token" class="field-label">Setup token</label><div class="login-password-field"><input id="setup-token" type="password" name="setupToken" autocomplete="off" required placeholder="From the SETUP_TOKEN server setting"></div>`:''}
+        
         <p id="login-error" class="login-error" role="alert" aria-live="polite"></p>
         <button class="primary login-submit" type="submit"><span class="submit-text">${action}</span><span class="submit-spinner" aria-hidden="true"></span></button>
       </form>
@@ -160,7 +160,7 @@ function auth(setup,needsToken){
     submit.disabled=true;
     submit.setAttribute('aria-busy','true');
     try{
-      await api('login',{password:field.value,setupToken:$('#setup-token')?.value});
+      await api('login',{password:field.value});
       await init();
     }catch(err){
       error.textContent=err.message||'Incorrect password';

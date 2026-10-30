@@ -181,7 +181,7 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path == '/api/session':
             setup = get('password') is None
             return self.reply(200, {'setup': setup, 'authenticated': self.authorized(),
-                                    'setupRequiresToken': setup and policy.setup_requires_token(self.headers)})
+                                    'setupRequiresToken': False})
         if self.path == '/api/state':
             if not self.authorized(): return self.reply(401, {'error': 'Please sign in.'})
             return self.reply(200, json.loads(get('state') or '{"teams":[],"matches":[]}'))
@@ -235,9 +235,6 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.reply(400, {'error': 'Invalid request'})
             stored = get('password')
             if not stored:
-                allowed, message = policy.setup_allowed(self.headers, data.get('setupToken'))
-                if not allowed:
-                    return self.reply(403, {'error': message})
                 if len(password) < 10: return self.reply(400, {'error': 'Use at least 10 characters.'})
                 # Two first visits at once: only one password can be created; the other request loses.
                 if not put_if_absent('password', policy.hash_password(password)):
@@ -366,7 +363,7 @@ if __name__ == '__main__':
     print('Screenshot reader: ' + ('ready (server-side OCR)' if scanner() else
           'not installed, the browser reader will be used. Install it with: pip install -r requirements-docker.txt'), flush=True)
     if get('password') is None:
-        print('First visit: create the organizer password.' + (' A setup token is required.' if os.environ.get('SETUP_TOKEN') else ''), flush=True)
+        print('First visit: create the organizer password.', flush=True)
     if os.environ.get('BACKUP_HOURS', '6') not in ('0', '0.0'):
         print(f'Backups: every {os.environ.get("BACKUP_HOURS", "6")} h into {backup.backup_dir(DB)} (keeping {os.environ.get("BACKUP_KEEP", "30")})', flush=True)
     if os.environ.get('RENDER') or os.environ.get('FLY_APP_NAME') or os.environ.get('TRUST_PROXY'):
