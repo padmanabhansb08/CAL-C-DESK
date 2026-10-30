@@ -103,8 +103,11 @@ def _assign_players(names, team):
     players = team['players']
     best = (-1.0, [])
     idx = range(len(players))
-    for perm in itertools.permutations(idx, min(4, len(players))):
-        total = sum(player_similarity(names[i], players[j]) if names[i] else 0.0 for i, j in enumerate(perm))
+    k = min(4, len(players))
+    # Each name/player score is computed once; the permutations only add up table entries.
+    sim = [[player_similarity(names[i], p) if names[i] else 0.0 for p in players] for i in range(k)]
+    for perm in itertools.permutations(idx, k):
+        total = sum(sim[i][j] for i, j in enumerate(perm))
         if total > best[0]:
             best = (total, list(perm))
     return best[0] / 4, best[1]
