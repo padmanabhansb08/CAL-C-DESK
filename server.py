@@ -131,10 +131,20 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT / 'public'), **kwargs)
 
+    def send_header(self, keyword, value):
+        if keyword.lower() == 'cache-control':
+            self._cache_control_sent = True
+        super().send_header(keyword, value)
+
     def end_headers(self):
         # self.headers is missing when the request line itself was malformed.
         for name, value in policy.security_headers(getattr(self, 'headers', None) or {}):
             self.send_header(name, value)
+        # Pages and scripts are revalidated on every load (a cheap 304 when unchanged), so a new deploy is
+        # never hidden behind a stale cached copy. API replies already say no-store.
+        if not getattr(self, '_cache_control_sent', False):
+            super().send_header('Cache-Control', 'no-cache')
+        self._cache_control_sent = False
         super().end_headers()
 
     def log_message(self, fmt, *args):

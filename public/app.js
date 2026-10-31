@@ -21,7 +21,7 @@ let state={teams:[],matches:[]}, page=lastPage(), selected=null, tab='teams', dr
 
 // Heavy tools load on first use, in order: the screenshot reader on the results check page, the export
 // tools when Export is chosen, and the in-browser reader only when the server cannot read screenshots.
-const MODULES={reader:['digit-templates.js?v=2','layout.js?v=1','ocr.js?v=15','ocr-learning.js?v=1','ocr-batch.js?v=1','panel-editor.js?v=2'],export:['scoreboard.js?v=5','scoreboard-pdf.js?v=4','templates.js?v=2','export-ui.js?v=4'],tesseract:['vendor/tesseract.min.js']};
+const MODULES={reader:['digit-templates.js?v=2','layout.js?v=1','ocr.js?v=16','ocr-learning.js?v=1','ocr-batch.js?v=1','panel-editor.js?v=2'],export:['scoreboard.js?v=5','scoreboard-pdf.js?v=4','templates.js?v=2','export-ui.js?v=4'],tesseract:['vendor/tesseract.min.js']};
 const loadedModules={};
 function loadModules(name){
   return loadedModules[name]||=MODULES[name].reduce((ready,src)=>ready.then(()=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>{delete loadedModules[name];reject(Error('Could not load '+src.split('?')[0]+'. Check the connection and try again.'));};document.head.append(script);})),Promise.resolve());
@@ -351,7 +351,7 @@ async function scan(skipConfirm=false){
     progress[index]=Math.max(progress[index],Math.min(1,value));
     const overall=progress.reduce((sum,n)=>sum+n,0)/files.length;
     $('#ocr-progress').value=overall;$('#ocr-status').textContent='Reading screenshots · '+Math.round(overall*100)+'%';
-    markScanItem(index,progress[index]);const bar=$('#scan-meter-bar');if(bar)bar.style.width=Math.max(4,overall*100)+'%';
+    markScanItem(index,progress[index]);scanTick();
   };
   try{
     await WarOCRLearning.load().catch(e=>console.warn('Reviewed OCR examples unavailable:',e));
@@ -390,7 +390,7 @@ async function scan(skipConfirm=false){
     // Teams that read cleanly are confirmed here; the organizer is only shown the ones that need a look.
     if(window.autoConfirmDraft)autoConfirmDraft();
     const sum=reviewSummary();
-    $('#ocr-status').textContent=`Results ready · ${sum.read} of ${sum.total} kill counts read · ${sum.confirmed} teams confirmed automatically, ${sum.ready+sum.look} to check`;redrawReview();
+    $('#ocr-status').textContent=`Results ready · ${sum.read} of ${sum.total} kill counts read · ${sum.confirmed} teams confirmed automatically, ${sum.ready+sum.look} to check`;document.querySelector('.intake-panel')?.removeAttribute('open');redrawReview();
   }catch(e){
     restore();setMatchLoading(false);
     const kept=previousDraft?' Your earlier results are unchanged.':'';
@@ -478,23 +478,83 @@ async function logout(){if(busy)return toast('Wait for reading to finish.','warn
 
 
 
-let scanControl=null,scanTimer=null;
+let scanControl=null,scanTimer=null,scanStatusWatch=null,scanView=null;
 function setMatchLoading(active){
   document.querySelector('#review')?.setAttribute('aria-busy',String(active));
-  if(!active){clearInterval(scanTimer);scanTimer=null;scanControl=null;document.querySelector('#scan-card')?.remove();}
+  if(!active){clearInterval(scanTimer);scanTimer=null;scanControl=null;scanStatusWatch?.disconnect();scanStatusWatch=null;scanView=null;document.body?.classList.remove('is-reading');document.querySelector('#scan-card')?.remove();}
 }
-// Reading progress stays on the page: one line per screenshot, elapsed time, and a way out.
+// Reading gets a page of its own: overall percentage, one completion line segment per screenshot, each
+// screenshot with what was found in it once it is done, and a way out. The upload form is hidden meanwhile.
+const READING_RING=2*Math.PI*52,shortTeamName=name=>String(name||'').replace(/^FFK\s+/i,'').trim()||String(name||'');
+const clock=ms=>{const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0');};
 function showScanCard(files){
-  const host=$('#review');if(!host)return;const started=Date.now();
-  host.innerHTML=`<section class="scan-card" id="scan-card"><div class="scan-card-head"><div><h2>Reading ${files.length} screenshot${files.length===1?'':'s'}</h2><p id="scan-card-note" aria-live="polite">Usually 5 to 15 seconds per screenshot.</p></div><button type="button" id="scan-cancel">Cancel</button></div><div class="scan-meter" aria-hidden="true"><span id="scan-meter-bar"></span></div><ol class="scan-list">${files.map((f,i)=>`<li id="scan-item-${i}" class="is-waiting">${images[i]?.url?`<img src="${images[i].url}" alt="">`:''}<span class="scan-name">${esc(f.name)}</span><span class="scan-state">Waiting</span></li>`).join('')}</ol></section>`;
-  $('#scan-cancel').onclick=()=>{scanControl?.abort();$('#scan-cancel').disabled=true;$('#scan-card-note').textContent='Stopping after the current step…';};
-  clearInterval(scanTimer);scanTimer=setInterval(()=>{const note=$('#scan-card-note'),seconds=Math.round((Date.now()-started)/1000);if(note&&!$('#scan-cancel')?.disabled)note.textContent=`${seconds} s so far · usually 5 to 15 seconds per screenshot`;},1000);
-  host.querySelector('#scan-card').scrollIntoView({block:'nearest'});
+  const host=$('#review');if(!host)return;
+  const n=files.length,started=Date.now();document.body?.classList.add('is-reading');
+  scanView={n,started,real:Array(n).fill(0),begun:Array(n).fill(0),shown:0,special:null,stopping:false};
+  const check='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.6l4.2 4.2 8.8-9.4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  host.innerHTML=`<section class="reading-stage" id="scan-card" aria-label="Reading screenshots">
+    <div class="reading-hero">
+      <div class="reading-ring" aria-hidden="true"><svg viewBox="0 0 120 120"><circle class="ring-track" cx="60" cy="60" r="52"/><circle class="ring-fill" id="reading-ring" cx="60" cy="60" r="52" stroke-dasharray="${READING_RING.toFixed(1)}" stroke-dashoffset="${READING_RING.toFixed(1)}"/></svg><div class="ring-value"><strong id="reading-pct">0</strong><span>%</span></div></div>
+      <div class="reading-main">
+        <p class="reading-kicker">Step 2 of 3 · Reading</p>
+        <h2>Reading ${n} screenshot${n===1?'':'s'}</h2>
+        <p class="reading-live" id="scan-live" role="status"><i aria-hidden="true"></i><span>Getting ready…</span></p>
+        <div class="reading-line" id="reading-line" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">${files.map((_,i)=>`<span id="reading-seg-${i}"><i></i></span>`).join('')}</div>
+        <p class="reading-count"><b id="reading-done">0 of ${n} done</b><span id="scan-card-note">0:00 so far · usually 5 to 15 seconds per screenshot</span></p>
+      </div>
+      <button type="button" id="scan-cancel">Cancel</button>
+    </div>
+    <dl class="reading-stats" aria-label="Found so far">
+      <div><dt>Placements</dt><dd><b id="stat-placements">–</b><small>of 12</small></dd></div>
+      <div><dt>Teams matched</dt><dd><b id="stat-teams">–</b><small>of 12</small></dd></div>
+      <div><dt>Kill counts read</dt><dd><b id="stat-kills">–</b><small>of 48</small></dd></div>
+    </dl>
+    <ol class="scan-list">${files.map((f,i)=>`<li id="scan-item-${i}" class="is-waiting"><div class="scan-thumb">${images[i]?.url?`<img src="${images[i].url}" alt="">`:''}<span class="scan-index">${i+1}</span><span class="scan-badge" aria-hidden="true">${check}</span></div><div class="scan-meta"><span class="scan-name" title="${esc(f.name)}">${esc(f.name)}</span><span class="scan-state">Waiting</span></div><p class="scan-found" id="scan-found-${i}" hidden></p></li>`).join('')}</ol></section>`;
+  $('#scan-cancel').onclick=()=>{scanControl?.abort();$('#scan-cancel').disabled=true;scanView.stopping=true;scanTick();};
+  // Messages from the reader that explain a wait (another read in progress, switching readers) are shown for a few seconds.
+  scanStatusWatch?.disconnect();const status=$('#ocr-status');
+  const noteStatus=()=>{const text=(status.textContent||'').trim();if(scanView&&/^(Another|Switching|Preparing)/.test(text))scanView.special={text,at:Date.now()};};
+  if(status&&typeof MutationObserver!=='undefined'){scanStatusWatch=new MutationObserver(noteStatus);scanStatusWatch.observe(status,{childList:true,characterData:true,subtree:true});}
+  if(status)noteStatus();
+  clearInterval(scanTimer);scanTimer=setInterval(scanTick,250);scanTick();
+  host.querySelector('#scan-card').scrollIntoView({block:'start'});
+}
+function setScanLive(text){const live=document.querySelector('#scan-live span');if(live&&live.textContent!==text)live.textContent=text;}
+// The reader reports a screenshot as finished, not how far along it is, so the bar eases towards (never to) done
+// while a screenshot is being read. The percentage never goes backwards and only reaches 100 when everything is read.
+function scanTick(){
+  const v=scanView;if(!v||!document.getElementById('reading-pct'))return;
+  const now=Date.now(),each=v.real.map((real,i)=>real>=1?1:v.begun[i]?Math.max(real,Math.min(.95,.05+.9*(1-Math.exp(-(now-v.begun[i])/9000)))):0);
+  const done=v.real.filter(x=>x>=1).length;
+  v.shown=Math.max(v.shown,Math.min(each.reduce((a,b)=>a+b,0)/v.n,done===v.n?1:.99));
+  const pct=Math.round(v.shown*100);
+  $('#reading-pct').textContent=pct;$('#reading-ring').setAttribute('stroke-dashoffset',(READING_RING*(1-v.shown)).toFixed(1));
+  const line=$('#reading-line');line?.setAttribute('aria-valuenow',String(pct));
+  each.forEach((value,i)=>{const seg=document.getElementById('reading-seg-'+i);if(!seg)return;seg.firstElementChild.style.width=(value*100).toFixed(1)+'%';seg.classList.toggle('is-done',value>=1);});
+  $('#reading-done').textContent=`${done} of ${v.n} done`;
+  const active=v.real.findIndex(x=>x>0&&x<1);
+  setScanLive(v.stopping?'Stopping after the current step…':v.special&&now-v.special.at<6000?v.special.text:done===v.n?'Matching teams and players…':active>=0?(v.n>1?`Reading screenshot ${active+1} of ${v.n}…`:'Reading the screenshot…'):'Getting ready…');
+  const note=$('#scan-card-note');if(note)note.textContent=`${clock(now-v.started)} so far · usually 5 to 15 seconds per screenshot`;
+}
+// What one finished screenshot contained, and the running totals across all finished screenshots.
+function scanTally(){
+  const seen=new Map();
+  images.forEach(source=>(source.rows||[]).forEach(row=>{const entry=seen.get(row.placement)||{team:false,kills:[]};if(row.teamId)entry.team=true;row.players.forEach((p,k)=>{if(Number.isInteger(p.kills))entry.kills[k]=true;});seen.set(row.placement,entry);}));
+  const all=[...seen.values()];return {placements:seen.size,teams:all.filter(e=>e.team).length,kills:all.reduce((n,e)=>n+e.kills.filter(Boolean).length,0)};
+}
+function showScanFound(index){
+  const rows=images[index]?.rows||[],target=document.getElementById('scan-found-'+index);if(!target)return;
+  const names=rows.filter(r=>r.teamId).map(r=>shortTeamName(state.teams.find(t=>t.id===r.teamId)?.name)).filter(Boolean);
+  target.innerHTML=`<strong>${rows.length} placement${rows.length===1?'':'s'}</strong> · ${names.length} team${names.length===1?'':'s'} matched${names.length?`<span class="scan-teams">${names.slice(0,6).map(name=>`<em>${esc(name)}</em>`).join('')}${names.length>6?`<em>+${names.length-6}</em>`:''}</span>`:''}`;
+  target.hidden=false;
+  const tally=scanTally();for(const [id,value] of [['placements',tally.placements],['teams',tally.teams],['kills',tally.kills]]){const el=document.getElementById('stat-'+id);if(el)el.textContent=value;}
 }
 function markScanItem(index,value){
+  const v=scanView;if(v&&index<v.n){v.real[index]=Math.max(v.real[index],value);if(value>0&&!v.begun[index])v.begun[index]=Date.now();}
   const item=document.getElementById('scan-item-'+index);if(!item)return;
   const state=value>=1?'is-done':value>0?'is-active':'is-waiting';if(item.classList.contains(state))return;
   item.className=state;item.querySelector('.scan-state').textContent=value>=1?'Done':value>0?'Reading…':'Waiting';
+  if(value>=1)showScanFound(index);
 }
 
 function openMatchManager(){

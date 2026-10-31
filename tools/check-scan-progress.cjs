@@ -37,12 +37,16 @@ const server=http.createServer(async(req,res)=>{
     await page.locator('#scan-card').waitFor();
     assert.equal(await page.locator('#match-loading').count(),0,'No full-screen overlay');
     assert(await page.locator('.nav').isVisible(),'Navigation stays visible while reading');
+    assert.equal(await page.locator('.intake-panel').isVisible(),false,'The upload form gives way to the reading page');
+    assert(await page.locator('#reading-pct').isVisible(),'The overall percentage is shown');
+    assert.equal(await page.locator('#reading-line > span').count(),2,'One completion segment per screenshot');
     assert.equal(await page.locator('.scan-list li').count(),2,'One line per screenshot');
     await page.waitForFunction(()=>document.querySelector('#scan-item-0')?.classList.contains('is-active'));
     assert.equal(await page.locator('#scan-item-1 .scan-state').innerText(),'Waiting');
     await page.waitForFunction(()=>/so far/.test(document.querySelector('#scan-card-note')?.textContent||''),null,{timeout:4000});
     await page.locator('#scan-cancel').click();
     await page.waitForFunction(()=>!document.querySelector('#scan-card'));
+    assert.equal(await page.evaluate(()=>document.body.classList.contains('is-reading')),false,'The reading page is gone after cancelling');
     assert((await page.locator('#toast').innerText()).includes('earlier results are unchanged'),'Says reading was cancelled and nothing was lost');
     assert.equal(await page.evaluate(()=>draft?.rows[0].teamId),'team-0','Earlier results are restored after cancelling');
     assert.equal(await page.locator('.desk-row').count(),12,'The earlier results check is shown again');
@@ -50,6 +54,6 @@ const server=http.createServer(async(req,res)=>{
     assert.equal(await page.evaluate(()=>busy),false,'The desk is usable again');
     releaseScan?.();
     assert.deepEqual(errors,[]);
-    console.log('PASS: reading progress stays on the page with one line per screenshot, elapsed time and cancel; cancelling keeps earlier results.');
+    console.log('PASS: reading shows its own page (percentage, completion line, one card per screenshot, elapsed time and cancel); cancelling keeps earlier results.');
   }finally{releaseScan?.();if(browser)await browser.close();server.closeAllConnections?.();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
