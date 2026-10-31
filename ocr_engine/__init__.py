@@ -19,6 +19,18 @@ def _clip(page, regions):
         page.words = [w for w in page.words if any(b[0] <= w.cx <= b[2] and b[1] <= w.cy <= b[3] for b in boxes)]
 
 
+def warm():
+    """Load the recogniser's models and run it once, so the first real screenshot is not the slow one."""
+    import numpy as np
+    from .engine import _get_engine
+    engine = _get_engine()
+    try:
+        engine(np.full((48, 192, 3), 255, dtype=np.uint8), use_det=True, use_cls=True, use_rec=True)
+    except Exception:
+        pass  # loading the models is the part that matters; a blank image may simply find no text
+    return 'warm'
+
+
 def scan(image_bytes, roster=None, regions=None):
     """Read one screenshot and return structured, reasoned rows (JSON-serialisable)."""
     page = read_page(image_bytes)

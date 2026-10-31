@@ -52,7 +52,7 @@ async function scanOnServer(sources,files,candidates,updateProgress,signal){
     let scan;
     for(let attempt=0;;attempt++){
       try{scan=await api('ocr/scan',{image,roster,regions},{signal});break;}
-      catch(e){if(e.name==='AbortError'||!e.busy||attempt>=5)throw e;$('#ocr-status').textContent=`Another screenshot is being read. Waiting your turn (${attempt+1} of 5)…`;await new Promise(r=>setTimeout(r,4000));}
+      catch(e){if(e.name==='AbortError'||!e.busy||attempt>=8)throw e;$('#ocr-status').textContent='Another screenshot is being read. Waiting your turn…';await new Promise(r=>setTimeout(r,4000));}
     }
     const result=WarOCR.fromServerScan(scan);
     if(!result.length)throw Error(scan.warnings?.[0]||'No result panels were found in this screenshot.');
@@ -362,7 +362,8 @@ async function scan(skipConfirm=false){
     let rowsByScreenshot=null;
     if(localOCR.scan){
       try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress,signal);}
-      catch(e){if(e.name==='AbortError')throw e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
+      // A busy server is a queue, not a failure: it is reported as such instead of switching to the slow in-browser reader.
+      catch(e){if(e.name==='AbortError'||e.busy)throw e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);if(scanView)scanView.fallback=String(e.message||e).slice(0,140);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
     }
     if(!rowsByScreenshot)await loadModules('tesseract').catch(()=>{});
     if(!rowsByScreenshot&&!window.Tesseract)throw Error('The in-browser reader could not load (it needs an internet connection). Use a server with the screenshot reader installed, or enter results by hand.');
@@ -401,9 +402,10 @@ async function scan(skipConfirm=false){
       return;
     }
     console.error('Screenshot processing failed',e);
-    $('#ocr-status').textContent='Unable to read these screenshots.'+kept;
+    const reason=e.busy?'The screenshot reader is still busy with another read. Wait a minute and try again, or enter results by hand.':'Unable to read these screenshots. Try clearer screenshots or enter results by hand.';
+    $('#ocr-status').textContent=(e.busy?'The screenshot reader is busy.':'Unable to read these screenshots.')+kept;
     if(draft)redrawReview();else $('#review').innerHTML='';
-    toast('Unable to read these screenshots. Try clearer screenshots or enter results by hand.'+kept,'error');
+    toast(reason+kept,'error');
   }finally{
     busy=false;setMatchLoading(false);$('#scan').disabled=false;$('#manual').disabled=false;$('#screenshots').disabled=false;showSources();window.refreshUploadStatus?.();
   }
@@ -490,7 +492,7 @@ const clock=ms=>{const s=Math.max(0,Math.round(ms/1000));return Math.floor(s/60)
 function showScanCard(files){
   const host=$('#review');if(!host)return;
   const n=files.length,started=Date.now();document.body?.classList.add('is-reading');
-  scanView={n,started,real:Array(n).fill(0),begun:Array(n).fill(0),shown:0,special:null,stopping:false};
+  scanView={n,started,real:Array(n).fill(0),begun:Array(n).fill(0),shown:0,special:null,stopping:false,queued:false,fallback:''};
   const check='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12.6l4.2 4.2 8.8-9.4" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   host.innerHTML=`<section class="reading-stage" id="scan-card" aria-label="Reading screenshots">
     <div class="reading-hero">
@@ -504,27 +506,28 @@ function showScanCard(files){
       </div>
       <button type="button" id="scan-cancel">Cancel</button>
     </div>
+    <p class="reading-notice" id="reading-notice" role="status" hidden></p>
     <dl class="reading-stats" aria-label="Found so far">
-      <div><dt>Placements</dt><dd><b id="stat-placements">–</b><small>of 12</small></dd></div>
-      <div><dt>Teams matched</dt><dd><b id="stat-teams">–</b><small>of 12</small></dd></div>
-      <div><dt>Kill counts read</dt><dd><b id="stat-kills">–</b><small>of 48</small></dd></div>
+      <div><dt>Placements</dt><dd><b id="stat-placements">0</b><small>of 12</small></dd></div>
+      <div><dt>Teams matched</dt><dd><b id="stat-teams">0</b><small>of 12</small></dd></div>
+      <div><dt>Kill counts read</dt><dd><b id="stat-kills">0</b><small>of 48</small></dd></div>
     </dl>
     <ol class="scan-list">${files.map((f,i)=>`<li id="scan-item-${i}" class="is-waiting"><div class="scan-thumb">${images[i]?.url?`<img src="${images[i].url}" alt="">`:''}<span class="scan-index">${i+1}</span><span class="scan-badge" aria-hidden="true">${check}</span></div><div class="scan-meta"><span class="scan-name" title="${esc(f.name)}">${esc(f.name)}</span><span class="scan-state">Waiting</span></div><p class="scan-found" id="scan-found-${i}" hidden></p></li>`).join('')}</ol></section>`;
   $('#scan-cancel').onclick=()=>{scanControl?.abort();$('#scan-cancel').disabled=true;scanView.stopping=true;scanTick();};
   // Messages from the reader that explain a wait (another read in progress, switching readers) are shown for a few seconds.
   scanStatusWatch?.disconnect();const status=$('#ocr-status');
-  const noteStatus=()=>{const text=(status.textContent||'').trim();if(scanView&&/^(Another|Switching|Preparing)/.test(text))scanView.special={text,at:Date.now()};};
+  const noteStatus=()=>{const text=(status.textContent||'').trim();if(!scanView)return;if(/^Another/.test(text))scanView.queued=true;if(/^(Another|Switching|Preparing)/.test(text))scanView.special={text,at:Date.now()};};
   if(status&&typeof MutationObserver!=='undefined'){scanStatusWatch=new MutationObserver(noteStatus);scanStatusWatch.observe(status,{childList:true,characterData:true,subtree:true});}
   if(status)noteStatus();
   clearInterval(scanTimer);scanTimer=setInterval(scanTick,250);scanTick();
-  host.querySelector('#scan-card').scrollIntoView({block:'start'});
+  host.querySelector('#scan-card').scrollIntoView({block:'nearest'});
 }
 function setScanLive(text){const live=document.querySelector('#scan-live span');if(live&&live.textContent!==text)live.textContent=text;}
 // The reader reports a screenshot as finished, not how far along it is, so the bar eases towards (never to) done
 // while a screenshot is being read. The percentage never goes backwards and only reaches 100 when everything is read.
 function scanTick(){
   const v=scanView;if(!v||!document.getElementById('reading-pct'))return;
-  const now=Date.now(),each=v.real.map((real,i)=>real>=1?1:v.begun[i]?Math.max(real,Math.min(.95,.05+.9*(1-Math.exp(-(now-v.begun[i])/9000)))):0);
+  const now=Date.now(),each=v.real.map((real,i)=>real>=1?1:v.begun[i]?Math.max(real,v.queued?0:Math.min(.95,.05+.9*(1-Math.exp(-(now-v.begun[i])/9000)))):0);
   const done=v.real.filter(x=>x>=1).length;
   v.shown=Math.max(v.shown,Math.min(each.reduce((a,b)=>a+b,0)/v.n,done===v.n?1:.99));
   const pct=Math.round(v.shown*100);
@@ -533,7 +536,12 @@ function scanTick(){
   each.forEach((value,i)=>{const seg=document.getElementById('reading-seg-'+i);if(!seg)return;seg.firstElementChild.style.width=(value*100).toFixed(1)+'%';seg.classList.toggle('is-done',value>=1);});
   $('#reading-done').textContent=`${done} of ${v.n} done`;
   const active=v.real.findIndex(x=>x>0&&x<1);
-  setScanLive(v.stopping?'Stopping after the current step…':v.special&&now-v.special.at<6000?v.special.text:done===v.n?'Matching teams and players…':active>=0?(v.n>1?`Reading screenshot ${active+1} of ${v.n}…`:'Reading the screenshot…'):'Getting ready…');
+  setScanLive(v.stopping?'Stopping after the current step…':v.special&&now-v.special.at<12000?v.special.text:done===v.n?'Matching teams and players…':active>=0?(v.n>1?`Reading screenshot ${active+1} of ${v.n}…`:'Reading the screenshot…'):'Getting ready…');
+  // Say how long the screenshot being read has been going, and say so plainly when something makes it slow.
+  v.real.forEach((real,i)=>{if(real>0&&real<1&&v.begun[i]){const state=document.querySelector('#scan-item-'+i+' .scan-state');if(state)state.textContent=(v.queued?'In queue… ':'Reading… ')+clock(now-v.begun[i]);}});
+  const slow=v.real.some((real,i)=>real>0&&real<1&&v.begun[i]&&now-v.begun[i]>45000);
+  const notice=$('#reading-notice'),text=v.fallback?`The server reader could not read this (${v.fallback}). Using the slower in-browser reader, which can take a minute or more per screenshot.`:v.queued&&!done?'Another screenshot was still being read on the server, so this one is waiting for its turn. A read left running clears within two minutes.':slow?'This is taking longer than usual. The server may be busy. You can cancel and try again, or enter results by hand.':'';
+  if(notice){if(notice.textContent!==text)notice.textContent=text;notice.hidden=!text;}
   const note=$('#scan-card-note');if(note)note.textContent=`${clock(now-v.started)} so far · usually 5 to 15 seconds per screenshot`;
 }
 // What one finished screenshot contained, and the running totals across all finished screenshots.
@@ -554,7 +562,7 @@ function markScanItem(index,value){
   const item=document.getElementById('scan-item-'+index);if(!item)return;
   const state=value>=1?'is-done':value>0?'is-active':'is-waiting';if(item.classList.contains(state))return;
   item.className=state;item.querySelector('.scan-state').textContent=value>=1?'Done':value>0?'Reading…':'Waiting';
-  if(value>=1)showScanFound(index);
+  if(value>=1){if(v)v.queued=false;showScanFound(index);}
 }
 
 function openMatchManager(){

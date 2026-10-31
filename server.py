@@ -27,6 +27,25 @@ def scanner():
     except Exception:
         return None
 
+def warm_reader():
+    """Start the reader process and load its models at startup (SCAN_WARM=0 turns it off).
+
+    Without this the first screenshot after every restart or deploy pays for launching the worker and loading
+    the models on top of reading, which on a small host can double its time."""
+    engine = scanner()
+    if engine is None or os.environ.get('SCAN_WARM', '1') == '0':
+        return
+
+    def work():
+        started = time.time()
+        try:
+            scan_gate.run(engine.warm)
+            log.info('screenshot reader warm seconds=%.1f', time.time() - started)
+        except Exception as error:
+            log.warning('screenshot reader warm-up skipped: %s', error)
+    threading.Thread(target=work, daemon=True, name='warm-reader').start()
+
+
 class WarDeskServer(ThreadingHTTPServer):
     # Windows SO_REUSEADDR can let an old and new process share the same port.
     allow_reuse_address = os.name != 'nt'
@@ -378,4 +397,5 @@ if __name__ == '__main__':
         print(f'Backups: every {os.environ.get("BACKUP_HOURS", "6")} h into {backup.backup_dir(DB)} (keeping {os.environ.get("BACKUP_KEEP", "30")})', flush=True)
     if os.environ.get('RENDER') or os.environ.get('FLY_APP_NAME') or os.environ.get('TRUST_PROXY'):
         print(f'Trusting {policy.trusted_hops()} reverse proxy hop(s) for client addresses.', flush=True)
+    warm_reader()
     WarDeskServer(('0.0.0.0', port), Handler).serve_forever()
