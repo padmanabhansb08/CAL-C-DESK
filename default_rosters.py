@@ -3,6 +3,8 @@ import json
 import re
 import uuid
 
+from ffk_core import weekly
+
 VERSION = 'season11-poster-defaults-v1'
 VINI_VERSION = 'ffk-vini-default-v1'
 VINI_MEMBERS = ['FFK VINI', 'FFK BALA', 'FFK HAKAI', 'FFK PADHU']
@@ -46,6 +48,17 @@ def key(value):
 def initialize(db):
     _initialize_poster_rosters(db)
     _initialize_vini_roster(db)
+    _initialize_set_a_week(db)
+
+
+def _initialize_set_a_week(db):
+    if db.execute('SELECT 1 FROM settings WHERE key=?', (weekly.VERSION,)).fetchone():
+        return
+    row = db.execute("SELECT value FROM settings WHERE key='state'").fetchone()
+    state = json.loads(row[0]) if row else {'teams': [], 'matches': []}
+    weekly.apply_set_a(state)
+    db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('state', json.dumps(state)))
+    db.execute('INSERT INTO settings VALUES (?,?)', (weekly.VERSION, 'applied'))
 
 
 def _initialize_poster_rosters(db):

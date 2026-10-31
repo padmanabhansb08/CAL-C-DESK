@@ -8,6 +8,7 @@ and a weak reading is settled by what the other panels already claimed.
 import itertools
 import re
 import unicodedata
+from typing import NamedTuple
 
 # Common look-alike letters from decorative Unicode names (Cyrillic/Greek).
 _LOOKALIKES = str.maketrans({
@@ -98,19 +99,47 @@ def player_similarity(observed, player):
     return similarity(observed, player['name'])
 
 
+NOISE = 0.5   # unrelated names still share letters; below this a similarity is not evidence
+SOLID = 0.7   # a player counts as found at this similarity
+IGL_SCORE = 0.85
+IGL_EXACT = 0.99
+EXTRA_PLAYER = 0.3   # a team needs at least one more found player than any rival, unless its IGL is exact
+
+
+class Fit(NamedTuple):
+    score: float      # average similarity of the four names, noise removed
+    pairing: list     # roster index for each name
+    evidence: float   # summed similarity of the players that were really found
+    found: bool       # the IGL, or any two players, were found
+    exact: bool       # the IGL was read exactly
+
+
+def captain_index(team):
+    """Players change week to week; the IGL (captain) is the constant that names the team."""
+    players = team['players']
+    return next((i for i, p in enumerate(players) if p.get('isCaptain')), 0)
+
+
 def _assign_players(names, team):
-    """Best pairing of up to four recognised names to the team's players."""
+    """Best pairing of up to four recognised names to the team's players.
+
+    `found` says whether the evidence is enough to name the team: its IGL, or any two of its players.
+    """
     players = team['players']
     best = (-1.0, [])
     idx = range(len(players))
     k = min(4, len(players))
     # Each name/player score is computed once; the permutations only add up table entries.
     sim = [[player_similarity(names[i], p) if names[i] else 0.0 for p in players] for i in range(k)]
+    sim = [[s if s >= NOISE else 0.0 for s in row] for row in sim]
     for perm in itertools.permutations(idx, k):
         total = sum(sim[i][j] for i, j in enumerate(perm))
         if total > best[0]:
             best = (total, list(perm))
-    return best[0] / 4, best[1]
+    solid = [(j, sim[i][j]) for i, j in enumerate(best[1]) if sim[i][j] >= SOLID]
+    igl = captain_index(team)
+    igl_score = max([s for j, s in solid if j == igl] + [0.0])
+    return Fit(best[0] / 4, best[1], sum(s for _, s in solid), len(solid) >= 2 or igl_score >= IGL_SCORE, igl_score >= IGL_EXACT)
 
 
 def _hungarian(cost):
@@ -153,11 +182,16 @@ def _hungarian(cost):
     return result
 
 
-def _team_ok(score, strong, anchors, margin):
-    """Accept a team only on distinct-player evidence that clearly beats the runner-up."""
-    if margin < 0.12:
+def _team_ok(fit, rivals):
+    """Accept a team when its IGL, or any two of its players, are found and no other team is as well supported.
+
+    Rivals are only the teams that could themselves be named from this panel; noise from unrelated names
+    never counts. An exactly read IGL settles overlapping names ("SANJAY" inside "SANJAY 1M").
+    """
+    if not fit.found:
         return False
-    return strong >= 2 or (anchors >= 1 and score >= 0.45)
+    rival = max([r.evidence for r in rivals] + [0.0])
+    return fit.evidence - rival >= EXTRA_PLAYER or (fit.exact and not any(r.exact for r in rivals))
 
 
 def match_rosters(result, roster):
@@ -172,13 +206,16 @@ def match_rosters(result, roster):
         row = []
         for team in teams:
             if len(team['players']) < 4 and len(team['players']) == 0:
-                row.append((0.0, []))
+                row.append(Fit(0.0, [], 0.0, False, False))
             else:
                 row.append(_assign_players(names, team))
         table.append(row)
     n, m = len(panels), len(teams)
     size = max(n, m)
-    cost = [[1.0 - (table[i][j][0] if i < n and j < m else 0.0) for j in range(size)] for i in range(size)]
+    # Players found for certain decide who gets which team (a team that can actually be named comes first);
+    # looser name similarity only breaks ties.
+    support = lambda fit: fit.evidence / 4 + 0.25 * fit.score + (0.1 if fit.found else 0.0)
+    cost = [[1.0 - (support(table[i][j]) if i < n and j < m else 0.0) for j in range(size)] for i in range(size)]
     chosen = _hungarian(cost)
     for i, panel in enumerate(panels):
         j = chosen[i] if i < len(chosen) else None
@@ -193,9 +230,7 @@ def match_rosters(result, roster):
             names = [(c['rawName'] or c['name']) if c else '' for c in panel['cells']]
             for ci, pj in enumerate(pairing):
                 player_scores.append(player_similarity(names[ci], team['players'][pj]) if names[ci] else 0.0)
-        strong = sum(1 for s in player_scores if s >= 0.7)
-        anchors = sum(1 for s in player_scores if s >= 0.94)
-        ok = bool(team) and _team_ok(own, strong, anchors, own - rival)
+        ok = bool(team) and _team_ok(table[i][j], [table[i][k] for k in range(m) if k != j and table[i][k].found])
         # A globally forced choice (the best team was taken by a stronger panel) needs stronger evidence.
         taken_better = team is not None and scores and scores[0][1] != j and scores[0][0] > own + 0.05
         panel['team'] = {

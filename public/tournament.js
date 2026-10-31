@@ -14,6 +14,14 @@
     const other=set==='A'?'B':'A',excluded=established(s,other)?w.groups[other]:[];
     return s.teams.filter(t=>!excluded.includes(t.id));
   }
+  // Teams to read screenshots against. Before a set has saved results, a suggested list of 12 (this week's
+  // slot list) narrows the search; the pick lists still offer every available team for manual changes.
+  function scanTeams(s,set){
+    const pool=availableTeams(s,set);
+    if(!['A','B'].includes(set)||established(s,set))return pool;
+    const hinted=pool.filter(t=>(s.war?.groups?.[set]||[]).includes(t.id));
+    return hinted.length===12?hinted:pool;
+  }
   function registerResult(s,match){
     const set=match.stage;if(!sets.includes(set))throw Error('Choose Set A, Set B or Set C.');
     const w=s.war||initial(),ids=match.rows.map(row=>row.teamId);
@@ -68,7 +76,7 @@
     migratePlayoffs(w);
     w.cs[key]={teams:pair,scores:[a,b],winner,loser:pair[a>b?1:0],at:new Date().toISOString()};
   }
-  const core={initial,members,matches,standings,qualify,fixture,recordCS,established,availableTeams,registerResult,playoffFormat,playoffKeys,playoffLabels,playoffResults,migratePlayoffs,clearCS};
+  const core={initial,members,matches,standings,qualify,fixture,recordCS,established,availableTeams,scanTeams,registerResult,playoffFormat,playoffKeys,playoffLabels,playoffResults,migratePlayoffs,clearCS};
   if(typeof module!=='undefined'){root.WarOverall=require('./overall.js');module.exports=core;return;}
   root.WarTournament=core;
   const prior={finalize,api,bind};

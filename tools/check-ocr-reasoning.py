@@ -130,6 +130,47 @@ assert dup['panels'][0]['team']['id'] == 'ram' and dup['panels'][1]['team']['id'
 # similar names must not be merged: RAMBO is not RAM
 assert roster.similarity('RAMBO', 'RAM') == 0 and roster.similarity('Ram01', 'RAM') > .9
 
+# ---- 5b. players change weekly: the IGL alone, or any two players, name the team
+def match_one(names, pool=teams):
+    r = {'panels': [panel_with(names)], 'warnings': []}
+    roster.match_rosters(r, {'teams': pool})
+    return r['panels'][0]
+only_igl = match_one(['FFK KO OBITO', 'Newguy', 'Another', 'Third'])
+assert only_igl['team']['id'] == 'obito', only_igl['team']
+assert [c.get('playerId') for c in only_igl['cells']] == ['KO OBITO', None, None, None], only_igl['cells']
+two_players = match_one(['Stranger', 'FFK BALA', 'FFK ZORO', 'Someone'])
+assert two_players['team']['id'] == 'ram' and [c.get('playerId') for c in two_players['cells']] == [None, 'BALA', 'ZORO', None]
+assert match_one(['Stranger', 'FFK BALA', 'Someone', 'Else'])['team']['id'] == '', 'one non-IGL player is not enough'
+# a captain flag, not list position, decides who the IGL is
+flagged_igl = [{'id': 'sw', 'name': 'FFK SW', 'players': [{'id': 'a', 'name': 'FFK ALPHA'}, {'id': 'b', 'name': 'FFK BRAVO', 'isCaptain': True},
+                                                         {'id': 'c', 'name': 'FFK CHARLIE'}, {'id': 'd', 'name': 'FFK DELTA'}]}]
+assert match_one(['BRAVO', 'x1', 'x2', 'x3'], flagged_igl)['team']['id'] == 'sw'
+assert match_one(['ALPHA', 'x1', 'x2', 'x3'], flagged_igl)['team']['id'] == '', 'a non-IGL player alone is not enough'
+# two teams sharing two players: only the IGL tells them apart
+shared = [{'id': t, 'name': 'FFK ' + t, 'players': [{'id': n, 'name': 'FFK ' + n, 'isCaptain': n == t} for n in (t, 'ITACHI', 'APPU', t + '2')]} for t in ('XAVIER', 'YOGESH')]
+assert match_one(['q', 'ITACHI', 'APPU', 'w'], shared)['team']['id'] == '', 'shared players alone cannot pick a team'
+assert match_one(['YOGESH', 'ITACHI', 'APPU', 'w'], shared)['team']['id'] == 'YOGESH'
+
+# this week's real Set A roster: every IGL is found alone among junk names, and all 12 panels resolve together
+from ffk_core import weekly
+week = [{'id': m[0], 'name': 'FFK ' + m[0], 'players': [{'id': 'FFK ' + n, 'name': 'FFK ' + n, 'isCaptain': i == 0} for i, n in enumerate(m)]} for m in weekly.SET_A]
+for members in weekly.SET_A:
+    got = match_one(['FFK ' + members[0], 'xQz', 'Newguy', 'Another'], week)
+    assert got['team']['id'] == members[0], (members[0], got['team'])
+    # a player on two teams (BALA, SASUKE, FLASH, ...) plus a stranger must not pick a team by themselves
+    for shared in members[1:]:
+        for other in weekly.SET_A:
+            if other is not members and shared in other and shared != other[0]:
+                assert match_one(['Stranger', 'FFK ' + shared, 'xQz', 'Other'], week)['team']['id'] == '', (shared, members[0], other[0])
+full = {'panels': [panel_with(['FFK ' + n for n in m]) for m in reversed(weekly.SET_A)], 'warnings': []}
+roster.match_rosters(full, {'teams': week})
+assert [p['team']['id'] for p in full['panels']] == [m[0] for m in reversed(weekly.SET_A)]
+assert all(c['playerId'] for p in full['panels'] for c in p['cells'])
+mixed = [['FFK ' + m[0], 'sub1', 'sub2', 'sub3'] for m in weekly.SET_A[:6]] + [['FFK ' + m[0], 'FFK ' + m[1], 'FFK ' + m[2], 'sub'] for m in weekly.SET_A[6:]]
+swapped = {'panels': [panel_with(names) for names in mixed], 'warnings': []}
+roster.match_rosters(swapped, {'teams': week})
+assert [p['team']['id'] for p in swapped['panels']] == [m[0] for m in weekly.SET_A], [p['team']['name'] for p in swapped['panels']]
+
 # ---- 6. verification
 bad = {'panels': [{'placement': 3, 'cells': [None] * 4, 'review': []}, {'placement': 3, 'cells': [None] * 4, 'review': []},
                   {'placement': 6, 'cells': [None] * 4, 'review': []}], 'warnings': []}

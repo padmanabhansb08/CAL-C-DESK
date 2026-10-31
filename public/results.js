@@ -11,7 +11,8 @@
   // Shared ranks: equal values get the same rank number, the next distinct value skips ahead.
   function sharedRanks(items,same){return items.map((item,i)=>{let r=i;while(r>0&&same(items[r-1],item))r--;return r+1;});}
   function playerRows(match){
-    const list=match.rows.flatMap(r=>r.players.map(p=>({...p,teamName:r.teamName})));
+    // Only detected (registered) players are ranked; substitutes still count in their team's kills.
+    const list=match.rows.flatMap(r=>r.players.filter(p=>!p.isSubstitute).map(p=>({...p,teamName:r.teamName})));
     list.sort((a,b)=>b.kills-a.kills||String(a.name).localeCompare(String(b.name)));
     const ranks=sharedRanks(list,(a,b)=>a.kills===b.kills);return list.map((p,i)=>({...p,rank:ranks[i]}));
   }
@@ -73,7 +74,7 @@
       :`${esc(match.map)} · ${match.stage?'Set '+esc(match.stage):'Practice'} · ${new Date(match.created).toLocaleDateString('en-IN')}`;
     let body;
     if(tab==='teams')body=`${podium(match,rows)}<section class="panel table-wrap">${teamTable(match,rows)}</section><p class="caption">Ranking: points → kills → ${overall?'wins':'Booyah'} → placement points.${overall?' Only teams that played are included.':''}</p>`;
-    else if(tab==='players')body=`<section class="panel table-wrap">${playerTable(match)}</section><p class="caption">${overall?'Total kills across saved matches; substitutes included.':'Kills in this match; substitutes included.'}</p>`;
+    else if(tab==='players')body=`<section class="panel table-wrap">${playerTable(match)}</section><p class="caption">${overall?'Total kills across saved matches':'Kills in this match'}; registered players only. Substitutes still count in their team's kills and points.</p>`;
     else body=`<section class="panel graph-panel">${graphPanel(match)}</section>`;
     return header(overall?'All saved matches':'Verified match results',overall?'Overall points table':esc(match.name),actions)+`<div class="results-toolbar no-print"><div class="form-grid no-print results-controls compact-results-controls">${select}<button type="button" class="manage-matches" onclick="openMatchManager()">Manage matches</button></div>${views}</div><p class="results-context">${context}</p>${body}`;
   };

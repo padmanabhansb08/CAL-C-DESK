@@ -119,11 +119,17 @@
     if(r.warnings.some(w=>/disagree/i.test(w)))out.push('Screenshots disagree');
     (r.flags||[]).forEach(f=>out.push(f.text));
     r.players.forEach((p,j)=>{if(p.kills>HIGH_KILLS&&!(r.flags||[]).some(f=>f.code==='high_kills'&&f.player===j))out.push(`Player ${j+1}: ${p.kills} kills is unusually high`);});
-    const subs=r.players.filter(p=>p.isSubstitute).length;if(subs)out.push((subs===1?'1 substitute':subs+' substitutes')+': make sure it is not a roster player');
     if(!out.length&&rowStatus(r)==='look')out.push('Low-confidence reading: compare with the screenshot');
     return out;
   }
-  function stateOf(r){if(r.confirmed)return 'confirmed';return valid(r)&&rowStatus(r)==='ready'&&!r.players.some(p=>p.isSubstitute)?'ready':'check';}
+  // Players the reader could not place on the roster are match-only substitutes: they count towards the team's
+  // score but never need confirming, and they are left out of the player statistics.
+  function stateOf(r){if(r.confirmed)return 'confirmed';return valid(r)&&rowStatus(r)==='ready'?'ready':'check';}
+  let autoConfirmed=null;
+  window.autoConfirmDraft=function(){
+    const done=[];draft.rows.forEach((r,i)=>{if(stateOf(r)==='ready'){r.confirmed=true;r.warnings=[];done.push(i);}});
+    autoConfirmed=done;
+  };
   function rowSum(r){const complete=r.players.every(p=>Number.isInteger(p.kills)),kills=complete?r.players.reduce((n,p)=>n+p.kills,0):null;return {kills,points:kills===null?null:kills+(points[r.placement-1]||0)};}
   function counts(){const c={confirmed:0,ready:0,check:0};draft.rows.forEach(r=>c[stateOf(r)]++);return c;}
   // The screenshot crop for one player. When the screenshot is still loaded, the crop opens it full size
@@ -194,7 +200,7 @@
     // Keep the current placement when navigating the same draft, but never carry progress/Undo
     // controls over from the previous match. Resumed drafts start at their first unconfirmed team.
     const identity=draft.id||draft;
-    if(identity!==reviewDraftIdentity){reviewDraftIdentity=identity;const first=draft.rows.findIndex(r=>!r.confirmed);currentRow=first<0?0:first;lastBulk=null;lastConfirmed=null;hideConfirmed=false;if(!oneAtATimeExplicit)oneAtATime=matchMedia('(max-width: 760px)').matches;}
+    if(identity!==reviewDraftIdentity){reviewDraftIdentity=identity;const first=draft.rows.findIndex(r=>!r.confirmed);currentRow=first<0?0:first;lastBulk=autoConfirmed?.length?autoConfirmed:null;autoConfirmed=null;lastConfirmed=null;hideConfirmed=first>=0&&draft.rows.some(r=>r.confirmed);if(!oneAtATimeExplicit)oneAtATime=matchMedia('(max-width: 760px)').matches;}
     if(oneAtATime===null)oneAtATime=matchMedia('(max-width: 760px)').matches;
     const manual=draft.entry==='manual';
     return `<div class="desk-review${manual?' desk-review--manual':''}" id="desk-review"><div class="desk-bar">${deskBar()}</div>

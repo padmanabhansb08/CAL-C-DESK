@@ -78,8 +78,22 @@
   }
   function playerSimilarity(observed,player){const key=normalize(observed);return key.length>=4&&(player.ocrAliases||[]).some(alias=>normalize(alias)===key)?1:rosterSimilarity(observed,player.name);}
   function rowSimilarity(row,player){return row.identityEdited?(row.isSubstitute?0:row.playerId===player.id?1:-1):playerSimilarity(row.rawName||row.name,player);}
-  function assignment(players,team){let best={score:-1,indices:[]};function visit(i,used,sum,indices){if(i===4){if(sum>best.score)best={score:sum,indices:[...indices]};return;}team.players.forEach((p,j)=>{if(!used.has(j)){used.add(j);visit(i+1,used,sum+rowSimilarity(players[i],p),[...indices,j]);used.delete(j);}});}visit(0,new Set(),0,[]);return {...best,score:best.score/4,team};}
-  function matchTeam(players,teams,options={}){const ranked=teams.map(t=>assignment(players,t)).filter(t=>t.indices.length===4).sort((a,b)=>b.score-a.score),best=ranked[0];if(!best)return {teamId:'',players};const scores=best.indices.map((j,i)=>rowSimilarity(players[i],best.team.players[j]));const strong=scores.filter(x=>x>=.7).length;const anchors=scores.filter(x=>x>=.94).length;const trusted=teams.length===1&&options.trustedTeamId===best.team.id;const valid=trusted||((best.score>=.58&&strong>=2||best.score>=.45&&anchors>=2)&&best.score-(ranked[1]?.score||0)>=.12);
+  // Players change week to week, so a team is named by its IGL (captain) or by any two of its players.
+  // Unrelated names still share letters, so similarities below NOISE are not evidence at all.
+  const NOISE=.5,SOLID=.7,IGL_SCORE=.85,IGL_EXACT=.99,EXTRA_PLAYER=.3;
+  function weight(row,player){const v=rowSimilarity(row,player);return v<0||v>=NOISE?v:0;}
+  function assignment(players,team){let best={score:-1,indices:[]};function visit(i,used,sum,indices){if(i===4){if(sum>best.score)best={score:sum,indices:[...indices]};return;}team.players.forEach((p,j)=>{if(!used.has(j)){used.add(j);visit(i+1,used,sum+weight(players[i],p),[...indices,j]);used.delete(j);}});}visit(0,new Set(),0,[]);return {...best,score:best.score/4,team};}
+  // What the four names prove about one team: the players really found, and whether that is enough to name it.
+  function fit(players,item){
+    const scores=item.indices.map((j,i)=>weight(players[i],item.team.players[j])),igl=Math.max(0,item.team.players.findIndex(p=>p.isCaptain));
+    const solid=item.indices.map((j,i)=>({j,s:scores[i]})).filter(x=>x.s>=SOLID),iglScore=Math.max(0,...solid.filter(x=>x.j===igl).map(x=>x.s));
+    return {...item,scores,evidence:solid.reduce((sum,x)=>sum+x.s,0),found:solid.length>=2||iglScore>=IGL_SCORE,exact:iglScore>=IGL_EXACT};
+  }
+  const support=f=>f.evidence/4+.25*f.score+(f.found?.1:0);
+  function matchTeam(players,teams,options={}){const ranked=teams.map(t=>assignment(players,t)).filter(t=>t.indices.length===4).map(t=>fit(players,t)).sort((a,b)=>support(b)-support(a)),best=ranked[0];if(!best)return {teamId:'',players};const scores=best.scores;const trusted=teams.length===1&&options.trustedTeamId===best.team.id;
+    // Only rivals that could themselves be named count; an exactly read IGL settles overlapping names (SANJAY / SANJAY 1M).
+    const rivals=ranked.slice(1).filter(r=>r.found),rival=Math.max(0,...rivals.map(r=>r.evidence));
+    const valid=trusted||(best.found&&(best.evidence-rival>=EXTRA_PLAYER||(best.exact&&!rivals.some(r=>r.exact))));
     if(valid)players.forEach((p,i)=>{if(p.identityEdited)return;const found=best.team.players[best.indices[i]];p.rawName=p.rawName||p.name;p.matchScore=scores[i];const alternatives=best.team.players.filter((_,j)=>j!==best.indices[i]).map(other=>playerSimilarity(p.rawName||p.name,other));if(scores[i]>=.7&&scores[i]-Math.max(0,...alternatives)>=.12){p.playerId=found.id;p.name=found.name;p.isSubstitute=false;}});
     return {teamId:valid?best.team.id:'',players,matchConfidence:best.score};
   }

@@ -10,7 +10,8 @@
    team.breakdown.push({id:match.id,name:match.name,placement:row.placement,kills,place,adjustment,total:kills+place+adjustment});
    const roster=state.teams.find(t=>t.id===row.teamId)?.players||[];
    // Players are grouped by ID, and shown under their current roster name (a spelling fix renames, it does not split).
-   for(const player of row.players){let entry=team.players.find(p=>p.playerId===player.playerId);if(!entry){entry={...player,name:roster.find(p=>p.id===player.playerId)?.name||player.name,kills:0};team.players.push(entry);}entry.kills+=player.kills;}
+   // Match-only substitutes count towards the team's kills above but are not tracked as players.
+   for(const player of row.players){if(player.isSubstitute)continue;let entry=team.players.find(p=>p.playerId===player.playerId);if(!entry){entry={...player,name:roster.find(p=>p.id===player.playerId)?.name||player.name,kills:0};team.players.push(entry);}entry.kills+=player.kills;}
   }
   const rows=[...teams.values()].sort((a,b)=>b.total-a.total||b.kills-a.kills||b.wins-a.wins||b.placementPoints-a.placementPoints||String(a.teamName).localeCompare(String(b.teamName)));
   rows.forEach((row,i)=>{const previous=rows[i-1];row.rank=previous&&previous.total===row.total&&previous.kills===row.kills&&previous.wins===row.wins&&previous.placementPoints===row.placementPoints?previous.rank:i+1;row.overall=true;});

@@ -3,6 +3,8 @@ import json
 import re
 import uuid
 
+from ffk_core import weekly
+
 VERSION = "season11-poster-defaults-v1"
 VINI_VERSION = "ffk-vini-default-v1"
 VINI_MEMBERS = ["FFK VINI", "FFK BALA", "FFK HAKAI", "FFK PADHU"]
@@ -62,7 +64,18 @@ def _pg_put(db, k, v):
 def initialize(db):
     _initialize_poster_rosters(db)
     _initialize_vini_roster(db)
+    _initialize_set_a_week(db)
     db.commit()
+
+
+def _initialize_set_a_week(db):
+    if _pg_get(db, weekly.VERSION):
+        return
+    raw = _pg_get(db, "state")
+    state = json.loads(raw) if raw else {"teams": [], "matches": []}
+    weekly.apply_set_a(state)
+    _pg_put(db, "state", json.dumps(state))
+    _pg_put(db, weekly.VERSION, "applied")
 
 
 def _initialize_poster_rosters(db):

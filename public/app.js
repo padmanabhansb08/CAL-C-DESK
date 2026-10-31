@@ -40,7 +40,7 @@ function fileToDataUrl(file,image){
 }
 // Manual panel bounds are drawn on a 1392-wide canvas; the server wants pixels of the image it receives.
 function scaleBounds(bounds,sentWidth){if(!bounds?.length)return undefined;const k=sentWidth/1392;return bounds.map(b=>({x:b.x*k,y:b.y*k,width:b.width*k,height:b.height*k}));}
-function serverRoster(teams){return {teams:teams.map(t=>({id:t.id,name:t.name,players:(t.players||[]).map(p=>({id:p.id,name:p.name,aliases:p.ocrAliases||[]}))}))};}
+function serverRoster(teams){return {teams:teams.map(t=>({id:t.id,name:t.name,players:(t.players||[]).map(p=>({id:p.id,name:p.name,isCaptain:!!p.isCaptain,aliases:p.ocrAliases||[]}))}))};}
 // Read screenshots with the server's OCR engine and roster reasoning (one at a time; the engine is shared).
 async function scanOnServer(sources,files,candidates,updateProgress,signal){
   const roster=serverRoster(candidates),rows=[];
@@ -272,13 +272,13 @@ function rematchDraft(){let matched=0;draft.rows.forEach(r=>{const team=state.te
 function rowStatus(r){
   if(r.confirmed)return 'confirmed';
   const complete=r.teamId&&r.players.every(p=>p.playerId&&p.name.trim()&&Number.isInteger(p.kills)&&p.kills>=0&&p.kills<=99);
-  const doubtful=r.players.some(p=>p.serverRead&&(p.killConfidence??100)<70||(p.matchScore!==undefined&&p.matchScore<.7)||p.kills>HIGH_KILLS)||r.warnings.some(w=>w.includes('disagree'))||!!r.flags?.length;
+  const doubtful=r.players.some(p=>p.serverRead&&(p.killConfidence??100)<70||(!p.isSubstitute&&p.matchScore!==undefined&&p.matchScore<.7)||p.kills>HIGH_KILLS)||r.warnings.some(w=>w.includes('disagree'))||!!r.flags?.length;
   return complete&&!doubtful?'ready':'look';
 }
 function reviewSummary(){
   const rows=draft.rows,cells=rows.flatMap(r=>r.players),read=cells.filter(p=>Number.isInteger(p.kills)).length;
   const ready=rows.filter(r=>rowStatus(r)==='ready').length,look=rows.filter(r=>rowStatus(r)==='look').length;
-  return {read,total:cells.length,teams:rows.filter(r=>r.teamId).length,ready,look};
+  return {read,total:cells.length,teams:rows.filter(r=>r.teamId).length,ready,look,confirmed:rows.filter(r=>r.confirmed).length};
 }
 
 
@@ -358,7 +358,7 @@ async function scan(skipConfirm=false){
     const localOCR=await api('ocr/status').catch(()=>({available:false}));
     images=files.map((file,i)=>{const url=URL.createObjectURL(file),image=new Image();image.src=url;return {url,image,bounds:previousBounds[i],fileKey:file.name+':'+file.size};});
     await Promise.all(images.map(source=>source.image.decode()));showSources();showScanCard(files);
-    const candidates=typeof WarTournament==='undefined'?state.teams:WarTournament.availableTeams(state,incoming.stage);
+    const candidates=typeof WarTournament==='undefined'?state.teams:WarTournament.scanTeams(state,incoming.stage);
     let rowsByScreenshot=null;
     if(localOCR.scan){
       try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress,signal);}
@@ -387,8 +387,10 @@ async function scan(skipConfirm=false){
     // Applied only now: every step that can fail has succeeded.
     draft=incoming;previousImages.forEach(x=>URL.revokeObjectURL(x.url));
     draft.rows.forEach(row=>{applySubstitutes(row);if(!row.teamId)row.warnings.push('Team could not be matched confidently');if(row.players.some(p=>p.kills===null))row.warnings.push('Missing or uncertain kill counts');if(row.players.some(p=>!p.playerId))row.warnings.push('Some screenshot names do not match this registered roster');});
+    // Teams that read cleanly are confirmed here; the organizer is only shown the ones that need a look.
+    if(window.autoConfirmDraft)autoConfirmDraft();
     const sum=reviewSummary();
-    $('#ocr-status').textContent=`Results ready · ${sum.read} of ${sum.total} kill counts read · ${sum.teams} of 12 teams matched · ${sum.ready} ready to confirm, ${sum.look} to check`;redrawReview();
+    $('#ocr-status').textContent=`Results ready · ${sum.read} of ${sum.total} kill counts read · ${sum.confirmed} teams confirmed automatically, ${sum.ready+sum.look} to check`;redrawReview();
   }catch(e){
     restore();setMatchLoading(false);
     const kept=previousDraft?' Your earlier results are unchanged.':'';
