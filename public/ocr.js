@@ -76,7 +76,14 @@
     }
     return Math.min(.89,similarity(a,b));
   }
-  function playerSimilarity(observed,player){const key=normalize(observed);return key.length>=4&&(player.ocrAliases||[]).some(alias=>normalize(alias)===key)?1:rosterSimilarity(observed,player.name);}
+  // The registered name, or a spelling the organizer corrected to this player before: exactly (certain), or a
+  // close misreading of it (almost as good), so a single correction lets the player be found again.
+  const ALIAS_CLOSE=.85;
+  function playerSimilarity(observed,player){
+    const key=normalize(observed);let best=rosterSimilarity(observed,player.name);
+    if(key.length>=4)for(const alias of player.ocrAliases||[]){const known=normalize(alias);if(known===key)return 1;if(known.length>=5&&similarity(observed,alias)>=ALIAS_CLOSE)best=Math.max(best,.97);}
+    return best;
+  }
   function rowSimilarity(row,player){return row.identityEdited?(row.isSubstitute?0:row.playerId===player.id?1:-1):playerSimilarity(row.rawName||row.name,player);}
   // Players change week to week, so a team is named by its IGL (captain) or by any two of its players.
   // Unrelated names still share letters, so similarities below NOISE are not evidence at all.
@@ -97,17 +104,22 @@
     if(valid)players.forEach((p,i)=>{if(p.identityEdited)return;const found=best.team.players[best.indices[i]];p.rawName=p.rawName||p.name;p.matchScore=scores[i];const alternatives=best.team.players.filter((_,j)=>j!==best.indices[i]).map(other=>playerSimilarity(p.rawName||p.name,other));if(scores[i]>=.7&&scores[i]-Math.max(0,...alternatives)>=.12){p.playerId=found.id;p.name=found.name;p.isSubstitute=false;}});
     return {teamId:valid?best.team.id:'',players,matchConfidence:best.score};
   }
+  // Learn from what the organizer settled: in a confirmed row the organizer touched (picked the team or a
+  // player), each registered player's read spelling becomes a remembered alias, unless it is already
+  // recognised as that player. Rows nobody touched teach nothing, so the reader never learns from its own guesses.
   function rememberAliases(teams,rows){
     let count=0;
     for(const row of rows){if(!row.confirmed)continue;const team=teams.find(t=>t.id===row.teamId);if(!team)continue;
       for(const p of row.players){
-        if(!p.identityEdited||p.isSubstitute||!p.rawName)continue;
+        if(!(p.identityEdited||row.hostTouched)||p.isSubstitute||!p.rawName)continue;
         const player=team.players.find(x=>x.id===p.playerId),raw=p.rawName.trim().slice(0,90),key=normalize(raw);
         if(!player||key.length<4||key===normalize(player.name))continue;
         // Keep conflicting corrections unresolved rather than teaching the wrong identity.
         if(team.players.some(other=>other.id!==player.id&&(normalize(other.name)===key||(other.ocrAliases||[]).some(a=>normalize(a)===key))))continue;
+        // Already found again without help (the registered name or an alias reads close enough): nothing to learn.
+        if(!p.identityEdited&&playerSimilarity(raw,player)>=.97)continue;
         const aliases=player.ocrAliases||[];if(aliases.some(a=>normalize(a)===key))continue;
-        player.ocrAliases=[...aliases,raw].slice(-12);count++;
+        player.ocrAliases=[...aliases,raw].slice(-20);count++;
       }
     }
     return count;

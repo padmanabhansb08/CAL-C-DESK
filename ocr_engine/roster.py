@@ -92,11 +92,24 @@ def similarity(observed, registered):
     return min(best, 1.0)
 
 
+ALIAS_CLOSE = 0.85   # a read this close to a name the organizer once corrected is the same player's name again
+
+
 def player_similarity(observed, player):
+    """The better of the registered name and the spellings the organizer has corrected to this player before.
+
+    An exact earlier correction is certain; a close reading of one (the same name misread a little
+    differently) is almost as good, so one correction is enough for the player to be found again."""
     key = normalize(observed)
-    if len(key) >= 4 and any(normalize(al) == key for al in player.get('aliases', [])):
-        return 1.0
-    return similarity(observed, player['name'])
+    best = similarity(observed, player['name'])
+    if len(key) >= 4:
+        for alias in player.get('aliases', []):
+            known = normalize(alias)
+            if known == key:
+                return 1.0
+            if len(known) >= 5 and similarity(observed, alias) >= ALIAS_CLOSE:
+                best = max(best, 0.97)
+    return best
 
 
 NOISE = 0.5   # unrelated names still share letters; below this a similarity is not evidence

@@ -88,6 +88,25 @@ def main():
         finally:
             isolated.close()
 
+        # --- two reader processes read two screenshots at the same time; a third waits or is refused
+        pool = ScanGate(wait_seconds=0.2, run_seconds=20, isolate=True, workers=2)
+        try:
+            assert pool.workers == 2
+            pool.run(gate_module._sleep, 0.01); pool.run(gate_module._sleep, 0.01)  # both readers started
+            out, began = [], time.time()
+            pair = [threading.Thread(target=lambda: out.append(pool.run(gate_module._sleep, 1.0))) for _ in range(2)]
+            [t.start() for t in pair]; time.sleep(0.3)
+            assert pool.busy(), 'both readers are in use'
+            try:
+                pool.run(gate_module._sleep, 0.01); raise AssertionError('a third caller should be refused')
+            except Busy:
+                pass
+            [t.join() for t in pair]
+            assert out == ['slept', 'slept'] and time.time() - began < 1.9, 'two reads must overlap'
+            assert not pool.busy()
+        finally:
+            pool.close()
+
 
     def state_of(path):
         # Close every connection: Windows cannot delete a database file that is still open.

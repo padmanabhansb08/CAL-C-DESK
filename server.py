@@ -13,8 +13,16 @@ DB = Path(os.environ.get('DB_PATH', ROOT / 'war.sqlite3'))
 throttle = policy.Throttle()
 limiter = policy.RateLimiter()
 # The reader runs in its own process so a stuck read can be stopped for real (SCAN_ISOLATE=0 uses a thread).
+def _reader_workers():
+    try:
+        from ocr_engine import tuning
+        return tuning.WORKERS
+    except Exception:
+        return 1
+
+
 scan_gate = ScanGate(float(os.environ.get('SCAN_WAIT_SECONDS', '25')), float(os.environ.get('SCAN_TIMEOUT_SECONDS', '120')),
-                     isolate=os.environ.get('SCAN_ISOLATE', '1') != '0')
+                     isolate=os.environ.get('SCAN_ISOLATE', '1') != '0', workers=_reader_workers())
 MAX_CONNECTIONS = int(os.environ.get('MAX_CONNECTIONS', '64'))
 log = logs.setup()
 
@@ -204,7 +212,7 @@ class Handler(SimpleHTTPRequestHandler):
             return self.reply(200, json.loads(get('state') or '{"teams":[],"matches":[]}'))
         if self.path == '/api/ocr/status':
             if not self.authorized(): return self.reply(401, {'error': 'Please sign in.'})
-            return self.reply(200, {'available': local_ocr.available(), 'scan': scanner() is not None})
+            return self.reply(200, {'available': local_ocr.available(), 'scan': scanner() is not None, 'workers': scan_gate.workers})
         if self.path.startswith('/api/'): return self.reply(404, {'error': 'Not found'})
         super().do_GET()
 

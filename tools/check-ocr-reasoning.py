@@ -151,6 +151,18 @@ shared = [{'id': t, 'name': 'FFK ' + t, 'players': [{'id': n, 'name': 'FFK ' + n
 assert match_one(['q', 'ITACHI', 'APPU', 'w'], shared)['team']['id'] == '', 'shared players alone cannot pick a team'
 assert match_one(['YOGESH', 'ITACHI', 'APPU', 'w'], shared)['team']['id'] == 'YOGESH'
 
+# a correction the organizer made once is remembered: the same decorated IGL name is found again, even misread a little
+def with_alias(*aliases):
+    return [{'id': 'kar', 'name': 'FFK KARTHIK', 'players': [{'id': 'k', 'name': 'FFK KARTHIK', 'isCaptain': True, 'aliases': list(aliases)},
+            {'id': 'p', 'name': 'FFK PAVAN'}, {'id': 'q', 'name': 'FFK QUINN'}, {'id': 'r', 'name': 'FFK ROHAN'}]}]
+decorated = ['Z9QxKzv', 'zz1', 'zz2', 'zz3']
+assert match_one(decorated, with_alias())['team']['id'] == '', 'nothing known about this spelling yet'
+assert match_one(decorated, with_alias('Z9QxKzv'))['team']['id'] == 'kar', 'the corrected spelling is found again'
+misread = match_one(['Z9QxKzy', 'zz1', 'zz2', 'zz3'], with_alias('Z9QxKzv'))
+assert misread['team']['id'] == 'kar' and misread['cells'][0]['playerId'] == 'k', 'a close misreading of it is found too'
+assert match_one(['Z9RpMtw', 'zz1', 'zz2', 'zz3'], with_alias('Z9QxKzv'))['team']['id'] == '', 'an unrelated name is not'
+assert match_one(['Q9', 'zz1', 'zz2', 'zz3'], with_alias('Q9'))['team']['id'] == '', 'names under 4 letters are never learned'
+
 # this week's real Set A roster: every IGL is found alone among junk names, and all 12 panels resolve together
 from ffk_core import weekly
 week = [{'id': m[0], 'name': 'FFK ' + m[0], 'players': [{'id': 'FFK ' + n, 'name': 'FFK ' + n, 'isCaptain': i == 0} for i, n in enumerate(m)]} for m in weekly.SET_A]

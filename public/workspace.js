@@ -241,11 +241,18 @@
   function confirmAndNext(i){
     const r=draft.rows[i];if(r.confirmed)return focusNext(i);
     if(!valid(r)){refreshRow(i);toast(`Placement ${r.placement}: ${problems(r).join(', ').toLowerCase()||'check the team, players and kills'}.`,'error');return focusNeed(i);}
-    r.confirmed=true;r.warnings=[];lastBulk=null;lastConfirmed=i;redrawReview();focusNext(i);
+    r.confirmed=true;r.warnings=[];lastBulk=null;lastConfirmed=i;
+    // What the organizer just settled is remembered now, so the next screenshot and the next match benefit
+    // (it is saved with the roster the next time the app saves).
+    if(window.WarOCR?.rememberAliases)WarOCR.rememberAliases(state.teams,[r]);
+    redrawReview();focusNext(i);
     // A short highlight shows where the desk moved to (skipped when motion is reduced).
     const next=document.getElementById('review-team-'+currentRow);if(next&&currentRow!==i&&!reduceMotion()){next.classList.add('is-arriving');setTimeout(()=>next.classList.remove('is-arriving'),700);}
   }
   function redrawKeeping(selector){redrawReview();const el=selector&&document.querySelector(selector);if(el)el.focus({preventScroll:true});}
+  // Once the organizer's change leaves a placement complete and clean ("Looks right"), it needs no second
+  // look: confirm it and move to the next one still open. "Undo" in the bar reopens it.
+  function settleEdit(i){const r=draft.rows[i];if(r&&!r.confirmed&&stateOf(r)==='ready')confirmAndNext(i);}
   function bindBar(){
     const ready=$('#desk-confirm-ready');if(ready)ready.onclick=()=>{const done=[];draft.rows.forEach((r,i)=>{if(stateOf(r)==='ready'){r.confirmed=true;r.warnings=[];done.push(i);}});lastBulk=done;lastConfirmed=null;redrawReview();toast(done.length+' team'+(done.length===1?'':'s')+' confirmed.'+(counts().check?' Now check the ones marked “Check”.':''));const first=draft.rows.findIndex(r=>!r.confirmed);if(first>=0)focusNeed(first);};
     const undo=$('#desk-undo-bulk');if(undo)undo.onclick=()=>{(lastBulk||[]).forEach(i=>{draft.rows[i].confirmed=false;});const n=lastBulk?.length||0;lastBulk=null;redrawReview();toast(n+' confirmation'+(n===1?'':'s')+' undone.');};
@@ -260,15 +267,16 @@
     row.querySelectorAll('[data-confirm]').forEach(el=>el.onclick=()=>confirmAndNext(+el.dataset.confirm));
     row.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{const i=+el.dataset.edit;draft.rows[i].confirmed=false;lastBulk=null;lastConfirmed=null;currentRow=i;redrawKeeping(`[data-kills="${i},0"]`);});
     row.querySelectorAll('[data-team]').forEach(el=>el.onchange=()=>{
-      const i=+el.dataset.team,r=draft.rows[i];r.teamId=el.value;r.confirmed=false;
+      const i=+el.dataset.team,r=draft.rows[i];r.teamId=el.value;r.confirmed=false;r.hostTouched=true;
       r.players.forEach(p=>{p.playerId='';p.isSubstitute=false;p.identityEdited=false;p.name=p.rawName||p.name;});
-      const team=teamOf(r);if(team)WarOCR.matchTeam(r.players,[team],{trustedTeamId:team.id});applySubstitutes(r);lastBulk=null;redrawReview();focusNeed(i);
+      const team=teamOf(r);if(team)WarOCR.matchTeam(r.players,[team],{trustedTeamId:team.id});applySubstitutes(r);r.flags=[];lastBulk=null;redrawReview();focusNeed(i);settleEdit(i);
     });
     row.querySelectorAll('[data-player]').forEach(el=>el.onchange=()=>{
       const [i,j]=el.dataset.player.split(',').map(Number),r=draft.rows[i],chosen=teamOf(r)?.players.find(p=>p.id===el.value),player=r.players[j];
       player.rawName=player.rawName||player.name;player.identityEdited=!!chosen||el.value==='__sub';player.playerId=chosen?.id||'';if(chosen)player.matchScore=1;else delete player.matchScore;player.isSubstitute=false;player.name=chosen?.name||player.rawName||player.name;
       if(el.value==='__sub'){player.playerId='';applySubstitutes(r);}
-      r.confirmed=false;lastBulk=null;redrawKeeping(el.value==='__sub'?`[data-sub-name="${i},${j}"]`:`[data-kills="${i},${j}"]`);
+      if(r.flags)r.flags=r.flags.filter(f=>f.player!==j);
+      r.hostTouched=true;r.confirmed=false;lastBulk=null;redrawKeeping(el.value==='__sub'?`[data-sub-name="${i},${j}"]`:`[data-kills="${i},${j}"]`);settleEdit(i);
     });
     row.querySelectorAll('[data-sub-name]').forEach(el=>el.oninput=()=>{const [i,j]=el.dataset.subName.split(',').map(Number),player=draft.rows[i].players[j];player.rawName=player.rawName||player.name;player.name=el.value.trim();player.identityEdited=true;draft.rows[i].confirmed=false;refreshRow(i);});
     row.querySelectorAll('[data-kills]').forEach(el=>{
@@ -277,6 +285,7 @@
         // Typing the number from the screenshot settles that player's own reading doubts.
         if(draft.rows[i].flags)draft.rows[i].flags=draft.rows[i].flags.filter(f=>!(f.player===j&&['high_kills','clipped'].includes(f.code)));if(value!==null)p.killConfidence=100;draft.rows[i].confirmed=false;el.setAttribute('aria-invalid',String(value===null));el.closest('.desk-player')?.classList.toggle('is-missing',value===null);refreshRow(i);};
       el.oninput=()=>{const digits=el.value.replace(/\D/g,'').slice(0,2);if(digits!==el.value)el.value=digits;set(digits===''?null:Math.min(99,Number(digits)));};
+      el.onchange=()=>settleEdit(i);
       el.onfocus=()=>el.select();
       el.onkeydown=e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const now=Number.isInteger(draft.rows[i].players[j].kills)?draft.rows[i].players[j].kills:0,value=Math.max(0,Math.min(99,now+(e.key==='ArrowUp'?1:-1)));el.value=String(value);set(value);}};
     });

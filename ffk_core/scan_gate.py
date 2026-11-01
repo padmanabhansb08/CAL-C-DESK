@@ -1,6 +1,7 @@
-"""Run at most one screenshot read at a time, with a wait limit and a hard time limit.
+"""Run a few screenshot reads at a time (one per reader process), with a wait limit and a hard time limit.
 
-The OCR engine is CPU-heavy (about 400 MB and several seconds per screenshot). Reads queue up briefly
+The OCR engine is CPU-heavy (about 400 MB and several seconds per screenshot), so the number of reader
+processes follows the CPUs the server really has (see ocr_engine/tuning.py). Reads queue up briefly
 and are refused with a clear "busy" answer if the queue does not clear.
 
 With isolate=True (what the server uses) the reader runs in its own worker process. A read that
@@ -91,12 +92,16 @@ class _Worker:
 
 
 class ScanGate:
-    def __init__(self, wait_seconds=25.0, run_seconds=120.0, isolate=False):
-        self._gate = threading.Semaphore(1)
+    """`workers` reader processes (isolate=True only; a thread-run read is always one at a time)."""
+
+    def __init__(self, wait_seconds=25.0, run_seconds=120.0, isolate=False, workers=1):
+        self.workers = max(1, workers) if isolate else 1
+        self._gate = threading.Semaphore(self.workers)
         self.wait_seconds = wait_seconds
         self.run_seconds = run_seconds
         self.isolate = isolate
-        self._worker = _Worker() if isolate else None
+        self._free = [_Worker() for _ in range(self.workers)] if isolate else []
+        self._lock = threading.Lock()
         self._local = threading.local()
 
     def last(self):
@@ -115,10 +120,14 @@ class ScanGate:
             raise Busy()
         self._local.queue, self._local.worker_start = time.perf_counter() - queued, 0.0
         if self.isolate:
+            with self._lock:
+                worker = self._free.pop()
             try:
-                return self._worker.call(fn, args, kwargs, self.run_seconds)
+                return worker.call(fn, args, kwargs, self.run_seconds)
             finally:
-                self._local.worker_start = self._worker.start_seconds
+                self._local.worker_start = worker.start_seconds
+                with self._lock:
+                    self._free.append(worker)
                 self._gate.release()
         box = {}
 
@@ -140,8 +149,8 @@ class ScanGate:
         return box['value']
 
     def close(self):
-        if self._worker:
-            self._worker.stop()
+        for worker in self._free:
+            worker.stop()
 
 
 # Small top-level functions the isolation checks run in the worker process.

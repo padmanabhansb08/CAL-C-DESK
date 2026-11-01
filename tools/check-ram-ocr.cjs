@@ -24,6 +24,13 @@ assert.equal(ocr.rememberAliases(teams,[{teamId:'ram',confirmed:true,players:man
 assert.equal(ocr.playerSimilarity(raw[1],teams[1].players[1]),0,'RAM correction must not attach to VINI BALA');
 const learned=players();ocr.matchTeam(learned,teams);assert.equal(learned[1].playerId,'ram-1');
 const manualOther={...manual[1],playerId:'ram-2',name:'FFK ZORO'};assert.equal(ocr.rememberAliases(teams,[{teamId:'ram',confirmed:true,players:[manualOther]}]),0,'Conflicting aliases stay unresolved');
+// One correction is enough: a close misreading of the corrected spelling is found again, an unrelated name is not.
+assert.ok(ocr.playerSimilarity('FKTUmsUT FZ',teams[0].players[1])>=.97,'A close misreading of a corrected spelling is the same player');
+assert.ok(ocr.playerSimilarity('Qwerty Zxcv',teams[0].players[1])<.5);
+// Rows the organizer touched teach their read names even when nobody opened the player dropdown; untouched rows teach nothing.
+const touched=structuredClone([ram]),pick=[{rawName:'Z9QxKzv',name:'FFK RAM',playerId:'ram-0'},{rawName:'FFK BALA',name:'FFK BALA',playerId:'ram-1'}];
+assert.equal(ocr.rememberAliases(touched,[{teamId:'ram',confirmed:true,players:pick}]),0,'An untouched row teaches nothing');
+assert.equal(ocr.rememberAliases(touched,[{teamId:'ram',confirmed:true,hostTouched:true,players:pick}]),1,'A touched row teaches the spelling that was not already recognised');
 // A failed save must roll back newly learned aliases; retry should keep them after success.
 const context=vm.createContext({console,structuredClone,WarOCR:ocr,WarTournament:require('../public/tournament.js'),crypto:require('node:crypto').webcrypto,setTimeout,clearTimeout,URL,Blob,
  document:{querySelector:sel=>sel==='#match-name'?{value:'Test match'}:sel==='#match-map'?{value:'Bermuda'}:null},window:{addEventListener(){}},

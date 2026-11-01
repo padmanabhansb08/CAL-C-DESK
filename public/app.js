@@ -21,7 +21,7 @@ let state={teams:[],matches:[]}, page=lastPage(), selected=null, tab='teams', dr
 
 // Heavy tools load on first use, in order: the screenshot reader on the results check page, the export
 // tools when Export is chosen, and the in-browser reader only when the server cannot read screenshots.
-const MODULES={reader:['digit-templates.js?v=2','layout.js?v=1','ocr.js?v=15','ocr-learning.js?v=1','ocr-batch.js?v=1','panel-editor.js?v=2'],export:['scoreboard.js?v=5','scoreboard-pdf.js?v=4','templates.js?v=2','export-ui.js?v=4'],tesseract:['vendor/tesseract.min.js']};
+const MODULES={reader:['digit-templates.js?v=2','layout.js?v=1','ocr.js?v=16','ocr-learning.js?v=1','ocr-batch.js?v=1','panel-editor.js?v=2'],export:['scoreboard.js?v=5','scoreboard-pdf.js?v=4','templates.js?v=2','export-ui.js?v=4'],tesseract:['vendor/tesseract.min.js']};
 const loadedModules={};
 function loadModules(name){
   return loadedModules[name]||=MODULES[name].reduce((ready,src)=>ready.then(()=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>{delete loadedModules[name];reject(Error('Could not load '+src.split('?')[0]+'. Check the connection and try again.'));};document.head.append(script);})),Promise.resolve());
@@ -41,14 +41,16 @@ function fileToDataUrl(file,image){
 // Manual panel bounds are drawn on a 1392-wide canvas; the server wants pixels of the image it receives.
 function scaleBounds(bounds,sentWidth){if(!bounds?.length)return undefined;const k=sentWidth/1392;return bounds.map(b=>({x:b.x*k,y:b.y*k,width:b.width*k,height:b.height*k}));}
 function serverRoster(teams){return {teams:teams.map(t=>({id:t.id,name:t.name,players:(t.players||[]).map(p=>({id:p.id,name:p.name,isCaptain:!!p.isCaptain,aliases:p.ocrAliases||[]}))}))};}
-// Read screenshots with the server's OCR engine and roster reasoning (one at a time; the engine is shared).
-async function scanOnServer(sources,files,candidates,updateProgress,signal){
-  const roster=serverRoster(candidates),rows=[];
-  for(let i=0;i<sources.length;i++){
+// Read screenshots with the server's OCR engine and roster reasoning. The server has `workers` reader
+// processes, so that many screenshots of the match are read at the same time.
+async function scanOnServer(sources,files,candidates,updateProgress,signal,workers=1){
+  const roster=serverRoster(candidates),rows=new Array(sources.length);
+  let next=0,failure=null;
+  async function readOne(i){
     if(signal?.aborted)throw new DOMException('Cancelled','AbortError');
-    $('#ocr-status').textContent=`Reading screenshot ${i+1} of ${sources.length}…`;updateProgress(i,.05);
+    updateProgress(i,.05);
     const source=sources[i],sent=await fileToDataUrl(files[i],source.image),image=sent.dataUrl,regions=scaleBounds(source.bounds,sent.width);
-    // The server reads one screenshot at a time; if someone else's is in progress, wait and retry.
+    // If the readers are all busy (someone else's screenshots), wait and retry.
     let scan;
     for(let attempt=0;;attempt++){
       try{scan=await api('ocr/scan',{image,roster,regions},{signal});break;}
@@ -56,8 +58,13 @@ async function scanOnServer(sources,files,candidates,updateProgress,signal){
     }
     const result=WarOCR.fromServerScan(scan);
     if(!result.length)throw Error(scan.warnings?.[0]||'No result panels were found in this screenshot.');
-    source.layout=result.layout;source.rows=structuredClone(result);showSources();updateProgress(i,1);rows.push(result);
+    source.layout=result.layout;source.rows=structuredClone(result);showSources();updateProgress(i,1);rows[i]=result;
   }
+  async function lane(){
+    while(!failure&&next<sources.length){const i=next++;try{await readOne(i);}catch(e){failure=failure||e;}}
+  }
+  await Promise.all(Array.from({length:Math.max(1,Math.min(workers,sources.length))},lane));
+  if(failure)throw failure;
   return rows;
 }
 async function api(path,data,options={}){
@@ -291,7 +298,7 @@ async function finalize(){
   if(draft.stage){try{WarTournament.registerResult(state,draft);}catch(e){return toast(e.message,'error');}}
   const rosterBefore=structuredClone(state.teams);
   const learnedNames=WarOCR.rememberAliases(state.teams,draft.rows);
-  const m=structuredClone(draft);m.rows.forEach(r=>{r.teamName=state.teams.find(t=>t.id===r.teamId).name;delete r.flags;delete r._read;r.players.forEach(p=>{delete p.ocrRegion;delete p.killEdited;delete p.evidenceCrop;delete p.identityEdited;});});m.created=new Date().toISOString();
+  const m=structuredClone(draft);m.rows.forEach(r=>{r.teamName=state.teams.find(t=>t.id===r.teamId).name;delete r.flags;delete r._read;delete r.hostTouched;r.players.forEach(p=>{delete p.ocrRegion;delete p.killEdited;delete p.evidenceCrop;delete p.identityEdited;});});m.created=new Date().toISOString();
   busy=true;state.matches.push(m);
   try{await save();}catch(e){state.matches.pop();state.teams=rosterBefore;if(warBefore===undefined)delete state.war;else state.war=warBefore;busy=false;toast(e.message,'error');return;}
   let message='Verified match saved'+(learnedNames?' · '+learnedNames+' player name corrections remembered':'');
@@ -361,7 +368,7 @@ async function scan(skipConfirm=false){
     const candidates=typeof WarTournament==='undefined'?state.teams:WarTournament.scanTeams(state,incoming.stage);
     let rowsByScreenshot=null;
     if(localOCR.scan){
-      try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress,signal);}
+      try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress,signal,localOCR.workers||1);}
       catch(e){if(e.name==='AbortError')throw e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
     }
     if(!rowsByScreenshot)await loadModules('tesseract').catch(()=>{});

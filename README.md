@@ -134,7 +134,7 @@ The desk reads the scoreboard with real text recognition and then reasons about 
 
 On the 10 labelled screenshots (5 matches, 2 frames each) the server reader gets 252/252 training and 166/166 held-out kill counts right with zero wrong readings accepted, and matches 22/22 teams to the right roster entry. Run `python tools/evaluate_ocr.py --verbose` to reproduce it, or `--stress` to see how it behaves on half-size and blurred copies (a couple of fields become unresolved rather than wrong). Reading takes about 5 to 6 seconds per screenshot on a laptop CPU.
 
-Be careful with the claim: the sample is small and all from one screenshot style, so treat this as strong evidence for that style, not a guarantee for every phone and layout. Anything uncertain is flagged for review instead of being filled in, and corrections you confirm are remembered for the next scan.
+Be careful with the claim: the sample is small and all from one screenshot style, so treat this as strong evidence for that style, not a guarantee for every phone and layout. Anything uncertain is flagged for review instead of being filled in, and corrections you confirm are remembered for the next scan. A correction is learned the moment you confirm a team you touched (picked the team or a player), not only when you save the match, and one correction is enough: a close misreading of a remembered spelling is recognised as the same player (similarity 0.85 or more, spelling of 5+ letters). The reader never learns from its own guesses, only from rows you touched, and a spelling that already belongs to another player on the team is not learned.
 
 ### Where the time goes (measure, then tune)
 
@@ -144,7 +144,8 @@ Every server read records how long each stage took and returns it as `timing` in
 
 Speed settings live in `ocr_engine/tuning.py` and are read from the environment (the start-up line prints the ones in effect):
 
-- `OCR_THREADS` (default: the CPUs this process can really use, a container's quota rather than the host's core count, at most 4). `0` or `default` leaves ONNX Runtime to size its own pool.
+- `SCAN_WORKERS` (default by CPU count: 1 below 4 CPUs, 2 from 4, 3 from 12). Reader processes; the browser reads that many screenshots of one match at the same time. A usual two-screenshot match then takes about one read instead of two (measured here: 17.6 s per read on 2 threads, 11.5 s on 4). Each holds about 400 MB.
+- `OCR_THREADS` (default: this reader's share of the CPUs the server can really use, a container's quota rather than the host's core count, at most 4). `0` or `default` leaves ONNX Runtime to size its own pool.
 - `OCR_USE_CLS=0` skips the text-angle classifier.
 - `OCR_DIGIT_MODE=cascade` stops reading a kill count after the page line and one re-read when they agree strongly; `page-trust` accepts a near-certain page reading without re-reads. Both are off by default.
 

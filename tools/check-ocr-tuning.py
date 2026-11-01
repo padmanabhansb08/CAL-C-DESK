@@ -60,4 +60,20 @@ assert reloaded('3') == 3 and reloaded('8') == 8, 'an explicit number is used as
 auto = reloaded(None)
 assert 1 <= auto <= tuning.MAX_AUTO_THREADS, f'auto is capped ({auto})'
 assert reloaded('nonsense') == auto, 'an unreadable value falls back to the automatic choice'
-print('PASS: container CPU quotas (cgroup v1 and v2) limit the reader threads, explicit overrides and the opt-out work, automatic choice is capped.')
+assert [tuning._auto_workers(n) for n in (1, 2, 3, 4, 7, 8, 12, 32)] == [1, 1, 1, 2, 2, 2, 3, 3], 'reader processes follow the CPUs'
+old = os.environ.get('SCAN_ISOLATE')
+os.environ['SCAN_ISOLATE'] = '0'
+try:
+    assert tuning._auto_workers(32) == 1, 'a thread-run reader is one at a time'
+finally:
+    if old is None:
+        os.environ.pop('SCAN_ISOLATE', None)
+    else:
+        os.environ['SCAN_ISOLATE'] = old
+os.environ['SCAN_WORKERS'] = '4'
+try:
+    assert importlib.reload(tuning).WORKERS == 4, 'SCAN_WORKERS sets the number of readers'
+finally:
+    os.environ.pop('SCAN_WORKERS')
+    importlib.reload(tuning)
+print('PASS: container CPU quotas limit the reader threads and the reader-process count follows the CPUs; explicit overrides and the opt-out work, automatic choice is capped.')

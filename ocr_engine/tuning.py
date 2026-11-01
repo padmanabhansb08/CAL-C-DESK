@@ -4,9 +4,12 @@ Apart from the thread count below, every default reproduces the reader's long-st
 setting is only worth turning on after tools/bench_scan.py shows, on the labelled screenshots, that it is as
 accurate as the default.
 
+SCAN_WORKERS     unset (default): reader processes by CPU count (1 below 4 CPUs, 2 from 4, 3 from 12; 1 when
+                 SCAN_ISOLATE=0). The browser reads that many screenshots of a match at the same time. Each
+                 reader holds about 400 MB. A number (1-6) sets it.
 OCR_USE_CLS      1 (default) runs the text-angle classifier on every detected line; 0 skips it.
-OCR_THREADS      unset (default): the CPUs this process can really use (a container's quota, not the host's
-                 core count), at most 4. A number sets it; 0 or "default" leaves ONNX Runtime to size its own
+OCR_THREADS      unset (default): this reader's share of the CPUs the server can really use (a container's
+                 quota, not the host's core count), at most 4. A number sets it; 0 or "default" leaves ONNX Runtime to size its own
                  pool, which on a busy or CPU-limited host was measured 3x slower (more threads than the CPU
                  can run make every step wait for the slowest one).
 OCR_DIGIT_MODE   full (default): every kill count is read three independent ways (page line, label
@@ -57,9 +60,21 @@ def usable_cpus():
 
 MAX_AUTO_THREADS = 4
 USE_CLS = _flag('OCR_USE_CLS', True)
-# 0 = leave ONNX Runtime's own choice; unset = the CPUs we can really use, at most MAX_AUTO_THREADS.
+
+
+def _auto_workers(cpus):
+    # A match is usually two screenshots (up to six). Measured: one read takes 17.6 s on 2 threads and 11.5 s on 4
+    # (threads scale poorly), so two readers sharing 4 CPUs finish a pair sooner than one reader on all 4.
+    if not _flag('SCAN_ISOLATE', True):
+        return 1
+    return 3 if cpus >= 12 else 2 if cpus >= 4 else 1
+
+
+_workers = os.environ.get('SCAN_WORKERS', '').strip()
+WORKERS = max(1, min(6, int(_workers))) if _workers.isdigit() else _auto_workers(usable_cpus())
+# 0 = leave ONNX Runtime's own choice; unset = this reader's share of the CPUs we can really use, at most MAX_AUTO_THREADS.
 _threads = os.environ.get('OCR_THREADS', '').strip().lower()
-THREADS = 0 if _threads in ('0', 'default') else int(_threads) if _threads.isdigit() else min(MAX_AUTO_THREADS, usable_cpus())
+THREADS = 0 if _threads in ('0', 'default') else int(_threads) if _threads.isdigit() else min(MAX_AUTO_THREADS, max(1, usable_cpus() // WORKERS))
 DIGIT_MODE = os.environ.get('OCR_DIGIT_MODE', 'full').strip().lower()
 if DIGIT_MODE not in ('full', 'cascade', 'page-trust'):
     DIGIT_MODE = 'full'
@@ -67,5 +82,5 @@ PAGE_TRUST = float(os.environ.get('OCR_PAGE_TRUST', '0.99'))
 
 
 def describe():
-    return (f'use_cls={int(USE_CLS)} digit_mode={DIGIT_MODE} threads={THREADS or "default"}'
+    return (f'workers={WORKERS} use_cls={int(USE_CLS)} digit_mode={DIGIT_MODE} threads={THREADS or "default"}'
             + (f' page_trust={PAGE_TRUST}' if DIGIT_MODE == 'page-trust' else ''))
