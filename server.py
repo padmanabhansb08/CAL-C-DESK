@@ -27,6 +27,23 @@ def scanner():
     except Exception:
         return None
 
+def reader_settings():
+    """The reader's speed settings (see ocr_engine/tuning.py), for the start-up line."""
+    try:
+        from ocr_engine import tuning
+        return f'{tuning.describe()} usable_cpus={tuning.usable_cpus()}'
+    except Exception:
+        return 'settings unavailable'
+
+
+def describe_timing(report):
+    """One log-friendly string: engine total, then every stage as name=milliseconds/calls."""
+    if not report:
+        return ''
+    stages = ' '.join(f"{name}={info['ms']:.0f}ms/{info['calls']}" for name, info in sorted(report['stages'].items(), key=lambda kv: -kv[1]['ms']))
+    return f"engine={report['total'] / 1000:.1f}s {stages}"
+
+
 class WarDeskServer(ThreadingHTTPServer):
     # Windows SO_REUSEADDR can let an old and new process share the same port.
     allow_reuse_address = os.name != 'nt'
@@ -296,8 +313,10 @@ class Handler(SimpleHTTPRequestHandler):
                 raw = base64.b64decode(image.split(',', 1)[-1], validate=True)
                 started = time.time()
                 result = scan_gate.run(engine.scan, raw, data.get('roster'), data.get('regions'))
-                log.info('scan ok seconds=%.1f panels=%d warnings=%d', time.time() - started,
-                         len(result.get('panels', [])), len(result.get('warnings', [])))
+                waits = scan_gate.last()
+                log.info('scan ok seconds=%.1f queue=%.1f worker_start=%.1f bytes=%d panels=%d warnings=%d %s',
+                         time.time() - started, waits['queue'], waits['worker_start'], len(raw),
+                         len(result.get('panels', [])), len(result.get('warnings', [])), describe_timing(result.get('timing')))
                 return self.reply(200, result)
             except Busy:
                 return self.reply(429, {'error': 'Another screenshot is still being read. Trying again shortly.', 'busy': True})
@@ -360,7 +379,7 @@ if __name__ == '__main__':
     lan = lan_address()
     if lan and not lan.startswith('127.'):
         print(f'Other devices on this network: http://{lan}:{port}', flush=True)
-    print('Screenshot reader: ' + ('ready (server-side OCR)' if scanner() else
+    print('Screenshot reader: ' + (f'ready (server-side OCR; {reader_settings()})' if scanner() else
           'not installed, the browser reader will be used. Install it with: pip install -r requirements-docker.txt'), flush=True)
     if get('password') is None:
         print('First visit: create the organizer password.', flush=True)

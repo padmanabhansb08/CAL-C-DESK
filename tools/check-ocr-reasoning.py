@@ -171,6 +171,40 @@ swapped = {'panels': [panel_with(names) for names in mixed], 'warnings': []}
 roster.match_rosters(swapped, {'teams': week})
 assert [p['team']['id'] for p in swapped['panels']] == [m[0] for m in weekly.SET_A], [p['team']['name'] for p in swapped['panels']]
 
+# a misaligned row: this panel's own two names name the team, its other two cells are players that the
+# neighbouring panel of the same screenshot shows in their own team
+def match_panels(*name_lists):
+    r = {'panels': [panel_with(names) for names in name_lists], 'warnings': []}
+    roster.match_rosters(r, {'teams': week})
+    return r['panels']
+
+
+own = ['FFK ' + n for n in weekly.SET_A[0]]
+neighbour = ['FFK ' + n for n in weekly.SET_A[1]]
+shifted, beside = match_panels(own[:2] + neighbour[1:3], neighbour)
+assert shifted['team']['id'] == weekly.SET_A[0][0] and beside['team']['id'] == weekly.SET_A[1][0], (shifted['team'], beside['team'])
+assert [f['code'] for f in shifted['flags']] == ['foreign_player', 'foreign_player'] and [f['player'] for f in shifted['flags']] == [2, 3], shifted.get('flags')
+assert weekly.SET_A[1][0] in shifted['flags'][0]['text'], shifted['flags'][0]['text']
+assert not beside.get('flags'), 'the correctly aligned neighbour is not flagged'
+# the real half-size failure: the neighbour was left with only its first two cells (flagged partial), and
+# the cells it lost sit in the next panel, so no panel "claims" them: the neighbour being present is the evidence
+lost = {'panels': [panel_with(own[:2] + neighbour[2:4]), panel_with(neighbour[:2] + ['', ''])], 'warnings': []}
+lost['panels'][1]['cells'][2] = lost['panels'][1]['cells'][3] = None
+roster.match_rosters(lost, {'teams': week})
+assert [lost['panels'][1]['team']['id'], [f['player'] for f in lost['panels'][0]['flags']]] == [weekly.SET_A[1][0], [2, 3]], (lost['panels'][1]['team'], lost['panels'][0].get('flags'))
+# genuinely new players (on no roster) are never flagged: this is what lets unknown substitutes pass unasked
+new_players, _ = match_panels(own[:2] + ['Brandnew', 'Another Sub'], neighbour)
+assert new_players['team']['id'] == weekly.SET_A[0][0] and not new_players.get('flags'), new_players.get('flags')
+# a lookalike name is not enough on its own: "7xkarthi" beside a registered KARTHI that is nowhere in this screenshot
+lookalike = [{'id': 'a', 'name': 'FFK A', 'players': [{'id': 'a%d' % i, 'name': 'FFK ' + n, 'isCaptain': i == 0} for i, n in enumerate(['A', 'A1', 'A2', 'A3'])]},
+             {'id': 'b', 'name': 'FFK B', 'players': [{'id': 'b%d' % i, 'name': 'FFK ' + n, 'isCaptain': i == 0} for i, n in enumerate(['B', 'KARTHI', 'B2', 'B3'])]}]
+solo = {'panels': [panel_with(['FFK A', 'FFK A1', 'FFK 7xkarthi', 'FFK A3'])], 'warnings': []}
+roster.match_rosters(solo, {'teams': lookalike})
+assert solo['panels'][0]['team']['id'] == 'a' and not solo['panels'][0].get('flags'), solo['panels'][0].get('flags')
+both = {'panels': [panel_with(['FFK A', 'FFK A1', 'FFK 7xkarthi', 'FFK A3']), panel_with(['FFK B', 'FFK KARTHI', 'FFK B2', 'FFK B3'])], 'warnings': []}
+roster.match_rosters(both, {'teams': lookalike})
+assert [f['code'] for f in both['panels'][0]['flags']] == ['foreign_player'], 'but it is flagged when that team shows KARTHI in its own panel'
+
 # ---- 6. verification
 bad = {'panels': [{'placement': 3, 'cells': [None] * 4, 'review': []}, {'placement': 3, 'cells': [None] * 4, 'review': []},
                   {'placement': 6, 'cells': [None] * 4, 'review': []}], 'warnings': []}

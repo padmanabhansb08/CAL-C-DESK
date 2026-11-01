@@ -252,4 +252,49 @@ def match_rosters(result, roster):
                 if s >= 0.7 and s - max([0.0] + others) >= 0.12:
                     cell['playerId'] = team['players'][pj]['id']
                     cell['playerName'] = team['players'][pj]['name']
+    _flag_foreign_players(panels, teams)
     return result
+
+
+FOREIGN = 0.85  # an unknown name this close to another team's player may be that player
+
+
+def _flag_foreign_players(panels, teams):
+    """A player cannot be on two teams in one match, so a name that is really another panel's player is a misreading.
+
+    On a small or blurred screenshot a panel's rows can be grouped one row off: its own two names still name the
+    team, while the other two cells (names and kill counts) come from the neighbouring panel, which is left
+    with those cells missing. Those cells look like unknown substitutes, so new players are accepted unasked,
+    except when the name resembles a player of a team that this same screenshot shows in another panel. A merely
+    similar name is not enough on its own (a substitute called "7xkarthi" when KARTHI's team is not in the match)."""
+    present = {}
+    for index, panel in enumerate(panels):
+        team_id = (panel.get('team') or {}).get('id')
+        if team_id:
+            present.setdefault(team_id, index)
+    for index, panel in enumerate(panels):
+        team_id = (panel.get('team') or {}).get('id')
+        if not team_id:
+            continue
+        for position, cell in enumerate(panel['cells']):
+            name = (cell['rawName'] or cell['name']) if cell else ''
+            if not name or cell.get('playerId'):
+                continue
+            best = None
+            for other in teams:
+                if other['id'] == team_id:
+                    continue
+                for player in other['players']:
+                    score = player_similarity(name, player)
+                    if score >= FOREIGN and present.get(other['id'], index) != index and (best is None or score > best[0]):
+                        best = (score, other, player)
+            if best:
+                text = (f"Player {position + 1} ({player_label(best[2])}) looks like a player of {best[1]['name']}, which is also in this "
+                        'screenshot: check that the row lines up with it')
+                panel.setdefault('flags', []).append({'code': 'foreign_player', 'player': position, 'text': text})
+                panel.setdefault('review', []).append(text)
+                cell['foreignTeam'] = best[1]['name']
+
+
+def player_label(player):
+    return re.sub(r'^\s*ffk\s+', '', player['name'], flags=re.I).strip() or player['name']

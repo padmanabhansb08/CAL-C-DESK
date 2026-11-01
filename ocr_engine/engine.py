@@ -3,6 +3,8 @@ from io import BytesIO
 import re
 import threading
 
+from . import timing, tuning
+
 _engine = None
 _lock = threading.Lock()
 MAX_PIXELS = 12_000_000
@@ -23,7 +25,11 @@ def _get_engine():
     global _engine
     if _engine is None:
         from rapidocr import RapidOCR
-        _engine = RapidOCR()
+        if tuning.THREADS:
+            _engine = RapidOCR(params={'EngineConfig.onnxruntime.intra_op_num_threads': tuning.THREADS,
+                                       'EngineConfig.onnxruntime.inter_op_num_threads': 1})
+        else:
+            _engine = RapidOCR()
     return _engine
 
 
@@ -87,7 +93,8 @@ def load_image(image_bytes):
     from PIL import Image
     pil = Image.open(BytesIO(image_bytes))  # reads the header only; pixels are decoded after the checks
     working_scale(pil.width, pil.height)
-    return np.asarray(pil.convert('RGB'))
+    with timing.stage('decode'):
+        return np.asarray(pil.convert('RGB'))
 
 
 def read_page(image_bytes):
@@ -98,10 +105,14 @@ def read_page(image_bytes):
         # Enlarge small screenshots (the detector needs usable glyphs) and shrink huge ones
         # (it was tuned for ordinary screen sizes); positions are mapped back afterwards.
         import cv2
-        rgb = cv2.resize(rgb, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA)
+        with timing.stage('rescale'):
+            rgb = cv2.resize(rgb, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC if scale > 1 else cv2.INTER_AREA)
     height, width = rgb.shape[:2]
     with _lock:
-        result = _get_engine()(rgb[:, :, ::-1].copy(), use_det=True, use_cls=True, use_rec=True, return_word_box=True)
+        with timing.stage('engine_init', calls=0 if _engine is not None else 1):
+            engine = _get_engine()
+        with timing.stage('detect_recognize'):
+            result = engine(rgb[:, :, ::-1].copy(), use_det=True, use_cls=tuning.USE_CLS, use_rec=True, return_word_box=True)
     words = []
     lines = result.word_results or []
     if lines and all(isinstance(line, tuple) and all(isinstance(i, tuple) for i in line) for line in lines):
@@ -177,7 +188,8 @@ def read_label_numbers(page, region, pad=3, views=None):
             if views and name not in views:
                 continue
             try:
-                out = engine(image[:, :, ::-1].copy(), use_det=False, use_cls=False, use_rec=True, return_word_box=False)
+                with timing.stage('digit_label_rec'):
+                    out = engine(image[:, :, ::-1].copy(), use_det=False, use_cls=False, use_rec=True, return_word_box=False)
             except Exception:
                 continue
             texts = list(out.txts) if out.txts is not None else []
@@ -221,7 +233,8 @@ def read_isolated_digits(page, region, pad=2, views=None):
             if views and name not in views:
                 continue
             try:
-                out = engine(image[:, :, ::-1].copy(), use_det=False, use_cls=False, use_rec=True, return_word_box=False)
+                with timing.stage('digit_iso_rec'):
+                    out = engine(image[:, :, ::-1].copy(), use_det=False, use_cls=False, use_rec=True, return_word_box=False)
             except Exception:
                 continue
             texts = list(out.txts) if out.txts is not None else []

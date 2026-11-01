@@ -10,6 +10,7 @@ thread; a thread cannot be stopped, so a timed-out read keeps the queue until it
 """
 import multiprocessing
 import threading
+import time
 
 
 class Busy(Exception):
@@ -68,9 +69,12 @@ class _Worker:
         self.process = self.conn = None
 
     def call(self, fn, args, kwargs, timeout):
+        self.start_seconds = 0.0  # time spent launching a fresh worker for this call (0 when it was already running)
         if self.process is None or not self.process.is_alive():
+            began = time.perf_counter()
             self.stop()
             self._start()
+            self.start_seconds = time.perf_counter() - began
         self.conn.send((fn, args, kwargs))
         if not self.conn.poll(timeout):
             self.stop()
@@ -93,6 +97,11 @@ class ScanGate:
         self.run_seconds = run_seconds
         self.isolate = isolate
         self._worker = _Worker() if isolate else None
+        self._local = threading.local()
+
+    def last(self):
+        """Queue wait and worker start time of this thread's most recent run(), in seconds."""
+        return {'queue': getattr(self._local, 'queue', 0.0), 'worker_start': getattr(self._local, 'worker_start', 0.0)}
 
     def busy(self):
         if self._gate.acquire(blocking=False):
@@ -101,12 +110,15 @@ class ScanGate:
         return True
 
     def run(self, fn, *args, **kwargs):
+        queued = time.perf_counter()
         if not self._gate.acquire(timeout=self.wait_seconds):
             raise Busy()
+        self._local.queue, self._local.worker_start = time.perf_counter() - queued, 0.0
         if self.isolate:
             try:
                 return self._worker.call(fn, args, kwargs, self.run_seconds)
             finally:
+                self._local.worker_start = self._worker.start_seconds
                 self._gate.release()
         box = {}
 

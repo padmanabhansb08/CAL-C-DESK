@@ -13,6 +13,7 @@ The reasoning steps are:
 import re
 import statistics
 
+from . import timing, tuning
 from .engine import Word, read_label_numbers, read_isolated_digits
 
 LABEL = re.compile(r'elim(?:inat(?:ions|ion|io|i)?)?', re.I)
@@ -127,6 +128,11 @@ def _tally(votes):
             'participation': participation, 'others': [int(d) for d, _ in ranked[1:]]}
 
 
+def _settled_by_two(t, a):
+    """Two agreeing readings, no dissent, a confident mean, and the page itself read the line."""
+    return bool(t and t['support'] >= 2 and not t['others'] and t['mean'] >= 0.9 and a.line_text is not None)
+
+
 def read_kills(page, anchors):
     """Read each kill count several independent ways and vote.
 
@@ -139,10 +145,18 @@ def read_kills(page, anchors):
         left = a.digit_box[0] if a.line_text is not None else right - 1.0 * a.h
         iso_region = (min(left, right - 4), a.digit_box[1], right, a.digit_box[3])
         votes = _page_vote(a)
+        if tuning.DIGIT_MODE == 'page-trust' and votes and votes[0][1] >= tuning.PAGE_TRUST:
+            # Opt-in shortcut: the full-page line was read with near-certain confidence, so no re-reads.
+            a.votes, a.alternatives = votes, []
+            a.kill_conf = round(votes[0][1], 3)
+            a.kills = int(votes[0][0])
+            continue
         votes += read_label_numbers(page, label_region, views={'raw'})
-        votes += read_isolated_digits(page, iso_region, views={'raw'})
         t = _tally(votes)
-        settled = (t and t['support'] >= 3 and t['share'] == 1.0 and t['mean'] >= 0.8) or (t and t['support'] >= 2 and not t['others'] and t['mean'] >= 0.9 and not a.line_text is None)
+        if not (tuning.DIGIT_MODE == 'cascade' and _settled_by_two(t, a)):
+            votes += read_isolated_digits(page, iso_region, views={'raw'})
+            t = _tally(votes)
+        settled = (t and t['support'] >= 3 and t['share'] == 1.0 and t['mean'] >= 0.8) or _settled_by_two(t, a)
         if not settled:
             votes += read_label_numbers(page, label_region, views={'contrast', 'inverted', 'sharp'})
             votes += read_isolated_digits(page, iso_region, views={'contrast', 'inverted', 'sharp'})
@@ -313,7 +327,8 @@ def _parse(page):
         return {'width': page.width, 'height': page.height, 'panels': [],
                 'warnings': ['No "Eliminations" labels were found. Is this a results screen?']}
     height = statistics.median(a.h for a in anchors)
-    read_kills(page, anchors)
+    with timing.stage('read_kills', calls=len(anchors)):
+        read_kills(page, anchors)
 
     # Rank numbers: 1-2 digit words that are not part of a label.
     rank_words = []
