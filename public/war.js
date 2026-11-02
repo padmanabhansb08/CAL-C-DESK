@@ -118,7 +118,7 @@
     const war=w(),p=progress(state,set),cut=cutOf(set),rows=standingsRows(set).slice(0,limit||Infinity),qualified=war.qualified[set]||[];
     return `<div class="table-wrap war-table-wrap"><table class="war-table"><thead><tr><th scope="col">#</th><th scope="col">Team</th><th scope="col" class="col-extra">Played</th><th scope="col">Kills</th><th scope="col" class="col-extra">Wins</th><th scope="col">Points</th><th scope="col" class="col-status"><span class="sr-only">Status</span></th></tr></thead><tbody>${rows.map((r,i)=>{
       const q=qualified.includes(r.teamId),through=q||(!p.locked&&r.matches&&Number(r.rank)<=cut);
-      return `<tr class="${i===cut?'is-cutoff ':''}${q?'is-qualified':''}"><td class="rank">${r.rank}</td><td class="team-cell">${esc(r.teamName)}</td><td class="col-extra">${r.matches}</td><td>${r.kills}</td><td class="col-extra">${r.wins}</td><td class="total">${r.total}</td><td class="col-status">${q?`<span class="tag tag-ok">${ICON.check}Qualified</span>`:through?'<span class="tag">In the top '+cut+'</span>':''}</td></tr>`;}).join('')}</tbody></table></div>`;
+      return `<tr class="${i===cut?'is-cutoff ':''}${q?'is-qualified':''}"><td class="rank">${r.rank}</td><td class="team-cell">${esc(r.teamName)}</td><td class="col-extra">${r.matches}</td><td>${r.kills}</td><td class="col-extra">${r.wins}</td><td class="total">${r.total}</td><td class="col-status">${q?`<span class="tag tag-ok">${ICON.check}Qualified</span>`:''}</td></tr>`;}).join('')}</tbody></table></div>`;
   }
   function stageView(set){
     const war=w(),s=withWar(),p=progress(state,set),cut=cutOf(set),rows=WarTournament.standings(s,set);
@@ -130,7 +130,7 @@
     if(!ready(set))return `<section class="war-section war-empty"><p>${set==='C'?'The 12 semi-finalists appear here when the top 6 of Set A and Set B are confirmed.':`The 12 teams in the first saved ${label(set)} result become this set’s team list.${veteran()?'':' No allocation needed.'}`}</p></section>${set==='C'?'':settings}${assign}`;
     return `<section class="war-section" aria-labelledby="standings-title">
       <div class="section-head"><h2 id="standings-title">${label(set)} standings</h2><p>Top ${cut} advance${set==='C'?' to the finals':' to the semi-final'} · ranked by points, kills, wins, placement</p></div>
-      <div class="war-progress" role="progressbar" aria-label="${label(set)} matches played" aria-valuemin="0" aria-valuemax="${p.target}" aria-valuenow="${p.played}"><span style="width:${Math.min(100,p.played/p.target*100)}%"></span></div>
+      <p class="war-progress-label">${p.played} of ${p.target} matches played</p><div class="war-progress" role="progressbar" aria-label="${label(set)} matches played" aria-valuemin="0" aria-valuemax="${p.target}" aria-valuenow="${p.played}"><span style="width:${Math.min(100,p.played/p.target*100)}%"></span></div>
       ${standingsTable(set)}
       ${tied.length&&!p.locked?`<div class="war-tie" role="group" aria-labelledby="tie-title"><h3 id="tie-title">Tie at the cutoff</h3><p>These teams have identical records. Choose ${cut-rows.filter(r=>r.rank<edge.rank).length} to advance and give the reason.</p><div class="war-tie-options">${tied.map(r=>`<label><input type="checkbox" data-war-tie value="${esc(r.teamId)}"><span>${esc(r.teamName)}</span></label>`).join('')}</div><label>Reason<input id="war-tie-reason" maxlength="200" placeholder="e.g. Winner of the tiebreak match"></label></div>`:''}
     </section>
