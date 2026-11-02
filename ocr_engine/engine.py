@@ -143,23 +143,30 @@ def _split_line(text, conf, box):
     return out
 
 
-def _variants(crop, border=(16, 16)):
-    """Independent views of the same crop: raw, contrast-stretched, inverted, replicate-padded."""
+def _variants(crop, border=(16, 16), views=None):
+    """Independent views of the same crop: raw, contrast-stretched, inverted, replicate-padded.
+
+    Only the views asked for are built (all when views is None)."""
     import cv2
+    want = lambda name: not views or name in views
     big = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
-    gray = cv2.cvtColor(big, cv2.COLOR_RGB2GRAY)
-    stretched = cv2.normalize(gray, None, 0, 255, cv2.NORM_MINMAX)
-    inverted = 255 - stretched
     v, h = border
 
     def pad(img):
         return cv2.copyMakeBorder(img, v, v, h, h, cv2.BORDER_REPLICATE)
-    return [
-        ('raw', pad(big)),
-        ('contrast', pad(cv2.cvtColor(stretched, cv2.COLOR_GRAY2RGB))),
-        ('inverted', pad(cv2.cvtColor(inverted, cv2.COLOR_GRAY2RGB))),
-        ('sharp', pad(cv2.filter2D(big, -1, __import__('numpy').array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype='float32')))),
-    ]
+    out = []
+    if want('raw'):
+        out.append(('raw', pad(big)))
+    if want('contrast') or want('inverted'):
+        stretched = cv2.normalize(cv2.cvtColor(big, cv2.COLOR_RGB2GRAY), None, 0, 255, cv2.NORM_MINMAX)
+        if want('contrast'):
+            out.append(('contrast', pad(cv2.cvtColor(stretched, cv2.COLOR_GRAY2RGB))))
+        if want('inverted'):
+            out.append(('inverted', pad(cv2.cvtColor(255 - stretched, cv2.COLOR_GRAY2RGB))))
+    if want('sharp'):
+        import numpy as np
+        out.append(('sharp', pad(cv2.filter2D(big, -1, np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype='float32')))))
+    return out
 
 
 _CONFUSIONS = {'O': '0', 'o': '0', 'D': '0', 'Q': '0', 'I': '1', 'l': '1', '|': '1', 'i': '1'}
@@ -184,9 +191,7 @@ def read_label_numbers(page, region, pad=3, views=None):
     reads = []
     with _lock:
         engine = _get_engine()
-        for name, image in _variants(crop):
-            if views and name not in views:
-                continue
+        for name, image in _variants(crop, views=views):
             try:
                 with timing.stage('digit_label_rec'):
                     out = engine(image[:, :, ::-1].copy(), use_det=False, use_cls=False, use_rec=True, return_word_box=False)
@@ -229,9 +234,7 @@ def read_isolated_digits(page, region, pad=2, views=None):
     reads = []
     with _lock:
         engine = _get_engine()
-        for name, image in _variants(crop, border=(20, 40)):
-            if views and name not in views:
-                continue
+        for name, image in _variants(crop, border=(20, 40), views=views):
             try:
                 with timing.stage('digit_iso_rec'):
                     out = engine(image[:, :, ::-1].copy(), use_det=False, use_cls=False, use_rec=True, return_word_box=False)

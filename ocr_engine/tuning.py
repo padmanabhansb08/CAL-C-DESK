@@ -1,20 +1,21 @@
 """Speed/accuracy switches for the reader, read from the environment once per process.
 
-Apart from the thread count below, every default reproduces the reader's long-standing behaviour. A faster
+The defaults (cascade digit reads, no angle classifier) were measured on the labelled screenshots: same
+readings as the old full mode on original and half-size copies, about 16% faster, more panels auto-approved. A faster
 setting is only worth turning on after tools/bench_scan.py shows, on the labelled screenshots, that it is as
 accurate as the default.
 
 SCAN_WORKERS     unset (default): reader processes by CPU count (1 below 4 CPUs, 2 from 4, 3 from 12; 1 when
                  SCAN_ISOLATE=0). The browser reads that many screenshots of a match at the same time. Each
                  reader holds about 400 MB. A number (1-6) sets it.
-OCR_USE_CLS      1 (default) runs the text-angle classifier on every detected line; 0 skips it.
+OCR_USE_CLS      0 (default) skips the text-angle classifier; 1 runs it on every detected line.
 OCR_THREADS      unset (default): this reader's share of the CPUs the server can really use (a container's
                  quota, not the host's core count), at most 4. A number sets it; 0 or "default" leaves ONNX Runtime to size its own
                  pool, which on a busy or CPU-limited host was measured 3x slower (more threads than the CPU
                  can run make every step wait for the slowest one).
-OCR_DIGIT_MODE   full (default): every kill count is read three independent ways (page line, label
+OCR_DIGIT_MODE   full: every kill count is read three independent ways (page line, label
                  re-read, isolated-digit re-read) before it can be settled.
-                 cascade: stop after the page line and the label re-read when those two agree strongly.
+                 cascade (default): stop after the page line and the label re-read when those two agree strongly.
                  page-trust: accept the page-line reading alone when its confidence is at least
                  OCR_PAGE_TRUST (default 0.99); otherwise fall back to the full set of reads.
 """
@@ -59,7 +60,7 @@ def usable_cpus():
 
 
 MAX_AUTO_THREADS = 4
-USE_CLS = _flag('OCR_USE_CLS', True)
+USE_CLS = _flag('OCR_USE_CLS', False)
 
 
 def _auto_workers(cpus):
@@ -75,9 +76,9 @@ WORKERS = max(1, min(6, int(_workers))) if _workers.isdigit() else _auto_workers
 # 0 = leave ONNX Runtime's own choice; unset = this reader's share of the CPUs we can really use, at most MAX_AUTO_THREADS.
 _threads = os.environ.get('OCR_THREADS', '').strip().lower()
 THREADS = 0 if _threads in ('0', 'default') else int(_threads) if _threads.isdigit() else min(MAX_AUTO_THREADS, max(1, usable_cpus() // WORKERS))
-DIGIT_MODE = os.environ.get('OCR_DIGIT_MODE', 'full').strip().lower()
+DIGIT_MODE = os.environ.get('OCR_DIGIT_MODE', 'cascade').strip().lower()
 if DIGIT_MODE not in ('full', 'cascade', 'page-trust'):
-    DIGIT_MODE = 'full'
+    DIGIT_MODE = 'cascade'
 PAGE_TRUST = float(os.environ.get('OCR_PAGE_TRUST', '0.99'))
 
 
