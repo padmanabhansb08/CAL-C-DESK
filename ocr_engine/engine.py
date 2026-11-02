@@ -35,7 +35,19 @@ def _get_engine():
             params['Rec.model_type'] = ModelType(tuning.REC_MODEL)
         if tuning.DET_SIZE:
             params.update({'Det.limit_type': 'max', 'Det.limit_side_len': tuning.DET_SIZE})
-        _engine = RapidOCR(params=params) if params else RapidOCR()
+        try:
+            _engine = RapidOCR(params=params) if params else RapidOCR()
+        except Exception as error:
+            # A model that is not bundled is downloaded on first use; if that fails (no network, read-only
+            # disk), read with the bundled small models rather than failing every screenshot.
+            if not any(k in params for k in ('Det.model_type', 'Rec.model_type')):
+                raise
+            import logging
+            logging.getLogger('ocr').warning('reader: %s/%s models unavailable (%s); using the small models',
+                                             tuning.DET_MODEL, tuning.REC_MODEL, error)
+            params.pop('Det.model_type', None)
+            params.pop('Rec.model_type', None)
+            _engine = RapidOCR(params=params) if params else RapidOCR()
     return _engine
 
 
