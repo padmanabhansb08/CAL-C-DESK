@@ -24,12 +24,18 @@ def available():
 def _get_engine():
     global _engine
     if _engine is None:
-        from rapidocr import RapidOCR
+        from rapidocr import ModelType, RapidOCR
+        params = {}
         if tuning.THREADS:
-            _engine = RapidOCR(params={'EngineConfig.onnxruntime.intra_op_num_threads': tuning.THREADS,
-                                       'EngineConfig.onnxruntime.inter_op_num_threads': 1})
-        else:
-            _engine = RapidOCR()
+            params.update({'EngineConfig.onnxruntime.intra_op_num_threads': tuning.THREADS,
+                           'EngineConfig.onnxruntime.inter_op_num_threads': 1})
+        if tuning.DET_MODEL != 'small':
+            params['Det.model_type'] = ModelType(tuning.DET_MODEL)
+        if tuning.REC_MODEL != 'small':
+            params['Rec.model_type'] = ModelType(tuning.REC_MODEL)
+        if tuning.DET_SIZE:
+            params.update({'Det.limit_type': 'max', 'Det.limit_side_len': tuning.DET_SIZE})
+        _engine = RapidOCR(params=params) if params else RapidOCR()
     return _engine
 
 

@@ -1,6 +1,6 @@
 """Speed/accuracy switches for the reader, read from the environment once per process.
 
-The defaults (cascade digit reads, no angle classifier) were measured on the labelled screenshots: same
+The defaults (cascade digit reads, no angle classifier, tiny detector) were measured on the labelled screenshots: same
 readings as the old full mode on original and half-size copies, about 16% faster, more panels auto-approved. A faster
 setting is only worth turning on after tools/bench_scan.py shows, on the labelled screenshots, that it is as
 accurate as the default.
@@ -18,6 +18,11 @@ OCR_DIGIT_MODE   full: every kill count is read three independent ways (page lin
                  cascade (default): stop after the page line and the label re-read when those two agree strongly.
                  page-trust: accept the page-line reading alone when its confidence is at least
                  OCR_PAGE_TRUST (default 0.99); otherwise fall back to the full set of reads.
+OCR_DET_MODEL    tiny (default) or small: the full-page text detector. tiny halved detection time with the
+                 same teams and kill counts on the labelled screenshots (original and half-size).
+OCR_REC_MODEL    small (default) or tiny: the text recogniser (page lines and digit re-reads).
+OCR_DET_SIZE     unset (default): the detector enlarges the page until its short side is 736 px. A number N
+                 instead caps the long side at N px (960 halves detection time on 1600 x 720 screenshots).
 """
 import os
 
@@ -82,6 +87,18 @@ if DIGIT_MODE not in ('full', 'cascade', 'page-trust'):
 PAGE_TRUST = float(os.environ.get('OCR_PAGE_TRUST', '0.99'))
 
 
+def _model(name, default='small'):
+    value = os.environ.get(name, default).strip().lower()
+    return value if value in ('small', 'tiny', 'medium') else default
+
+
+DET_MODEL = _model('OCR_DET_MODEL', 'tiny')
+REC_MODEL = _model('OCR_REC_MODEL')
+_det_size = os.environ.get('OCR_DET_SIZE', '').strip()
+DET_SIZE = int(_det_size) if _det_size.isdigit() and int(_det_size) >= 320 else 0
+
+
 def describe():
     return (f'workers={WORKERS} use_cls={int(USE_CLS)} digit_mode={DIGIT_MODE} threads={THREADS or "default"}'
+            + f' det={DET_MODEL}@{DET_SIZE or "auto"} rec={REC_MODEL}'
             + (f' page_trust={PAGE_TRUST}' if DIGIT_MODE == 'page-trust' else ''))

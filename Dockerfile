@@ -11,6 +11,8 @@ WORKDIR /app
 # Full server dependencies including OCR (RapidOCR ships its own models, no download at runtime)
 COPY requirements-docker.txt .
 RUN pip install --no-cache-dir -r requirements-docker.txt
+# The default tiny detector is not bundled with RapidOCR: fetch it now so the server never downloads at runtime
+RUN python -c "from rapidocr import ModelType, RapidOCR; RapidOCR(params={'Det.model_type': ModelType.TINY})"
 
 # Application code
 COPY server.py local_ocr.py default_rosters.py ./
