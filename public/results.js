@@ -67,7 +67,7 @@
     if(selected!=='__overall__'&&!state.matches.some(m=>m.id===selected))selected=state.matches.at(-1).id;
     const match=resultMatch();if(!VIEWS.some(([v])=>v===tab))tab='teams';
     const overall=match.isOverall,rows=teamRows(match);
-    const actions=`<div class="actions">${overall?'':`<button type="button" class="icon-action-btn" onclick="deleteMatch()">${uiIcon('delete',{size:'sm'})}<span>Delete match</span></button>`}<button type="button" class="primary brand-main-action" id="export-results" onclick="exportResults()">${uiIcon('download',{size:'sm'})}<span>Export ${viewLabel(tab).toLowerCase()}</span></button></div>`;
+    const actions=`<div class="actions"><button type="button" class="primary brand-main-action" id="export-results" onclick="exportResults()">${uiIcon('download',{size:'sm'})}<span>Export ${viewLabel(tab).toLowerCase()}</span></button></div>`;
     const select=`<label>Match<select id="match-select"><option value="__overall__" ${overall?'selected':''}>Overall points table · ${state.matches.length} match${state.matches.length===1?'':'es'}</option>${state.matches.map(x=>`<option value="${esc(x.id)}" ${!overall&&match.id===x.id?'selected':''}>${esc(x.name)} · ${esc(x.map)}</option>`).join('')}</select></label>`;
     const views=`<div class="tabs" role="group" aria-label="Result views">${VIEWS.map(([id,text])=>`<button type="button" class="${tab===id?'active':''}" aria-pressed="${tab===id}" onclick="tab='${id}';render()">${text}</button>`).join('')}</div>`;
     const context=overall?`Totals across all ${match.matchCount} saved matches, including practice and every set. Equal records share a rank.`

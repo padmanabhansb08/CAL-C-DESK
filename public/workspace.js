@@ -72,7 +72,7 @@
     const set=$('#war-stage')?.value,w=state.war;let text='Practice match · saved results stay outside the tournament standings.';
     if(set){
       const count=w?(set==='C'?(w.qualified?.A?.length||0)+(w.qualified?.B?.length||0):(w.groups?.[set]?.length||0)):0;
-      text='Set '+set+(set==='C'?' · Semi-final':' · Qualifier')+' · Battle Royale · '+(set==='C'?'Top 4 advance to CS finals.':'Top 6 advance to Set C.');
+      text='Set '+set+(set==='C'?' · Semi-final':' · Qualifier')+' · Battle Royale · '+(set==='C'?'Top 4 advance to the finals.':'Top 6 advance to the semi-final (Set C).');
       if(set!=='C'&&count!==12)text+=' The 12 teams in your first saved points table become this set’s team list.';
       if(set==='C'&&count!==12)text+=' Confirm the top 6 from Set A and Set B first.';
       if(w?.qualified?.[set])text+=' Qualification is locked.';

@@ -186,7 +186,7 @@ let renderedPage=null;
 function render(){
   const title=(NAV.find(([id])=>id===page)||[0,'Workspace'])[1],signout=`<button type="button" class="signout" onclick="logout()">${uiIcon('logout',{size:'sm'})}<span>Sign out</span></button>`;
   $('#app').innerHTML=`<div class="shell channel-shell comfort-shell" data-page="${page}"><aside class="sidebar"><div class="brand channel-brand">${page==='war'?'<span class="channel-monogram">FFK</span>':'<img class="channel-profile" src="assets/channel-avatar.jpg" alt="FFK Prasanth channel profile">'}<span class="channel-wordmark">FFK<br>PRASANTH<small>WAR DESK</small></span></div>
-    <nav class="nav" aria-label="Main">${NAV.map(([id,label,icon])=>`<button type="button" class="${page===id?'active':''}" onclick="${id==='upload'?'navAddResults()':`go('${id}')`}"${page===id?' aria-current="page"':''}><span class="nav-icon">${uiIcon(icon,{size:'md'})}</span><span class="comfort-nav-label">${label}</span></button>`).join('')}</nav>
+    <nav class="nav" aria-label="Main">${NAV.map(([id,label,icon])=>`<button type="button" class="${page===id?'active':''}" onclick="${id==='upload'?'navAddResults()':id==='results'?`selected='__overall__';go('results')`:`go('${id}')`}"${page===id?' aria-current="page"':''}><span class="nav-icon">${uiIcon(icon,{size:'md'})}</span><span class="comfort-nav-label">${label}</span></button>`).join('')}</nav>
     <button type="button" class="host-access-button" onclick="openHostAccess()">${uiIcon('manage_accounts',{size:'md'})}<span>Host desk</span></button>
     <div class="sidebar-footer">${socialLinks()}${signout}</div></aside>
     <main class="main"><header class="topbar"><span class="comfort-top-title"><span>FFK WAR DESK</span><strong>${title}</strong></span><div class="topbar-right"><button type="button" class="sync-button" onclick="refreshWorkspace(true)" aria-label="Refresh saved data" title="Refresh saved data"><span id="sync-status">Up to date</span> ↻</button><details class="mobile-account"><summary aria-label="Channel and account menu">•••</summary><div class="mobile-account-panel"><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openHostAccess()">${uiIcon('manage_accounts',{size:'sm'})}<span>Host desk</span></button>${socialLinks()}${signout}</div></details></div></header>
@@ -251,6 +251,8 @@ function teamForm(id){
   form.oninput=()=>{check();error.textContent='';};
   form.onsubmit=async e=>{
     e.preventDefault();check();if(submit.disabled||!form.reportValidity())return;
+    const clashes=inputs.map(x=>x.value.trim()).filter(Boolean).map(n=>[n,state.teams.find(x=>x.id!==id&&(x.players||[]).some(p=>p.name.toLowerCase()===n.toLowerCase()))]).filter(([,other])=>other);
+    if(clashes.length&&!await confirmAction({title:'Player already in another team?',message:clashes.map(([n,other])=>`${n} is also in ${other.name}.`).join(' ')+' Screenshot reading can match the wrong team when two teams share a player name.',accept:'Save anyway',cancel:'Go back'}))return;
     const slots=inputs.map((x,i)=>({name:x.value.trim(),replace:form.querySelector(`[data-replace="${i}"]`)?.getAttribute('aria-pressed')==='true'}));
     const updated={...(t||{}),id:id||uid(),name:team.value.trim(),players:rosterUpdate(t,slots)};
     const prior=structuredClone(state);if(t)state.teams[state.teams.findIndex(x=>x.id===id)]=updated;else state.teams.push(updated);

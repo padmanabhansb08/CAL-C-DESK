@@ -118,7 +118,7 @@ Match results also includes **Kill graph** and **Position graph** tabs. Kill gra
 
 Overall exports of the Teams view (PNG, PDF, CSV) include every participating team. The artwork-based graphic holds twelve rows, so overall artwork shows the top twelve with an explicit note if more teams participated. In overall artwork, MATCH is each team's match count and WINS is cumulative wins. On the podium, teams with identical records share a rank and sit side by side. Overall totals are derived and do not create or modify saved matches. On a phone the standings show rank, team, kills and points; the other columns are in Details.
 
-To remove a saved match, open **Match results**, select the match, then choose **Delete match** and confirm. The selected match and its results are removed permanently; registered teams and other matches are preserved.
+To remove a saved match, open **Standings**, choose **Manage matches**, then **Delete** next to the match and confirm. The selected match and its results are removed permanently; registered teams and other matches are preserved.
 
 Use one active editor at a time (whole-state saves; a freshness check catches most conflicts, but it is not an atomic multi-editor protocol). Login sessions last twelve hours and survive server restarts. Public hosting needs HTTPS (any of the supplied host configs provide it) and a persistent disk.
 
