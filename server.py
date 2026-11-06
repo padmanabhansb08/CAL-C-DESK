@@ -5,7 +5,7 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 import local_ocr
 import default_rosters
-from ffk_core import policy, backup, logs, validate
+from ffk_core import policy, backup, logs, validate, weekly
 from ffk_core.scan_gate import ScanGate, Busy, TimedOut
 
 ROOT = Path(__file__).parent
@@ -299,6 +299,49 @@ class Handler(SimpleHTTPRequestHandler):
                 if len(remaining) == len(current['matches']):
                     return self.reply(404, {'error': 'This match has already been removed. Refresh the page.'})
                 current['matches'] = remaining
+                db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('state', json.dumps(current)))
+            return self.reply(200, current)
+        if self.path == '/api/lobby/scan':
+            engine = scanner()
+            if engine is None:
+                return self.reply(503, {'error': 'The screenshot reader is not installed on this server.'})
+            try:
+                raw = base64.b64decode(data['image'].split(',', 1)[-1], validate=True)
+                from ocr_engine import lobby
+                result = scan_gate.run(lobby.scan_lobby, raw)
+                log.info('lobby scan ok bytes=%d slots=%d', len(raw), len(result['slots']))
+                return self.reply(200, result)
+            except Busy:
+                return self.reply(429, {'error': 'Another screenshot is still being read. Trying again shortly.', 'busy': True})
+            except TimedOut:
+                return self.reply(504, {'error': 'Reading this screenshot took too long.'})
+            except (KeyError, ValueError, TypeError) as error:
+                return self.reply(400, {'error': 'Could not read this lobby screenshot: ' + str(error)})
+            except Exception as error:
+                log.exception('lobby scan failed')
+                return self.reply(500, {'error': 'The screenshot reader failed: ' + str(error)})
+        if self.path == '/api/slots':
+            # This week's slot list replaces the built-in Set A teams; the roster is updated in one transaction.
+            entries = data.get('entries')
+            slots = None
+            if entries is None:
+                try:
+                    slots = weekly.parse_slot_list(data.get('text'))
+                except ValueError as error:
+                    return self.reply(400, {'error': str(error)})
+            elif not isinstance(entries, list) or not entries or not all(
+                    isinstance(e, dict) and isinstance(e.get('slot'), int) and isinstance(e.get('players', []), list)
+                    and all(isinstance(n, str) for n in e.get('players', [])) and isinstance(e.get('name', ''), str)
+                    for e in entries):
+                return self.reply(400, {'error': 'Send the slots as a list of {slot, name, players}.'})
+            with connect() as db:
+                db.execute('BEGIN IMMEDIATE')
+                row = db.execute('SELECT value FROM settings WHERE key=?', ('state',)).fetchone()
+                current = json.loads(row[0]) if row else {'teams': [], 'matches': []}
+                if entries is None:
+                    weekly.apply_set_a(current, slots)
+                else:
+                    weekly.apply_lobby(current, entries)
                 db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('state', json.dumps(current)))
             return self.reply(200, current)
         if self.path == '/api/ocr':

@@ -116,7 +116,8 @@ NOISE = 0.5   # unrelated names still share letters; below this a similarity is 
 SOLID = 0.7   # a player counts as found at this similarity
 IGL_SCORE = 0.85
 IGL_EXACT = 0.99
-EXTRA_PLAYER = 0.3   # a team needs at least one more found player than any rival, unless its IGL is exact
+SLOT_BONUS = 0.4   # lobby order: a panel prefers the team that holds its slot
+EXTRA_PLAYER = 0.3  # a team needs at least one more found player than any rival, unless its IGL is exact
 
 
 class Fit(NamedTuple):
@@ -228,7 +229,10 @@ def match_rosters(result, roster):
     # Players found for certain decide who gets which team (a team that can actually be named comes first);
     # looser name similarity only breaks ties.
     support = lambda fit: fit.evidence / 4 + 0.25 * fit.score + (0.1 if fit.found else 0.0)
-    cost = [[1.0 - (support(table[i][j]) if i < n and j < m else 0.0) for j in range(size)] for i in range(size)]
+    # Lobby screenshots list the teams in slot order, so panel i is the roster's i-th team (the slot list order).
+    by_slot = bool(roster.get('bySlot'))
+    cost = [[1.0 - ((support(table[i][j]) + (SLOT_BONUS if by_slot and i == j else 0.0)) if i < n and j < m else 0.0)
+             for j in range(size)] for i in range(size)]
     chosen = _hungarian(cost)
     for i, panel in enumerate(panels):
         j = chosen[i] if i < len(chosen) else None
@@ -244,6 +248,11 @@ def match_rosters(result, roster):
             for ci, pj in enumerate(pairing):
                 player_scores.append(player_similarity(names[ci], team['players'][pj]) if names[ci] else 0.0)
         ok = bool(team) and _team_ok(table[i][j], [table[i][k] for k in range(m) if k != j and table[i][k].found])
+        # A team sitting in its slot is named by the slot even when its names were misread.
+        slot_named = by_slot and team is not None and j == i and not ok and not any(
+            table[i][k].found and table[i][k].evidence > table[i][j].evidence for k in range(m) if k != j)
+        if slot_named:
+            ok = True
         # A globally forced choice (the best team was taken by a stronger panel) needs stronger evidence.
         taken_better = team is not None and scores and scores[0][1] != j and scores[0][0] > own + 0.05
         panel['team'] = {
@@ -265,6 +274,15 @@ def match_rosters(result, roster):
                 if s >= 0.7 and s - max([0.0] + others) >= 0.12:
                     cell['playerId'] = team['players'][pj]['id']
                     cell['playerName'] = team['players'][pj]['name']
+            if slot_named:
+                # Players also sit in slot order: unnamed cells take the team's unclaimed players in order.
+                claimed = {c.get('playerId') for c in panel['cells'] if c}
+                free = [p for p in team['players'][:4] if p['id'] not in claimed]
+                for cell in panel['cells']:
+                    if cell and not cell.get('playerId') and free:
+                        player = free.pop(0)
+                        cell['playerId'], cell['playerName'] = player['id'], player['name']
+                        cell['bySlot'] = True
     _flag_foreign_players(panels, teams)
     return result
 

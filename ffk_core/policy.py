@@ -97,7 +97,7 @@ def setup_requires_token(headers=None):
 
 
 def body_limit(path):
-    return MAX_OCR_BODY if path in ('/api/ocr', '/api/ocr/scan') else MAX_BODY
+    return MAX_OCR_BODY if path in ('/api/ocr', '/api/ocr/scan', '/api/lobby/scan') else MAX_BODY
 
 
 def parse_content_length(value, path):
@@ -179,7 +179,7 @@ def rate_limited(limiter, ip, path):
     """True if this request should be refused with 429."""
     if not path.startswith('/api/'):
         return False
-    if path in ('/api/ocr', '/api/ocr/scan') and not limiter.allow((ip, 'scan'), SCAN_PER_MINUTE):
+    if path in ('/api/ocr', '/api/ocr/scan', '/api/lobby/scan') and not limiter.allow((ip, 'scan'), SCAN_PER_MINUTE):
         return True
     return not limiter.allow((ip, 'api'), API_PER_MINUTE)
 
