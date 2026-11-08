@@ -134,7 +134,7 @@ async function go(next){if(busy){toast('Wait for screenshot reading to finish.',
 
 window.addEventListener('beforeunload',e=>{if(busy||(draft&&(!window.isMatchDraftSaved||!window.isMatchDraftSaved()))){e.preventDefault();e.returnValue='';}});
 
-async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup);state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
+async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup);storageTemporary=session.persistentStorage===false;state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
 
 function auth(setup){
   const action=setup?'Create organizer password':'Sign in';
@@ -203,9 +203,11 @@ function render(){
   const title=(NAV.find(([id])=>id===page)||[0,'Workspace'])[1],signout=`<button type="button" class="signout" onclick="logout()">${uiIcon('logout',{size:'sm'})}<span>Sign out</span></button>`;
   $('#app').innerHTML=`<div class="shell channel-shell comfort-shell" data-page="${page}"><aside class="sidebar"><div class="brand channel-brand">${page==='war'?'<span class="channel-monogram">FFK</span>':'<img class="channel-profile" src="assets/channel-avatar.jpg" alt="FFK Prasanth channel profile">'}<span class="channel-wordmark">FFK<br>PRASANTH<small>WAR DESK</small></span></div>
     <nav class="nav" aria-label="Main">${NAV.map(([id,label,icon])=>`<button type="button" class="${page===id?'active':''}" onclick="${id==='upload'?'navAddResults()':id==='results'?`selected='__overall__';go('results')`:`go('${id}')`}"${page===id?' aria-current="page"':''}><span class="nav-icon">${uiIcon(icon,{size:'md'})}</span><span class="comfort-nav-label">${label}</span></button>`).join('')}</nav>
-    <button type="button" class="host-access-button" onclick="openHostAccess()">${uiIcon('manage_accounts',{size:'md'})}<span>Host desk</span></button>    <div class="sidebar-footer">${socialLinks()}${signout}</div></aside>
-    <main class="main"><header class="topbar"><span class="comfort-top-title"><span>FFK WAR DESK</span><strong>${title}</strong></span><div class="topbar-right"><button type="button" class="sync-button" onclick="refreshWorkspace(true)" aria-label="Refresh saved data" title="Refresh saved data"><span id="sync-status">Up to date</span> ↻</button><details class="mobile-account"><summary aria-label="Channel and account menu">•••</summary><div class="mobile-account-panel"><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openHostAccess()">${uiIcon('manage_accounts',{size:'sm'})}<span>Host desk</span></button>${socialLinks()}${signout}</div></details></div></header>
-    <div class="content">${page==='war'?renderWar():page==='roster'?roster():page==='upload'?(readerReady?intake():'<div class="panel empty" role="status"><p>Loading the screenshot tools…</p></div>'):page==='wheel'?wheelPage():results()}</div></main></div>`;
+    <button type="button" class="host-access-button" onclick="openHostAccess()">${uiIcon('manage_accounts',{size:'md'})}<span>Host desk</span></button>
+    <button type="button" class="host-access-button" onclick="openBackup()">${uiIcon('download',{size:'md'})}<span>Backup</span></button>
+    <div class="sidebar-footer">${socialLinks()}${signout}</div></aside>
+    <main class="main"><header class="topbar"><span class="comfort-top-title"><span>FFK WAR DESK</span><strong>${title}</strong></span><div class="topbar-right"><button type="button" class="sync-button" onclick="refreshWorkspace(true)" aria-label="Refresh saved data" title="Refresh saved data"><span id="sync-status">Up to date</span> ↻</button><details class="mobile-account"><summary aria-label="Channel and account menu">•••</summary><div class="mobile-account-panel"><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openHostAccess()">${uiIcon('manage_accounts',{size:'sm'})}<span>Host desk</span></button><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openBackup()">${uiIcon('download',{size:'sm'})}<span>Backup</span></button>${socialLinks()}${signout}</div></details></div></header>
+    <div class="content">${backupWarning()}${page==='war'?renderWar():page==='roster'?roster():page==='upload'?(readerReady?intake():'<div class="panel empty" role="status"><p>Loading the screenshot tools…</p></div>'):page==='wheel'?wheelPage():results()}</div></main></div>`;
   if(page==='upload'&&!readerReady){loadReaderPage();return;}
   if(page==='wheel'){bindWheel();if(renderedPage!==page){window.scrollTo({top:0,behavior:'instant'});const h=document.querySelector('.content h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}}renderedPage=page;return;}
   bind();
@@ -246,7 +248,11 @@ function bindWheel(){
   const note=$('#wheel-note');
   $('#wheel-maps').onchange=()=>{const list=wheelSelected();try{localStorage.setItem('ffk-wheel-maps',JSON.stringify(list));}catch{}note.textContent=list.length<2?'Choose at least two maps.':'';wheelSync();wheelSend({type:'wheel-maps',maps:list});};
   $('#wheel-sound').onchange=e=>{try{localStorage.setItem('ffk-wheel-sound',e.target.checked?'1':'0');}catch{}wheelSend({type:'wheel-sound',on:e.target.checked});};
-  $('#wheel-spin').onclick=async()=>{const list=wheelSelected();if(list.length<2)return;wheelSpinning=true;wheelSync();note.textContent='';
+  $('#wheel-spin').onclick=async()=>{const list=wheelSelected();if(list.length<2)return;
+    // A spin is live on every broadcast screen and cannot be taken back, so it is confirmed first.
+    const current=await api('wheel').then(d=>d.spin?.result).catch(()=>null);
+    if(!await confirmAction({title:'Spin the wheel live?',message:`The draw is final and plays on every broadcast screen now. Maps on the wheel: ${list.join(', ')}.${current?` This replaces the current result, ${current}.`:''}`,accept:'Spin now',cancel:'Not yet'}))return;
+    wheelSpinning=true;wheelSync();note.textContent='';
     try{wheelSend({type:'wheel-spun',data:await api('wheel/spin',{maps:list})});}
     catch(e){note.textContent='Could not spin: '+e.message;wheelSpinning=false;wheelSync();}};
   $('#wheel-fullscreen').onclick=()=>{const f=$('#wheel-frame');(f.requestFullscreen||f.webkitRequestFullscreen)?.call(f);};
@@ -713,6 +719,23 @@ function confirmAction({title,message,accept='Continue',cancel='Cancel'}){
   });
 }
 
+// Backup: the whole tournament (teams, matches, sets, the drawn final map) as one file kept off the server.
+let storageTemporary=false;
+function backupWarning(){return storageTemporary?`<div class="storage-warning" role="alert">${uiIcon('download',{size:'md'})}<p><strong>This server's storage is temporary.</strong> A redeploy or restart will erase the tournament. Add a volume mounted at <code>/data</code> in your hosting settings, and download a backup after every match until then.</p><button type="button" onclick="openBackup()">Backup</button></div>`:'';}
+function openBackup(){
+  modal(`<h2>Backup</h2><p>Download the whole tournament as one file: teams, matches, sets, qualifiers and the drawn final map. Keep it on your phone or computer, and download a new one after each match.</p>${storageTemporary?'<p class="caption storage-warning-text">This server\'s storage is temporary, so this file may be the only copy after a redeploy.</p>':''}<div class="actions"><button type="button" class="primary" id="backup-download">${uiIcon('download',{size:'sm'})} <span>Download backup file</span></button></div>
+    <h3>Restore</h3><p class="caption">Replaces everything on this desk with a backup file. The server keeps a copy of the current data first.</p><label class="backup-file">Backup file<input type="file" id="backup-file" accept=".json,application/json"></label><div class="actions"><button type="button" onclick="closeModal()">Close</button></div>`);
+  $('#backup-download').onclick=async()=>{try{const data=await api('backup');const stamp=new Date().toISOString().slice(0,16).replace(/[-:T]/g,'').replace(/^(\d{8})/,'$1-');
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,1)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download=`ffk-war-backup-${stamp}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);
+    toast(`Backup downloaded: ${data.state.teams.length} teams, ${data.state.matches.length} matches.`);}catch(e){toast('Could not download the backup: '+e.message,'error');}};
+  $('#backup-file').onchange=async e=>{const file=e.target.files[0];if(!file)return;let data;
+    try{data=JSON.parse(await file.text());}catch{e.target.value='';return toast('That file is not a backup file.','error');}
+    if(data?.format!=='ffk-war-desk-backup'||!data.state){e.target.value='';return toast('That file is not an FFK War Desk backup.','error');}
+    const when=data.savedAt?new Date(data.savedAt*1000).toLocaleString():'an unknown date';
+    if(!await confirmAction({title:'Restore this backup?',message:`Everything on this desk will be replaced with the backup from ${when}: ${data.state.teams?.length||0} teams and ${data.state.matches?.length||0} matches.`,accept:'Replace with backup',cancel:'Keep current data'})){e.target.value='';return;}
+    try{const r=await api('state/restore',data);state=await api('state');draft=null;closeModal();render();toast(`Backup restored: ${r.teams} teams, ${r.matches} matches.`);}
+    catch(err){e.target.value='';toast(err.message,'error');}};
+}
 async function openHostAccess(){
   try{
     const {key}=await api('host/access',{});

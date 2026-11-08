@@ -10,6 +10,23 @@ from ffk_core.scan_gate import ScanGate, Busy, TimedOut, warm_reader
 
 ROOT = Path(__file__).parent
 DB = Path(os.environ.get('DB_PATH', ROOT / 'war.sqlite3'))
+BACKUP_FORMAT = 'ffk-war-desk-backup'
+
+
+def storage_persistent():
+    """False when the database sits on a container's own disk, which a redeploy replaces (no volume mounted).
+    STORAGE_PERSISTENT=1/0 overrides the check."""
+    forced = os.environ.get('STORAGE_PERSISTENT')
+    if forced in ('0', '1'):
+        return forced == '1'
+    in_container = Path('/.dockerenv').exists() or any(k.startswith(('RAILWAY_', 'RENDER', 'FLY_')) for k in os.environ)
+    if os.name != 'posix' or not in_container:
+        return True
+    try:
+        folder = DB.parent if DB.parent.exists() else DB.parent.parent
+        return os.stat(folder).st_dev != os.stat('/').st_dev
+    except OSError:
+        return True
 throttle = policy.Throttle()
 limiter = policy.RateLimiter()
 # Maps on the final-map wheel (same names as the match form); public/wheel.js holds their artwork.
@@ -242,8 +259,16 @@ class Handler(SimpleHTTPRequestHandler):
             return self.reply(200, {'maps': WHEEL_MAPS, 'spin': spin, 'now': time.time()})
         if self.path == '/api/session':
             setup = get('password') is None
-            return self.reply(200, {'setup': setup, 'authenticated': self.authorized(),
-                                    'setupRequiresToken': False})
+            signed_in = self.authorized()
+            return self.reply(200, {'setup': setup, 'authenticated': signed_in, 'setupRequiresToken': False,
+                                    **({'persistentStorage': storage_persistent()} if signed_in else {})})
+        if self.path == '/api/backup':
+            # The whole tournament as one file the organizer keeps: survives a lost or wiped server.
+            if not self.authorized(): return self.reply(401, {'error': 'Please sign in.'})
+            payload = {'format': BACKUP_FORMAT, 'version': 1, 'savedAt': time.time(),
+                       'state': json.loads(get('state') or '{"teams":[],"matches":[]}'),
+                       'mapSpin': json.loads(get('map_spin') or 'null')}
+            return self.reply(200, payload)
         if self.path == '/api/state':
             if not self.authorized(): return self.reply(401, {'error': 'Please sign in.'})
             return self.reply(200, json.loads(get('state') or '{"teams":[],"matches":[]}'))
@@ -262,7 +287,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.reply(503, {'status': 'error', 'database': str(error)})
         age = backup.latest_backup_age(DB)
         self.reply(200, {'status': 'ok', 'database': database, 'screenshotReader': scanner() is not None,
-                         'lastBackupSecondsAgo': None if age is None else int(age)})
+                         'lastBackupSecondsAgo': None if age is None else int(age),
+                         'persistentStorage': storage_persistent()})
 
     def do_POST(self):
         if self.throttled():
@@ -325,6 +351,31 @@ class Handler(SimpleHTTPRequestHandler):
             put('map_spin', json.dumps(spin))
             log.info('map wheel spun: %s from %s', spin['result'], ', '.join(pool))
             return self.reply(200, {'maps': WHEEL_MAPS, 'spin': spin, 'now': time.time()})
+        if self.path == '/api/state/restore':
+            # Replace the tournament with a backup file. The current database is copied first, so a wrong file
+            # can itself be undone from the server's backups folder.
+            if data.get('format') != BACKUP_FORMAT or not isinstance(data.get('state'), dict):
+                return self.reply(400, {'error': 'This is not an FFK War Desk backup file.'})
+            restored = data['state']
+            found = list(validate.problems(restored, restored))
+            if found:
+                return self.reply(422, {'error': 'Not restored: ' + str(found[0])})
+            spin = data.get('mapSpin')
+            if spin is not None and not (isinstance(spin, dict) and spin.get('result') in WHEEL_MAPS):
+                spin = None
+            try:
+                safety = backup.make_backup(DB)
+            except Exception as error:  # never replace data without a copy of it
+                log.error('restore refused, could not back up first: %s', error)
+                return self.reply(500, {'error': 'Could not save a copy of the current data first, so nothing was changed.'})
+            with connect() as db:
+                db.execute('BEGIN IMMEDIATE')
+                db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('state', json.dumps(restored)))
+                if spin is not None:
+                    db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('map_spin', json.dumps(spin)))
+            log.warning('tournament restored from a backup file (%d teams, %d matches); previous data kept in %s',
+                        len(restored.get('teams', [])), len(restored.get('matches', [])), safety)
+            return self.reply(200, {'ok': True, 'teams': len(restored.get('teams', [])), 'matches': len(restored.get('matches', []))})
         if self.path == '/api/host/access':
             key = get('host_access_key')
             if data.get('rotate') or not key:

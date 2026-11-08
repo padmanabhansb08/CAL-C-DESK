@@ -6108,3 +6108,13 @@ html,.sidebar,.main,.content,.table-wrap{scrollbar-width:thin;scrollbar-color:va
 #wheel-note:empty{display:none}
 @media (max-width:1100px){.wheel-maps{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:760px){.wheel-maps{grid-template-columns:repeat(2,minmax(0,1fr))}.wheel-spin{width:100%;justify-content:center}}
+
+/* ── Backup: temporary-storage warning and the backup dialog ─────────────────────────────── */
+.storage-warning{display:flex;align-items:center;gap:14px;margin:0 0 var(--space-5,20px);padding:14px 16px;border:1px solid rgb(var(--c-amber-rgb)/.55);border-radius:var(--r-lg);background:rgb(var(--c-amber-rgb)/.1);color:var(--c-text)}
+.storage-warning>span{color:var(--c-amber);flex:none}
+.storage-warning p{margin:0;flex:1;line-height:1.45}
+.storage-warning code{font-size:.92em;padding:1px 5px;border-radius:4px;background:rgb(0 0 0/.35)}
+.storage-warning button{flex:none}
+.storage-warning-text{color:var(--c-amber)}
+.backup-file input[type=file]{display:block;margin-top:8px;width:100%}
+@media (max-width:760px){.storage-warning{flex-wrap:wrap}.storage-warning button{width:100%}}
