@@ -8,4 +8,12 @@ assert.ok(!graphs.trend([{match:'Only match',placement:1}],'Alpha').includes('Na
 assert.ok(!graphs.bars([{name:'Zero',kills:0}],'kills','Kills').includes('NaN'));
 assert.ok(graphs.bars([{name:'<script>',kills:1}],'kills','Kills').includes('&lt;script&gt;'));
 assert.equal(JSON.stringify(match),before);
-console.log('PASS: team kill totals, overall kills, actual finishing positions, missing-match gaps, single-match/zero-kill charts, escaped names and immutable results.');
+// Kill graph artwork: kills summed over the chosen matches, teams in slot order, current team names.
+const killgraph=require('../public/killgraph.js');
+const kgState={teams:[{id:'a',name:'FFK ALPHA',slot:2},{id:'b',name:'FFK BETA',slot:1}]};
+const second={rows:[{teamId:'a',teamName:'Alpha',placement:3,players:[{kills:4}]},{teamId:'b',teamName:'Beta',placement:1,players:[{kills:'1'}]}]};
+assert.deepEqual(killgraph.rows(kgState,[match,second]).map(r=>[r.teamId,r.name,r.kills,r.slot]),[['b','FFK BETA',9,1],['a','FFK ALPHA',9,2]]);
+assert.deepEqual(killgraph.rows(kgState,[match,second],'kills').map(r=>r.teamId),['a','b'],'equal kills fall back to name order');
+assert.deepEqual(killgraph.rows({teams:[{id:'a',slot:1},{id:'b',slot:1}]},[match]).map(r=>r.teamId),['b','a'],'duplicate slots fall back to most kills');
+assert.equal(JSON.stringify(match),before);
+console.log('PASS: team kill totals, overall kills, actual finishing positions, missing-match gaps, single-match/zero-kill charts, escaped names, kill-graph artwork totals and slot order, and immutable results.');

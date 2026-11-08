@@ -425,7 +425,34 @@ def lan_address():
         return None
 
 
+def _project_python():
+    """The project's own Python (.venv, set up by start.bat / start.sh), which has the screenshot reader."""
+    for candidate in (ROOT / '.venv' / 'Scripts' / 'python.exe', ROOT / '.venv' / 'bin' / 'python'):
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _relaunch_with_reader():
+    """Started with a Python that lacks the reader (e.g. plain `python server.py`)? Run under the project's
+    Python instead, so screenshots are never silently read by the slow, weaker browser reader."""
+    import subprocess, sys
+    venv = _project_python()
+    if scanner() is not None or venv is None or os.environ.get('FFK_RELAUNCHED'):
+        return
+    if Path(sys.executable).resolve() == venv.resolve():
+        return
+    print(f'Screenshot reader missing in {sys.executable}; restarting with {venv}', flush=True)
+    try:
+        code = subprocess.call([str(venv), str(Path(__file__).resolve()), *sys.argv[1:]],
+                               env={**os.environ, 'FFK_RELAUNCHED': '1'})
+    except KeyboardInterrupt:
+        code = 0
+    raise SystemExit(code)
+
+
 if __name__ == '__main__':
+    _relaunch_with_reader()
     port = int(os.environ.get('PORT', '8080'))
     init_db()
     backup.start_scheduler(DB, log.info)

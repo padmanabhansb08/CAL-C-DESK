@@ -23,6 +23,45 @@ function openPoster(){
   const download=format=>{downloadCanvas($('#poster-canvas'),fileStem(m)+'-FFK-scoreboard',format);rememberLabels(m,{...posterOptions(),isoDate:$('#poster-form').date.value});};
   $('#poster-download').onclick=()=>download('png');$('#poster-pdf').onclick=()=>download('pdf');updatePoster();
 }
+// Kill graph artwork. Its matches: this match, a set on one day (the poster's "SET B · DAY 2"), a whole set, or all.
+const KILL_LABELS_KEY='ffk-killgraph-labels-v1';
+function killScopes(current){
+  const day=m=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date(m.created)),nice=d=>d.slice(8,10)+'/'+d.slice(5,7),scopes=[];
+  if(current&&!current.isOverall)scopes.push({id:'match',label:'This match · '+current.name,matches:[current],stage:current.stage,map:current.map});
+  const sets=[...new Set(state.matches.map(m=>m.stage).filter(Boolean))].sort();
+  sets.forEach(set=>{const inSet=state.matches.filter(m=>m.stage===set),days=[...new Set(inSet.map(day))].sort();
+    days.forEach(d=>{const ms=inSet.filter(m=>day(m)===d);scopes.push({id:'day:'+set+':'+d,label:`Set ${set} on ${nice(d)} · ${ms.length} match${ms.length===1?'':'es'}`,matches:ms,stage:set,date:d});});
+    if(days.length>1)scopes.push({id:'set:'+set,label:`Set ${set}, all days · ${inSet.length} matches`,matches:inSet,stage:set});});
+  scopes.push({id:'all',label:'All saved matches · '+state.matches.length,matches:state.matches});
+  scopes.forEach(s=>{const maps=[...new Set(s.matches.map(m=>m.map).filter(Boolean))];s.map=s.map||(maps.length===1?maps[0]:'');});
+  const preferred=current&&!current.isOverall&&current.stage?scopes.find(s=>s.id==='day:'+current.stage+':'+day(current)):null;
+  return {scopes,preferred:preferred||scopes[0]};
+}
+let killRevision=0;
+function openKillGraph(){
+  const current=resultMatch(),{scopes,preferred}=killScopes(current);let saved={};try{saved=JSON.parse(localStorage.getItem(KILL_LABELS_KEY)||'{}');}catch{}
+  const maps=['Bermuda','NexTerra','Purgatory','Kalahari','Solara','Alpine'];
+  modal(`<div class="panel-head"><h2>Kill graph artwork</h2><button type="button" onclick="openExportChooser()">Back</button></div><p>Team kills on the FFK WAR kill graph. Teams stand in slot order; the top fragger is gold and crowned. Kills come only from saved results.</p>
+    <form id="kill-form" class="form-grid"><label>Matches<select name="scope">${scopes.map(s=>`<option value="${esc(s.id)}" ${s===preferred?'selected':''}>${esc(s.label)}</option>`).join('')}</select></label>
+    <label>Order<select name="order"><option value="slot" ${saved.order!=='kills'?'selected':''}>Slot order</option><option value="kills" ${saved.order==='kills'?'selected':''}>Most kills first</option></select></label>
+    <label>Week<input name="week" maxlength="6" value="${esc(saved.week||'')}"></label><label>Season<input name="season" maxlength="6" value="${esc(saved.season||'')}"></label>
+    <label>Set label<input name="set" maxlength="14"></label><label>Day label<input name="day" maxlength="14" value="${esc(saved.day||'')}" placeholder="DAY 2"></label>
+    <label>Map<select name="map"><option value="">No map</option>${maps.map(m=>`<option>${m}</option>`).join('')}</select></label></form>
+    <div class="poster-preview"><canvas id="kill-canvas" aria-label="Kill graph artwork preview"></canvas></div><p id="kill-error" class="error" role="alert"></p>
+    <div class="actions"><button type="button" class="primary" id="kill-download" disabled>Download PNG ↓</button><button type="button" id="kill-pdf" disabled>Download PDF ↓</button></div><p class="caption">1920 × 1080 pixels · Week, season and day are remembered in this browser.</p>`,{wide:true,className:'brand-dialog'});
+  const form=$('#kill-form'),scope=()=>scopes.find(s=>s.id===form.scope.value)||preferred;
+  const fill=()=>{const s=scope();form.set.value=s.stage?'SET '+s.stage:'';const map=maps.find(m=>m.toLowerCase()===String(s.map||'').toLowerCase());form.map.value=map||'';};
+  const draw=async()=>{const revision=++killRevision,buttons=['#kill-download','#kill-pdf'].map(s=>$(s));buttons.forEach(b=>b.disabled=true);
+    try{const s=scope(),list=WarKillGraph.rows(state,s.matches,form.order.value);if(!list.length)throw Error('No saved results in these matches.');
+      const off=document.createElement('canvas');await WarKillGraph.render(off,list,{week:form.week.value.trim(),season:form.season.value.trim(),set:form.set.value.trim().toUpperCase(),day:form.day.value.trim().toUpperCase(),map:form.map.value,order:form.order.value});
+      if(revision!==killRevision||!$('#kill-canvas'))return;const view=$('#kill-canvas');view.width=off.width;view.height=off.height;view.getContext('2d').drawImage(off,0,0);buttons.forEach(b=>b.disabled=false);$('#kill-error').textContent='';
+      try{localStorage.setItem(KILL_LABELS_KEY,JSON.stringify({week:form.week.value.trim(),season:form.season.value.trim(),day:form.day.value.trim(),order:form.order.value}));}catch{}}
+    catch(e){if($('#kill-error'))$('#kill-error').textContent='Could not draw the kill graph: '+e.message;}};
+  form.onsubmit=e=>e.preventDefault();form.oninput=e=>{if(e.target.name==='scope')fill();draw();};form.onchange=form.oninput;
+  const stem=()=>{const s=scope();return 'FFK-kill-graph-'+(s.stage?'set-'+s.stage+'-':'')+(s.date||s.id.replace(/[^a-z0-9]/gi,'-'));};
+  $('#kill-download').onclick=()=>downloadCanvas($('#kill-canvas'),stem(),'png');$('#kill-pdf').onclick=()=>downloadCanvas($('#kill-canvas'),stem(),'pdf');
+  fill();draw();
+}
 function downloadPosterPDF(){const canvas=$('#poster-canvas');if(canvas?.width)downloadCanvas(canvas,fileStem(resultMatch())+'-FFK-scoreboard','pdf');}
 
 // A plain, complete table image (every row), used for the full standings and the player leaderboard.
@@ -70,6 +109,8 @@ function openExportChooser(){
   const custom=WarTemplates.list(),usage=WarTemplates.usage();
   modal(`<div class="panel-head"><div><span class="caption">${esc(match.isOverall?'Overall points table':match.name)}</span><h2>Export ${esc(view.toLowerCase())}</h2></div><button type="button" onclick="closeModal()">Close</button></div>
     <section class="export-data export-view"><div><strong>${esc(view)}${teams&&match.isOverall?` · all ${match.rows.length} teams`:''}</strong><p>Exactly what is on screen${tab==='players'?', every player':teams?', every team':''}.</p></div><div class="actions"><button type="button" class="primary" data-export="png">${uiIcon('image',{size:'sm'})} <span>PNG</span></button><button type="button" data-export="pdf">${uiIcon('download',{size:'sm'})} <span>PDF</span></button><button type="button" id="choose-csv">${uiIcon('download',{size:'sm'})} <span>CSV</span></button></div></section>
+    <h3 class="export-section-title">Kill graph artwork</h3>
+    <div class="export-templates"><button type="button" class="export-template" id="choose-killgraph"><span class="export-layout-preview" aria-hidden="true">${uiIcon('leaderboard',{size:'md'})}</span><span><strong>FFK kill graph</strong><small>Team kills by slot · a match, a set day or a whole set · PNG or PDF</small></span>${uiIcon('chevron_right',{size:'sm'})}</button></div>
     <h3 class="export-section-title">Scoreboard artwork${teams?'':' · team standings'}</h3>
     ${teams?'':`<p class="caption">Artwork always shows team standings, not the ${esc(view.toLowerCase())}.</p>`}
     <div class="export-templates"><button type="button" class="export-template" id="choose-original"><img src="assets/scoreboard-reference.png" alt=""><span><strong>FFK scoreboard artwork</strong><small>${match.isOverall&&match.rows.length>12?'Top 12 of '+match.rows.length+' teams':'Team standings'} · PNG or PDF</small></span>${uiIcon('chevron_right',{size:'sm'})}</button>
@@ -79,6 +120,7 @@ function openExportChooser(){
   document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>exportView(b.dataset.export));
   $('#choose-csv').onclick=()=>downloadCSV();
   $('#choose-original').onclick=()=>openPoster();
+  $('#choose-killgraph').onclick=()=>openKillGraph();
   $('#choose-add').onclick=()=>WarTemplates.open(null,openExportChooser);
   document.querySelectorAll('[data-custom-template]').forEach(b=>b.onclick=()=>WarTemplates.open(WarTemplates.list().find(t=>t.id===b.dataset.customTemplate),openExportChooser));
   document.querySelectorAll('[data-delete-template]').forEach(b=>b.onclick=async()=>{const t=WarTemplates.list().find(x=>x.id===b.dataset.deleteTemplate);closeModal();if(t&&await confirmAction({title:'Delete template?',message:`“${t.name}” will be removed from this browser.`,accept:'Delete template',cancel:'Keep template'})){WarTemplates.remove(t.id);toast('Template deleted');}openExportChooser();});

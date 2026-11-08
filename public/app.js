@@ -21,7 +21,7 @@ let serverError=null,state={teams:[],matches:[]}, page=lastPage(), selected=null
 
 // Heavy tools load on first use, in order: the screenshot reader on the results check page, the export
 // tools when Export is chosen, and the in-browser reader only when the server cannot read screenshots.
-const MODULES={reader:['digit-templates.js?v=2','layout.js?v=1','ocr.js?v=16','ocr-learning.js?v=1','ocr-batch.js?v=1','panel-editor.js?v=2'],export:['scoreboard.js?v=5','scoreboard-pdf.js?v=4','templates.js?v=2','export-ui.js?v=4'],tesseract:['vendor/tesseract.min.js']};
+const MODULES={reader:['digit-templates.js?v=2','layout.js?v=1','ocr.js?v=16','ocr-learning.js?v=1','ocr-batch.js?v=1','panel-editor.js?v=2'],export:['scoreboard.js?v=5','killgraph.js?v=1','scoreboard-pdf.js?v=4','templates.js?v=2','export-ui.js?v=5'],tesseract:['vendor/tesseract.min.js']};
 const loadedModules={},loadedScripts=new Set();
 // A failed group can be retried: scripts that already ran are skipped, so only the missing ones are requested again.
 function loadModules(name){
@@ -452,6 +452,8 @@ async function scan(skipConfirm=false){
       try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress,signal,localOCR.workers||1);}
       catch(e){if(e.name==='AbortError')throw e;serverError=e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
     }
+    // Say so plainly: the browser reader is several times slower and far less accurate than the server's.
+    if(!rowsByScreenshot)toast(localOCR.scan?'The server reader failed, so the slower in-browser reader is used. Check the results carefully.':'The server screenshot reader is not running, so the slower, less accurate in-browser reader is used. Start the desk with start.bat to fix this.','warning');
     if(!rowsByScreenshot)await loadModules('tesseract').catch(()=>{});
     if(!rowsByScreenshot&&!window.Tesseract)throw Error('The in-browser reader could not load (it needs an internet connection). Use a server with the screenshot reader installed, or enter results by hand.');
     if(!rowsByScreenshot)rowsByScreenshot=await WarOCRBatch.run(images,{
