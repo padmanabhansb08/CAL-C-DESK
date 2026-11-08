@@ -8,11 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# Full server dependencies including OCR (RapidOCR ships its own models, no download at runtime)
+# Full server dependencies including OCR (models are fetched once at build time, below)
 COPY requirements-docker.txt .
 RUN pip install --no-cache-dir -r requirements-docker.txt
-# The default tiny detector is not bundled with RapidOCR: fetch it now so the server never downloads at runtime
-RUN python -c "from rapidocr import ModelType, RapidOCR; RapidOCR(params={'Det.model_type': ModelType.TINY})"
 
 # Application code
 COPY server.py local_ocr.py default_rosters.py ./
@@ -20,6 +18,12 @@ COPY ffk_core/ ./ffk_core/
 COPY ocr_engine/ ./ocr_engine/
 COPY tools/backup.py ./tools/backup.py
 COPY public/ ./public/
+
+# Load the reader exactly as the server does (same tuning, so the same models) and read one image: every model it
+# needs is downloaded and checked now, as root. The server runs as an unprivileged user that cannot write into
+# site-packages, so a model fetched at runtime would fail with "Permission denied". Then make the models readable.
+RUN python -c "import ocr_engine; ocr_engine.warm()" \
+ && chmod -R a+rX "$(python -c 'import os, rapidocr; print(os.path.join(os.path.dirname(rapidocr.__file__), "models"))')"
 
 # Run as an unprivileged user; /data is the persistent volume for the SQLite database
 RUN useradd --create-home --uid 10001 app && mkdir -p /data && chown app:app /data
