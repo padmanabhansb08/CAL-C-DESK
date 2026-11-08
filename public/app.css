@@ -3485,6 +3485,13 @@ dialog.action-confirmation p {
   background: var(--panel-hover);
   border-color: var(--accent);
 }
+/* The map wheel opens as a page of its own, so its entries are links styled like the host button. */
+a.host-access-button,
+a.mobile-host-btn {
+  align-items: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
 
 /* ─────────────────────────────────────────────────────────────
    PRINT

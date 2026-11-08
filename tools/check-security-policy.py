@@ -115,6 +115,19 @@ with tempfile.TemporaryDirectory() as folder:
     status, body, _ = call('GET', '/api/session', headers={'Cookie': 'ffk=forged'})
     assert body['authenticated'] is False
 
+    # One sign-in per device: it lasts SESSION_DAYS (30) and a sign-in in use is renewed, cookie included.
+    assert 'Max-Age=%d' % policy.SESSION_SECONDS in cookie2 and policy.SESSION_SECONDS >= 30 * 86400, cookie2
+    status, body, renewed = call('GET', '/api/session', headers={'Cookie': session_cookie})
+    assert renewed is None, 'a fresh sign-in is not rewritten on every request'
+    with server.quick() as db:
+        db.execute('UPDATE sessions SET expires=? WHERE token_hash=?', (time.time() + 3600, policy.hash_token(session_cookie[4:])))
+    status, body, renewed = call('GET', '/api/session', headers={'Cookie': session_cookie})
+    assert body['authenticated'] and renewed and 'Max-Age=%d' % policy.SESSION_SECONDS in renewed, renewed
+    assert server.session_expires(session_cookie[4:]) > time.time() + policy.SESSION_SECONDS - 60, 'renewed in the database'
+    status, body, cleared = call('POST', '/api/logout', {}, {'Cookie': session_cookie})
+    assert status == 200 and 'Max-Age=0' in cleared, cleared
+    assert not server.session_valid(session_cookie[4:]), 'sign out ends the session at once'
+
     # Lockout cannot be dodged by sending fake forwarded addresses (no trusted proxy configured).
     server.throttle = policy.Throttle()
     for i in range(policy.FAILURES_BEFORE_LOCK):
@@ -137,4 +150,4 @@ with tempfile.TemporaryDirectory() as folder:
     status, body, _ = call('POST', '/api/login', {'password': 'a-long-password'})
     assert status == 429 and 'Too many' in body['error']
     host.shutdown()
-print('PASS: content-length limits, proxy-gated first-run setup, setup token, Secure cookie, hashed persistent sessions, spoof-proof lockout, rate limit, security headers and health.')
+print('PASS: content-length limits, proxy-gated first-run setup, setup token, Secure cookie, hashed persistent sessions, 30-day renewing sign-in and sign-out, spoof-proof lockout, rate limit, security headers and health.')

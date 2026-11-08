@@ -8,7 +8,18 @@ import time
 
 MAX_BODY = 2_000_000          # organizer state, login, host access
 MAX_OCR_BODY = 14_000_000     # a screenshot as base64
-SESSION_SECONDS = 43200       # twelve hours
+
+def _session_days():
+    try:
+        return max(1.0, float(os.environ.get('SESSION_DAYS', '30')))
+    except ValueError:
+        return 30.0
+
+
+# One organizer sign-in per device: it lasts SESSION_DAYS (default 30) and every use moves the end forward, so a
+# desk in regular use never asks again. Sign out ends it at once.
+SESSION_SECONDS = int(_session_days() * 86400)
+SESSION_RENEW_AFTER = 3600    # renew a session (database row and cookie) at most once an hour
 
 FAILURES_BEFORE_LOCK = 5
 LOCK_SECONDS = 600

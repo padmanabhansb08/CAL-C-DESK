@@ -12,6 +12,8 @@ ROOT = Path(__file__).parent
 DB = Path(os.environ.get('DB_PATH', ROOT / 'war.sqlite3'))
 throttle = policy.Throttle()
 limiter = policy.RateLimiter()
+# Maps on the final-map wheel (same names as the match form); public/wheel.js holds their artwork.
+WHEEL_MAPS = ['Bermuda', 'Purgatory', 'Kalahari', 'NexTerra', 'Solara', 'Alpine']
 # The reader runs in its own process so a stuck read can be stopped for real (SCAN_ISOLATE=0 uses a thread).
 def _reader_workers():
     try:
@@ -115,12 +117,27 @@ def quick():
 
 
 def session_valid(token):
+    return session_expires(token) is not None
+
+
+def session_expires(token):
+    """When this sign-in ends (epoch seconds), or None if it is unknown or over."""
     if not token:
-        return False
+        return None
     try:
         with quick() as db:
             row = db.execute('SELECT expires FROM sessions WHERE token_hash=?', (policy.hash_token(token),)).fetchone()
-        return bool(row) and row[0] > time.time()
+        return row[0] if row and row[0] > time.time() else None
+    except sqlite3.Error:
+        return None
+
+
+def session_renew(token, expires):
+    """Move the end of a sign-in that is in use forward. True when it was renewed."""
+    try:
+        with quick() as db:
+            return db.execute('UPDATE sessions SET expires=? WHERE token_hash=? AND expires>?',
+                              (expires, policy.hash_token(token), time.time())).rowcount == 1
     except sqlite3.Error:
         return False
 
@@ -160,6 +177,10 @@ class Handler(SimpleHTTPRequestHandler):
         # self.headers is missing when the request line itself was malformed.
         for name, value in policy.security_headers(getattr(self, 'headers', None) or {}):
             self.send_header(name, value)
+        renewed = getattr(self, '_renewed_cookie', None)
+        if renewed:
+            self.send_header('Set-Cookie', renewed)
+            self._renewed_cookie = None
         super().end_headers()
 
     def log_message(self, fmt, *args):
@@ -180,7 +201,15 @@ class Handler(SimpleHTTPRequestHandler):
         return dict(x.strip().split('=', 1) for x in self.headers.get('Cookie', '').split(';') if '=' in x)
 
     def authorized(self):
-        return session_valid(self.cookies().get('ffk', ''))
+        token = self.cookies().get('ffk', '')
+        expires = session_expires(token)
+        if expires is None:
+            return False
+        # A sign-in in use keeps going: renewed (at most hourly) with a fresh cookie on this response.
+        now = time.time()
+        if expires - now < policy.SESSION_SECONDS - policy.SESSION_RENEW_AFTER and session_renew(token, now + policy.SESSION_SECONDS):
+            self._renewed_cookie = policy.session_cookie(token, self.headers)
+        return True
 
     def throttled(self):
         if policy.rate_limited(limiter, self.caller(), self.path.split('?')[0]):
@@ -203,6 +232,14 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.reply(401, {'error': 'Open a current host link from your organizer.'})
             current = json.loads(get('state') or '{"teams":[],"matches":[]}')
             return self.reply(200, policy.host_view(current))
+        if self.path == '/api/wheel':
+            # The final-map wheel: the organizer, or anyone with the host link (the broadcast screen), may watch.
+            key = self.headers.get('X-Host-Key', '')
+            expected = get('host_access_key')
+            if not self.authorized() and not (expected and key and hmac.compare_digest(key, expected)):
+                return self.reply(401, {'error': 'Open a current host link from your organizer.'})
+            spin = json.loads(get('map_spin') or 'null')
+            return self.reply(200, {'maps': WHEEL_MAPS, 'spin': spin, 'now': time.time()})
         if self.path == '/api/session':
             setup = get('password') is None
             return self.reply(200, {'setup': setup, 'authenticated': self.authorized(),
@@ -276,6 +313,18 @@ class Handler(SimpleHTTPRequestHandler):
             session_create(token, time.time() + policy.SESSION_SECONDS)
             return self.reply(200, {'ok': True}, policy.session_cookie(token, self.headers))
         if not self.authorized(): return self.reply(401, {'error': 'Please sign in.'})
+        if self.path == '/api/wheel/spin':
+            # The server draws the map (cryptographically random), so every screen lands on the same one.
+            pool = data.get('maps', WHEEL_MAPS)
+            if not isinstance(pool, list) or not all(isinstance(m, str) for m in pool):
+                return self.reply(400, {'error': 'Send the maps as a list of names.'})
+            pool = [m for m in WHEEL_MAPS if m in pool]
+            if len(pool) < 2:
+                return self.reply(400, {'error': 'Choose at least two maps for the wheel.'})
+            spin = {'id': secrets.token_hex(8), 'maps': pool, 'result': secrets.choice(pool), 'at': time.time()}
+            put('map_spin', json.dumps(spin))
+            log.info('map wheel spun: %s from %s', spin['result'], ', '.join(pool))
+            return self.reply(200, {'maps': WHEEL_MAPS, 'spin': spin, 'now': time.time()})
         if self.path == '/api/host/access':
             key = get('host_access_key')
             if data.get('rotate') or not key:
@@ -383,6 +432,7 @@ class Handler(SimpleHTTPRequestHandler):
                 log.exception('scan failed')
                 return self.reply(500, {'error': 'The screenshot reader failed: ' + str(error)})
         if self.path == '/api/logout':
+            self._renewed_cookie = None  # the cleared cookie below must be the last word
             session_delete(self.cookies().get('ffk', ''))
             return self.reply(200, {'ok': True}, policy.session_cookie('', self.headers, 0))
         if self.path == '/api/state':

@@ -1,0 +1,50 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a0101"><meta name="referrer" content="no-referrer"><title>FFK · Final map wheel</title><link rel="stylesheet" href="fonts.css?v=1"><link rel="stylesheet" href="wheel.css?v=5"><script src="wheel.js?v=2" defer></script></head><body>
+<div id="viewport">
+ <div id="stage" aria-live="polite">
+  <div class="rays" aria-hidden="true"></div>
+  <canvas id="embers" width="1920" height="1080" aria-hidden="true"></canvas>
+  <header class="brand">
+   <svg class="brand-shield" viewBox="0 0 132 156" aria-hidden="true"><defs>
+    <linearGradient id="sh-red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff3b30"/><stop offset=".6" stop-color="#b00000"/><stop offset="1" stop-color="#5a0000"/></linearGradient>
+    <linearGradient id="sh-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset=".5" stop-color="#ffc21a"/><stop offset="1" stop-color="#b86b00"/></linearGradient></defs>
+    <path d="M34 30 L28 6 L48 20 L66 0 L84 20 L104 6 L98 30 Z" fill="url(#sh-gold)" stroke="#6e3600" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M66 34 L124 50 V96 C124 124 98 144 66 154 C34 144 8 124 8 96 V50 Z" fill="url(#sh-red)" stroke="url(#sh-gold)" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M66 46 L113 59 V95 C113 117 93 133 66 142 C39 133 19 117 19 95 V59 Z" fill="none" stroke="rgba(255,243,160,.35)" stroke-width="2"/>
+    <path d="M30 70 L102 52 L96 64 L36 80 Z" fill="rgba(255,255,255,.18)"/>
+    <text x="66" y="112" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="46" fill="#fff" stroke="#2a0000" stroke-width="4" paint-order="stroke" transform="skewX(-8) translate(14 0)">FFK</text></svg>
+   <div class="lockup"><span class="lockup-presents">FFK PRASANTH</span><span class="lockup-word"><b>FFK</b> WAR</span><span class="lockup-tag">OFFICIAL MAP DRAW</span></div>
+  </header>
+  <div class="wheel-wrap">
+   <div class="wheel-glow" aria-hidden="true"></div>
+   <canvas id="rim" width="1000" height="1000" aria-hidden="true"></canvas>
+   <canvas id="wheel" width="1000" height="1000" role="img" aria-label="Map wheel"></canvas>
+   <div class="hub" aria-hidden="true"><div class="hub-face"></div></div>
+   <div class="pointer" id="pointer" aria-hidden="true"><svg viewBox="0 0 120 170"><defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4a3a"/><stop offset="1" stop-color="#8a0000"/></linearGradient><linearGradient id="pgold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset=".5" stop-color="#ffc21a"/><stop offset="1" stop-color="#b86b00"/></linearGradient></defs>
+    <path d="M24 46 L18 14 L40 32 L60 6 L80 32 L102 14 L96 46 Z" fill="url(#pgold)" stroke="#6e3600" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M14 52 H106 L60 164 Z" fill="url(#pg)" stroke="url(#pgold)" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M38 66 H82 L60 124 Z" fill="#ff7a5a" opacity=".45"/><circle cx="60" cy="74" r="9" fill="#fff3a0"/></svg></div>
+  </div>
+  <aside class="panel">
+   <span class="eyebrow" id="eyebrow">FFK WAR · FINAL MATCH</span>
+   <h1>FINAL <span>MAP</span></h1>
+   <p class="status" id="status">Waiting for the organizer to spin</p>
+   <ul class="pool" id="pool"></ul>
+   <article class="result" id="result" hidden><div class="result-art" id="result-art"></div><span class="result-kicker">THE FINAL MATCH WILL BE PLAYED ON</span><strong id="result-name"></strong></article>
+  </aside>
+  <footer class="ticker"><span>ONE TEAM</span><i></i><span>ONE DREAM</span><i></i><span class="red">FFK</span><i></i><span>STRONGER TOGETHER</span></footer>
+  <canvas id="confetti" width="1920" height="1080" aria-hidden="true"></canvas>
+ </div>
+</div>
+<section id="controls" hidden>
+ <div class="controls-maps" id="map-toggles" role="group" aria-label="Maps on the wheel"></div>
+ <div class="controls-actions">
+  <button type="button" id="spin" class="spin-button">SPIN</button>
+  <label class="sound"><input type="checkbox" id="sound"> Sound</label>
+  <a id="broadcast-link" target="_blank" rel="noopener" hidden>Open broadcast screen ↗</a>
+  <button type="button" id="copy-broadcast" hidden>Copy broadcast link</button>
+  <a href="/">Back to desk</a>
+ </div>
+ <p id="control-note" role="status"></p>
+</section>
+<p id="gate" hidden></p>
+</body></html>
