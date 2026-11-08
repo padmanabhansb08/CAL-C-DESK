@@ -189,7 +189,7 @@ def reply(data, status=200, cookie=None):
 
 @app.after_request
 def add_security_headers(resp):
-    for name, value in policy.security_headers(request.headers):
+    for name, value in policy.security_headers(request.headers, request.path):
         resp.headers[name] = value
     return resp
 

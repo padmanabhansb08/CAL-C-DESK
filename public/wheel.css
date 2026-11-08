@@ -7,10 +7,8 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; background: var(--ink); color: var(--text); font-family: var(--sans); overflow: hidden; }
-body.controller { overflow: auto; }
 
 #viewport { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-body.controller #viewport { height: calc(100vh - var(--controls-h, 150px)); }
 #stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden;
   background: radial-gradient(1100px 760px at 37% 52%, #6a0508 0%, #2a0304 48%, #0a0101 100%); }
 
@@ -86,19 +84,6 @@ body.controller #viewport { height: calc(100vh - var(--controls-h, 150px)); }
 .ticker .red { color: var(--gold); }
 .ticker i { width: 12px; height: 12px; background: #fff; transform: rotate(45deg); }
 
-/* Organizer controls (not on the broadcast screen). */
-#controls { position: fixed; left: 0; right: 0; bottom: 0; padding: 14px 20px 16px; background: #141012; border-top: 1px solid #3a2a2e; display: grid; gap: 10px; }
-.controls-maps { display: flex; flex-wrap: wrap; gap: 8px; }
-.controls-maps label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid #4a3a3e; border-radius: 999px; font: 600 15px var(--sans); cursor: pointer; }
-.controls-maps input { accent-color: var(--red); width: 18px; height: 18px; }
-.controls-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font: 500 15px var(--sans); }
-.controls-actions a, .controls-actions button:not(.spin-button) { color: #fff; background: none; border: 1px solid #4a3a3e; border-radius: 999px; padding: 8px 14px; font: inherit; text-decoration: none; cursor: pointer; }
-.spin-button { font: 800 30px var(--display); letter-spacing: .14em; padding: 10px 46px; border: 0; border-radius: 999px; color: #fff; cursor: pointer;
-  background: linear-gradient(#ff3b30, #b00000); box-shadow: 0 0 0 3px var(--gold), 0 0 24px rgba(229, 9, 20, .7); }
-.spin-button:disabled { filter: grayscale(.7); opacity: .6; cursor: not-allowed; }
-.spin-button:focus-visible, .controls-actions :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
-.sound { display: inline-flex; align-items: center; gap: 6px; }
-#control-note { margin: 0; color: var(--muted); font: 500 14px var(--sans); min-height: 18px; }
 #gate { position: fixed; inset: auto 0 40% 0; text-align: center; font: 600 22px var(--sans); color: #fff; }
 #gate a { color: var(--gold); }
 @media (prefers-reduced-motion: reduce) { .rays { animation: none; } }

@@ -24,6 +24,8 @@
     check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
     download:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
     delete:'<path d="M4.5 7h15M10 11v6M14 11v6M6.5 7l1 13h9l1-13M9.5 7V4.5h5V7"/>',
+    casino:'<circle cx="12" cy="13" r="8"/><circle cx="12" cy="13" r="1.8"/><path d="M12 5v6.2M12 14.8V21M4 13h6.2M13.8 13H20M6.4 7.4l4.3 4.3M13.3 14.3l4.3 4.3M17.6 7.4l-4.3 4.3M10.7 14.3l-4.3 4.3"/><path d="M10 2.5h4L12 5z" fill="currentColor"/>',
+    fullscreen:'<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>',
     image:'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8.5 8.5"/>'
   };
   const fallback='<circle cx="12" cy="12" r="3.5"/>';

@@ -37,6 +37,12 @@ names = dict(policy.security_headers({'X-Forwarded-Proto': 'https'}))
 assert "frame-ancestors 'none'" in names['Content-Security-Policy'] and "object-src 'none'" in names['Content-Security-Policy']
 assert names['X-Frame-Options'] == 'DENY' and 'Strict-Transport-Security' in names
 assert 'Strict-Transport-Security' not in dict(policy.security_headers({}))
+# Only the wheel may be framed, and only by this site (the desk's Map wheel page).
+framed = dict(policy.security_headers({}, '/wheel.html?v=3'))
+assert "frame-ancestors 'self'" in framed['Content-Security-Policy'] and framed['X-Frame-Options'] == 'SAMEORIGIN'
+for other in ('/', '/index.html', '/host.html', '/api/state'):
+    h = dict(policy.security_headers({}, other))
+    assert "frame-ancestors 'none'" in h['Content-Security-Policy'] and h['X-Frame-Options'] == 'DENY', other
 assert policy.hash_token('abc') != 'abc' and len(policy.hash_token('abc')) == 64
 assert 'Secure' in policy.session_cookie('t', {'X-Forwarded-Proto': 'https'})
 assert 'Secure' not in policy.session_cookie('t', {})

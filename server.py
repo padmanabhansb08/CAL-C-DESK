@@ -175,7 +175,7 @@ class Handler(SimpleHTTPRequestHandler):
 
     def end_headers(self):
         # self.headers is missing when the request line itself was malformed.
-        for name, value in policy.security_headers(getattr(self, 'headers', None) or {}):
+        for name, value in policy.security_headers(getattr(self, 'headers', None) or {}, getattr(self, 'path', '')):
             self.send_header(name, value)
         renewed = getattr(self, '_renewed_cookie', None)
         if renewed:

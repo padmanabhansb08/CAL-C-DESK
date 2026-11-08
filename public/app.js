@@ -16,7 +16,7 @@ function uiIcon(name, options = {}) {
 if (typeof window !== 'undefined') window.uiIcon = uiIcon;
 
 // The workspace reopens where the organizer left it. Add results is never restored: it needs a deliberate start.
-function lastPage(){try{const saved=localStorage.getItem('ffk-last-page-v1');return ['war','roster','results'].includes(saved)?saved:'war';}catch{return 'war';}}
+function lastPage(){try{const saved=localStorage.getItem('ffk-last-page-v1');return ['war','roster','results','wheel'].includes(saved)?saved:'war';}catch{return 'war';}}
 let serverError=null,state={teams:[],matches:[]}, page=lastPage(), selected=null, tab='teams', draft=null, images=[], busy=false, rosterQuery='';
 
 // Heavy tools load on first use, in order: the screenshot reader on the results check page, the export
@@ -195,7 +195,7 @@ function auth(setup){
 }
 
 // The workspace shell, rendered once in its final form: sidebar, top bar and the current page.
-const NAV=[['war','Tournament','emoji_events'],['upload','Add results','upload_file'],['roster','Teams','groups'],['results','Standings','leaderboard']];
+const NAV=[['war','Tournament','emoji_events'],['upload','Add results','upload_file'],['roster','Teams','groups'],['results','Standings','leaderboard'],['wheel','Map wheel','casino']];
 const SOCIAL_ICON={instagram:'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0M17.5 6.5h.01',youtube:'M9 8l7 4-7 4zM3 5h18v14H3z'};
 const socialLinks=()=>`<div class="channel-socials">${[['instagram','https://www.instagram.com/ffk_prasanth/','Instagram'],['youtube','https://www.youtube.com/@FFK_Prasanth','YouTube']].map(([k,href,label])=>`<a href="${href}" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on ${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SOCIAL_ICON[k]}"/></svg></a>`).join('')}</div>`;
 let renderedPage=null;
@@ -203,12 +203,11 @@ function render(){
   const title=(NAV.find(([id])=>id===page)||[0,'Workspace'])[1],signout=`<button type="button" class="signout" onclick="logout()">${uiIcon('logout',{size:'sm'})}<span>Sign out</span></button>`;
   $('#app').innerHTML=`<div class="shell channel-shell comfort-shell" data-page="${page}"><aside class="sidebar"><div class="brand channel-brand">${page==='war'?'<span class="channel-monogram">FFK</span>':'<img class="channel-profile" src="assets/channel-avatar.jpg" alt="FFK Prasanth channel profile">'}<span class="channel-wordmark">FFK<br>PRASANTH<small>WAR DESK</small></span></div>
     <nav class="nav" aria-label="Main">${NAV.map(([id,label,icon])=>`<button type="button" class="${page===id?'active':''}" onclick="${id==='upload'?'navAddResults()':id==='results'?`selected='__overall__';go('results')`:`go('${id}')`}"${page===id?' aria-current="page"':''}><span class="nav-icon">${uiIcon(icon,{size:'md'})}</span><span class="comfort-nav-label">${label}</span></button>`).join('')}</nav>
-    <button type="button" class="host-access-button" onclick="openHostAccess()">${uiIcon('manage_accounts',{size:'md'})}<span>Host desk</span></button>
-    <a class="host-access-button" href="/wheel.html" target="_blank" rel="noopener">${uiIcon('emoji_events',{size:'md'})}<span>Map wheel</span></a>
-    <div class="sidebar-footer">${socialLinks()}${signout}</div></aside>
-    <main class="main"><header class="topbar"><span class="comfort-top-title"><span>FFK WAR DESK</span><strong>${title}</strong></span><div class="topbar-right"><button type="button" class="sync-button" onclick="refreshWorkspace(true)" aria-label="Refresh saved data" title="Refresh saved data"><span id="sync-status">Up to date</span> ↻</button><details class="mobile-account"><summary aria-label="Channel and account menu">•••</summary><div class="mobile-account-panel"><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openHostAccess()">${uiIcon('manage_accounts',{size:'sm'})}<span>Host desk</span></button><a class="mobile-host-btn" href="/wheel.html" target="_blank" rel="noopener">${uiIcon('emoji_events',{size:'sm'})}<span>Map wheel</span></a>${socialLinks()}${signout}</div></details></div></header>
-    <div class="content">${page==='war'?renderWar():page==='roster'?roster():page==='upload'?(readerReady?intake():'<div class="panel empty" role="status"><p>Loading the screenshot tools…</p></div>'):results()}</div></main></div>`;
+    <button type="button" class="host-access-button" onclick="openHostAccess()">${uiIcon('manage_accounts',{size:'md'})}<span>Host desk</span></button>    <div class="sidebar-footer">${socialLinks()}${signout}</div></aside>
+    <main class="main"><header class="topbar"><span class="comfort-top-title"><span>FFK WAR DESK</span><strong>${title}</strong></span><div class="topbar-right"><button type="button" class="sync-button" onclick="refreshWorkspace(true)" aria-label="Refresh saved data" title="Refresh saved data"><span id="sync-status">Up to date</span> ↻</button><details class="mobile-account"><summary aria-label="Channel and account menu">•••</summary><div class="mobile-account-panel"><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openHostAccess()">${uiIcon('manage_accounts',{size:'sm'})}<span>Host desk</span></button>${socialLinks()}${signout}</div></details></div></header>
+    <div class="content">${page==='war'?renderWar():page==='roster'?roster():page==='upload'?(readerReady?intake():'<div class="panel empty" role="status"><p>Loading the screenshot tools…</p></div>'):page==='wheel'?wheelPage():results()}</div></main></div>`;
   if(page==='upload'&&!readerReady){loadReaderPage();return;}
+  if(page==='wheel'){bindWheel();if(renderedPage!==page){window.scrollTo({top:0,behavior:'instant'});const h=document.querySelector('.content h1');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}}renderedPage=page;return;}
   bind();
   // A new page starts at the top with focus on its heading, so keyboard and screen-reader users land there.
   if(renderedPage!==page){window.scrollTo({top:0,behavior:'instant'});const heading=document.querySelector('.content h1');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}
@@ -218,6 +217,43 @@ function render(){
 function navAddResults(){
   if(!draft&&window.WarGuide&&window.WarTournament){const set=WarGuide.next(state),p=WarGuide.progress(state,set);if(['A','B','C'].includes(set)&&WarTournament.availableTeams(state,set).length>=12&&!p.locked&&p.played<p.target)return warNew(set);}
   go('upload');
+}
+
+// Map wheel page. The wheel itself is wheel.html in embed mode (the same stage the OBS broadcast shows); the desk
+// holds the controls. A spin is drawn by the server, so this page, the broadcast screen and any other open
+// wheel all play the same spin.
+const WHEEL_ART={Bermuda:'bermuda-map.jpeg',Purgatory:'purgatory-map.jpg',Kalahari:'kalahari-map.jpg',NexTerra:'nexterra-map.png',Solara:'solara-map.jpg',Alpine:'alpine-map.jpg'},WHEEL_MAPS=Object.keys(WHEEL_ART);
+let wheelBroadcastURL=null,wheelSpinning=false;
+function wheelSaved(){try{const s=JSON.parse(localStorage.getItem('ffk-wheel-maps')||'null');return Array.isArray(s)?s:null;}catch{return null;}}
+function wheelSoundOn(){try{return localStorage.getItem('ffk-wheel-sound')!=='0';}catch{return true;}}
+function wheelPage(){
+  const saved=wheelSaved();
+  return header('Final match','Map wheel',`<button type="button" id="wheel-copy">Copy broadcast link</button><button type="button" id="wheel-open">${uiIcon('open_in_new',{size:'sm'})} <span>Open broadcast screen</span></button>`)
+    +`<p class="team-list-intro">Choose the maps, then spin. The server draws the map at random and every broadcast screen plays the same spin live.</p>
+    <div class="wheel-layout"><div class="wheel-frame"><iframe id="wheel-frame" src="/wheel.html?v=3#embed=1" title="Final map wheel" allow="autoplay; fullscreen"></iframe>
+    <button type="button" class="wheel-fullscreen" id="wheel-fullscreen" aria-label="Show the wheel full screen" title="Full screen">${uiIcon('fullscreen',{size:'md'})}</button></div>
+    <section class="wheel-controls" aria-label="Wheel controls"><fieldset class="wheel-maps" id="wheel-maps"><legend>Maps on the wheel</legend>${WHEEL_MAPS.map(m=>`<label class="wheel-map"><input type="checkbox" value="${m}" ${!saved||saved.includes(m)?'checked':''}><span class="wheel-map-art" style="background-image:url('assets/${WHEEL_ART[m]}')"></span><span class="wheel-map-name">${m}</span></label>`).join('')}</fieldset>
+    <div class="wheel-actions"><button type="button" class="primary brand-main-action wheel-spin" id="wheel-spin">${uiIcon('casino',{size:'md'})} <span>Spin the wheel</span></button><label class="wheel-sound"><input type="checkbox" id="wheel-sound" ${wheelSoundOn()?'checked':''}> Sound</label></div>
+    <p id="wheel-note" class="caption" role="status"></p></section></div>`;
+}
+function wheelSelected(){return [...document.querySelectorAll('#wheel-maps input')].filter(b=>b.checked).map(b=>b.value);}
+function wheelSync(){const b=$('#wheel-spin');if(b)b.disabled=wheelSpinning||wheelSelected().length<2;}
+function wheelSend(message){$('#wheel-frame')?.contentWindow?.postMessage(message,location.origin);}
+// The wheel tells the desk when a spin starts and ends, so Spin is off while one is playing.
+window.addEventListener('message',e=>{if(e.origin!==location.origin||e.data?.type!=='wheel-state')return;wheelSpinning=!!e.data.spinning;wheelSync();});
+function bindWheel(){
+  wheelSpinning=false;wheelSync();
+  const note=$('#wheel-note');
+  $('#wheel-maps').onchange=()=>{const list=wheelSelected();try{localStorage.setItem('ffk-wheel-maps',JSON.stringify(list));}catch{}note.textContent=list.length<2?'Choose at least two maps.':'';wheelSync();wheelSend({type:'wheel-maps',maps:list});};
+  $('#wheel-sound').onchange=e=>{try{localStorage.setItem('ffk-wheel-sound',e.target.checked?'1':'0');}catch{}wheelSend({type:'wheel-sound',on:e.target.checked});};
+  $('#wheel-spin').onclick=async()=>{const list=wheelSelected();if(list.length<2)return;wheelSpinning=true;wheelSync();note.textContent='';
+    try{wheelSend({type:'wheel-spun',data:await api('wheel/spin',{maps:list})});}
+    catch(e){note.textContent='Could not spin: '+e.message;wheelSpinning=false;wheelSync();}};
+  $('#wheel-fullscreen').onclick=()=>{const f=$('#wheel-frame');(f.requestFullscreen||f.webkitRequestFullscreen)?.call(f);};
+  // The broadcast link carries the host key, like the host desk's broadcast link.
+  const link=async()=>{if(!wheelBroadcastURL){const {key}=await api('host/access',{});const url=new URL('/wheel.html',location.origin);url.hash=new URLSearchParams({key,screen:'1'}).toString();wheelBroadcastURL=url.href;}return wheelBroadcastURL;};
+  $('#wheel-open').onclick=async()=>{const w=window.open('about:blank','_blank');if(w)w.opener=null;try{const url=await link();if(w)w.location=url;else location.href=url;}catch(e){w?.close();toast(e.message,'error');}};
+  $('#wheel-copy').onclick=async()=>{try{const url=await link();try{await navigator.clipboard.writeText(url);toast('Broadcast link copied. Add it to OBS as a 1920 × 1080 Browser Source.');}catch{note.textContent=url;}}catch(e){toast(e.message,'error');}};
 }
 
 function header(kicker,title,action=''){return `<div class="eyebrow">${kicker}</div><div class="heading"><h1>${title}</h1>${action}</div>`;}

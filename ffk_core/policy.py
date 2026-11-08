@@ -200,8 +200,13 @@ def hash_token(token):
     return hashlib.sha256(str(token).encode()).hexdigest()
 
 
-def security_headers(headers):
+# Pages the desk itself shows in a frame (the Map wheel page embeds the wheel). Only this site may frame them.
+SAME_ORIGIN_FRAMES = {'/wheel.html'}
+
+
+def security_headers(headers, path=''):
     """Response headers for every page and API reply. Returns a list of (name, value)."""
+    framed = str(path or '').split('?', 1)[0].split('#', 1)[0] in SAME_ORIGIN_FRAMES
     csp = ("default-src 'self'; "
            # The app builds markup with inline handlers, so inline scripts stay allowed for now; everything
            # else (framing, plugins, <base> injection, form hijacking, foreign scripts) is closed.
@@ -210,10 +215,10 @@ def security_headers(headers):
            "font-src 'self' data:; "
            "img-src 'self' data: blob:; "
            "connect-src 'self' https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; "
-           "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+           "worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors " + ("'self'" if framed else "'none'"))
     name = ('Content-Security-Policy-Report-Only' if os.environ.get('CSP_REPORT_ONLY') == '1'
             else 'Content-Security-Policy')
-    out = [(name, csp), ('X-Content-Type-Options', 'nosniff'), ('X-Frame-Options', 'DENY'),
+    out = [(name, csp), ('X-Content-Type-Options', 'nosniff'), ('X-Frame-Options', 'SAMEORIGIN' if framed else 'DENY'),
            ('Referrer-Policy', 'no-referrer'), ('Permissions-Policy', 'camera=(), microphone=(), geolocation=()'),
            ('Cross-Origin-Opener-Policy', 'same-origin')]
     if is_https(headers):

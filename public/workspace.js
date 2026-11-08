@@ -42,7 +42,7 @@
     if(busy||syncing||$('#modal')?.open)return;syncing=true;
     // Read without adopting yet: if a dialog opened or an operation started while the request was in flight,
     // keep the objects the open dialog is editing (the next refresh picks the changes up).
-    try{const latest=await prior.api('state');if($('#modal')?.open||busy)return;lastRemote=JSON.stringify(latest);const changed=JSON.stringify(latest)!==JSON.stringify(state);state=latest;const status=$('#sync-status');if(status)status.textContent='Up to date';if(changed&&!draft&&!$('#modal')?.open)render();else if(changed&&draft&&manual)redrawReview();if(manual)toast('Workspace refreshed');}
+    try{const latest=await prior.api('state');if($('#modal')?.open||busy)return;lastRemote=JSON.stringify(latest);const changed=JSON.stringify(latest)!==JSON.stringify(state);state=latest;const status=$('#sync-status');if(status)status.textContent='Up to date';if(changed&&!draft&&!$('#modal')?.open&&page!=='wheel')render();else if(changed&&draft&&manual)redrawReview();if(manual)toast('Workspace refreshed');}
     catch(e){const status=$('#sync-status');if(status)status.textContent=e.expired?'Signed out':'Offline · retry refresh';if(manual&&!e.expired)toast(e.message,'error');}finally{syncing=false;}
   };
   go=function(next){if(busy)return toast('Wait for screenshot reading to finish.','warning');remember();page=next;render();refreshWorkspace();};

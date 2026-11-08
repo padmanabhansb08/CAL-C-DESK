@@ -1,10 +1,12 @@
 /* Final-map wheel. The server draws the map (POST /api/wheel/spin); every open screen polls GET /api/wheel and plays the
-   same spin, landing on the same segment (the landing offset comes from the spin id). The organizer page has
-   controls; the broadcast screen (#screen=1&key=…, for OBS) only watches. */
+   same spin, landing on the same segment (the landing offset comes from the spin id). The desk's Map wheel
+   page embeds this page (#embed=1) and holds the controls; the broadcast screen (#screen=1&key=…, for OBS) only watches. */
 (function(){
   const ART={Bermuda:'bermuda-map.jpeg',Purgatory:'purgatory-map.jpg',Kalahari:'kalahari-map.jpg',NexTerra:'nexterra-map.png',Solara:'solara-map.jpg',Alpine:'alpine-map.jpg'};
   const SPIN_MS=7600,TURNS=7,POLL_MS=1200;
-  const params=new URLSearchParams(location.hash.slice(1)),key=params.get('key')||'',screen=params.get('screen')==='1';
+  const params=new URLSearchParams(location.hash.slice(1)),key=params.get('key')||'',screen=params.get('screen')==='1',embed=params.get('embed')==='1'&&window.parent!==window;
+  // Embedded in the desk's Map wheel page: the desk holds the controls and talks to this page by messages.
+  const tellDesk=()=>{if(embed)parent.postMessage({type:'wheel-state',spinning:!!spinning},location.origin);};
   const $=s=>document.querySelector(s);
   const stage=$('#stage'),wheel=$('#wheel'),rim=$('#rim'),pointer=$('#pointer');
   let maps=[],shown=[],images={},angle=0,spinning=null,currentId=null,lastFrame=performance.now(),won=null,soundOn=false;
@@ -83,7 +85,7 @@
     const target=landing(spin),from=angle,delta=((target-from)%360+360)%360+TURNS*360;
     spinning={spin,from,to:from+delta,start:performance.now()-Math.max(0,ageMs),lastSeg:Math.floor(from/seg())};
     won=null;stage.classList.add('is-spinning');stage.classList.remove('is-won');$('#result').hidden=true;$('#pool').hidden=false;
-    $('#status').textContent='Spinning…';setSpinEnabled(false);
+    $('#status').textContent='Spinning…';tellDesk();
   }
   async function settle(spin,celebrate){
     spinning=null;angle=((landing(spin))%360);won=spin.result;stage.classList.remove('is-spinning');stage.classList.add('is-won');
@@ -93,7 +95,7 @@
     $('#result-art').style.backgroundImage=`url("assets/${ART[won]}")`;$('#result-name').textContent=won.toUpperCase();
     $('#pool').hidden=true;$('#result').hidden=false;
     if(celebrate){flash=48;burst();fanfare();}
-    setSpinEnabled(true);
+    tellDesk();
   }
 
   function frame(now){
@@ -140,37 +142,30 @@
   let failures=0;
   async function poll(){
     try{handle(await call('GET','wheel'));failures=0;$('#gate').hidden=true;}
-    catch(e){failures++;if(e.status===401){$('#gate').hidden=false;$('#gate').innerHTML=screen?'This broadcast link is no longer valid. Ask the organizer for a new host link.':'Sign in on the <a href="/">desk</a> first, then open the map wheel again.';}}
+    catch(e){failures++;if(e.status===401){$('#gate').hidden=false;$('#gate').innerHTML=screen?'This broadcast link is no longer valid. Ask the organizer for a new host link.':embed?'Your sign-in has ended. Sign in again on the desk.':'Sign in on the <a href="/">desk</a> first, then open the map wheel again.';}}
     finally{setTimeout(poll,failures>3?4000:POLL_MS);}
   }
 
-  // ---------- Organizer controls.
-  function selected(){const boxes=[...document.querySelectorAll('#map-toggles input')];return boxes.length?boxes.filter(b=>b.checked).map(b=>b.value):maps;}
-  function setSpinEnabled(on){const b=$('#spin');if(b)b.disabled=!on||selected().length<2;}
-  async function setupControls(){
-    document.body.classList.add('controller');$('#controls').hidden=false;
-    const h=$('#controls').getBoundingClientRect().height;document.documentElement.style.setProperty('--controls-h',h+'px');fit();
-    try{soundOn=localStorage.getItem('ffk-wheel-sound')!=='0';}catch{soundOn=true;}$('#sound').checked=soundOn;
-    $('#sound').onchange=e=>{soundOn=e.target.checked;try{localStorage.setItem('ffk-wheel-sound',soundOn?'1':'0');}catch{}};
-    const data=await call('GET','wheel').catch(()=>null);maps=data?.maps||Object.keys(ART);
-    let saved=null;try{saved=JSON.parse(localStorage.getItem('ffk-wheel-maps')||'null');}catch{}
-    $('#map-toggles').innerHTML=maps.map(m=>`<label><input type="checkbox" value="${m}" ${!saved||saved.includes(m)?'checked':''}> ${m}</label>`).join('');
-    $('#map-toggles').onchange=()=>{const list=selected();try{localStorage.setItem('ffk-wheel-maps',JSON.stringify(list));}catch{}setSpinEnabled(!spinning);$('#control-note').textContent=list.length<2?'Choose at least two maps.':'';
-      if(!spinning){won=null;stage.classList.remove('is-won');$('#result').hidden=true;$('#pool').hidden=false;$('#status').textContent='Ready to spin';setShown(list);}};
-    $('#spin').onclick=async()=>{const list=selected();if(list.length<2)return;setSpinEnabled(false);$('#control-note').textContent='';ac();
-      try{await handle(await call('POST','wheel/spin',{maps:list}));}catch(e){$('#control-note').textContent='Could not spin: '+e.message;setSpinEnabled(true);}};
-    // The broadcast link carries the host key, like the host desk's broadcast link.
-    try{const {key:hostKey}=await call('POST','host/access',{});const url=new URL('/wheel.html',location.origin);url.hash=new URLSearchParams({key:hostKey,screen:'1'}).toString();
-      const link=$('#broadcast-link');link.href=url;link.hidden=false;const copy=$('#copy-broadcast');copy.hidden=false;
-      copy.onclick=async()=>{try{await navigator.clipboard.writeText(url.href);$('#control-note').textContent='Broadcast link copied. Add it to OBS as a 1920 × 1080 Browser Source.';}catch{$('#control-note').textContent=url.href;}};}
-    catch{}
-    setSpinEnabled(true);
+  // ---------- Desk controls (the desk's Map wheel page embeds this page; the maps chosen there are saved on this device).
+  function selected(){let saved=null;try{saved=JSON.parse(localStorage.getItem('ffk-wheel-maps')||'null');}catch{}const all=maps.length?maps:Object.keys(ART);return Array.isArray(saved)?all.filter(m=>saved.includes(m)):all;}
+  function resetTo(list){if(spinning)return;won=null;stage.classList.remove('is-won');$('#result').hidden=true;$('#pool').hidden=false;$('#status').textContent='Ready to spin';setShown(list);}
+  function setupEmbed(){
+    document.body.classList.add('embed');
+    try{soundOn=localStorage.getItem('ffk-wheel-sound')!=='0';}catch{soundOn=true;}
+    addEventListener('message',e=>{
+      if(e.origin!==location.origin||e.source!==parent)return;const m=e.data||{};
+      if(m.type==='wheel-maps'&&Array.isArray(m.maps))resetTo(m.maps.filter(x=>ART[x]));
+      else if(m.type==='wheel-sound'){soundOn=!!m.on;ac();}
+      else if(m.type==='wheel-spun'&&m.data){ac();handle(m.data);}
+    });
+    return call('GET','wheel').then(d=>{maps=d.maps||maps;}).catch(()=>{});
   }
 
-  // ---------- Start.
+  // ---------- Start. Opened on its own (not the broadcast screen), the wheel lives on the desk's Map wheel page.
+  if(!screen&&!embed){try{localStorage.setItem('ffk-last-page-v1','wheel');}catch{}location.replace('/');return;}
   document.body.classList.toggle('screen',screen);
   fit();drawRim();requestAnimationFrame(frame);
   if(screen){soundOn=params.get('sound')!=='0';}
-  (screen?Promise.resolve():setupControls()).finally(()=>{if(!shown.length)setShown(maps.length?(screen?maps:selected()):Object.keys(ART));poll();});
+  (screen?Promise.resolve():setupEmbed()).finally(()=>{if(!shown.length)setShown(screen?(maps.length?maps:Object.keys(ART)):selected());poll();});
   window.__wheel={state:()=>({angle,won,shown,currentId,spinning:!!spinning})};
 })();
