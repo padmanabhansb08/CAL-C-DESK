@@ -65,7 +65,8 @@ async function scanOnServer(sources,files,candidates,updateProgress,signal,worke
     let scan;
     for(let attempt=0;;attempt++){
       try{scan=await api('ocr/scan',{image,roster,regions},{signal});break;}
-      catch(e){if(e.name==='AbortError'||!e.busy||attempt>=5)throw e;$('#ocr-status').textContent=`Another screenshot is being read. Waiting your turn (${attempt+1} of 5)…`;await new Promise(r=>setTimeout(r,4000));}
+      catch(e){if(e.name==='AbortError'||!(e.busy||e.unreachable)||attempt>=5)throw e;
+        $('#ocr-status').textContent=e.unreachable?`Cannot reach the desk server. Trying again (${attempt+1} of 5)…`:`Another screenshot is being read. Waiting your turn (${attempt+1} of 5)…`;await new Promise(r=>setTimeout(r,e.unreachable?3000:4000));}
     }
     const result=WarOCR.fromServerScan(scan);
     if(!result.length)throw Error(scan.warnings?.[0]||'No result panels were found in this screenshot.');
@@ -79,7 +80,11 @@ async function scanOnServer(sources,files,candidates,updateProgress,signal,worke
   return rows;
 }
 async function api(path,data,options={}){
-  const r=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data),signal:options.signal});
+  let r;
+  try{r=await fetch('/api/'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json'},body:data===undefined?undefined:JSON.stringify(data),signal:options.signal});}
+  catch(error){if(error.name==='AbortError')throw error;const e=Error('Cannot reach the desk server. Check that it is still running (start.bat) and try again.');e.unreachable=true;throw e;}
+  // A proxy in front of a stopped server answers 502/503 instead of failing the connection.
+  if(r.status===502||r.status===503){const e=Error('Cannot reach the desk server. Check that it is still running (start.bat) and try again.');e.status=r.status;e.unreachable=true;throw e;}
   const body=await r.json().catch(()=>({}));
   if(!r.ok){
     const expired=r.status===401&&!['login','session','logout'].includes(path);
@@ -443,14 +448,15 @@ async function scan(skipConfirm=false){
   };
   try{
     await WarOCRLearning.load().catch(e=>console.warn('Reviewed OCR examples unavailable:',e));
-    const localOCR=await api('ocr/status').catch(()=>({available:false}));
+    const localOCR=await api('ocr/status').catch(e=>{if(e.unreachable||e.expired)throw e;return {available:false};});
     images=files.map((file,i)=>{const url=URL.createObjectURL(file),image=new Image();image.src=url;return {url,image,bounds:previousBounds[i],fileKey:file.name+':'+file.size};});
     await Promise.all(images.map(source=>source.image.decode()));showSources();showScanCard(files);
     const candidates=typeof WarTournament==='undefined'?state.teams:WarTournament.scanTeams(state,incoming.stage);
     let rowsByScreenshot=null;serverError=null;
     if(localOCR.scan){
       try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress,signal,localOCR.workers||1);}
-      catch(e){if(e.name==='AbortError')throw e;serverError=e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
+      // A stopped server or an ended sign-in is not a reader failure: stop and say so instead of reading badly.
+      catch(e){if(e.name==='AbortError'||e.unreachable||e.expired)throw e;serverError=e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
     }
     // Say so plainly: the browser reader is several times slower and far less accurate than the server's.
     if(!rowsByScreenshot)toast(localOCR.scan?'The server reader failed, so the slower in-browser reader is used. Check the results carefully.':'The server screenshot reader is not running, so the slower, less accurate in-browser reader is used. Start the desk with start.bat to fix this.','warning');
