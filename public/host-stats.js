@@ -4,9 +4,9 @@
   const overall=aggregate(state),previous=aggregate({...state,matches:state.matches.slice(0,-1)}),latest=state.matches.at(-1);
   const teams=overall.rows.map(t=>{
    const old=previous.rows.find(p=>p.teamId===t.teamId),history=t.breakdown;
-   return {...t,change:old?old.rank-t.rank:null,averageKills:t.kills/t.matches,averagePoints:t.total/t.matches,
-    averageFinish:history.reduce((s,r)=>s+r.placement,0)/history.length,
-    winRate:100*t.wins/t.matches,gap:overall.rows[0].total-t.total,
+   return {...t,change:old?old.rank-t.rank:null,averageKills:t.kills/(t.matches||1),averagePoints:t.total/(t.matches||1),
+    averageFinish:history.reduce((s,r)=>s+r.placement,0)/(history.length||1),
+    winRate:100*t.wins/(t.matches||1),gap:overall.rows[0].total-t.total,
     form:history.slice(-3),killShare:t.kills?Math.max(...t.players.map(p=>p.kills),0)/t.kills*100:0};
   });
   const players=teams.flatMap(t=>t.players.map(p=>({...p,teamName:t.teamName,teamId:t.teamId}))).sort((a,b)=>b.kills-a.kills||a.name.localeCompare(b.name));

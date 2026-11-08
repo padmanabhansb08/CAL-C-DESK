@@ -19,7 +19,7 @@
   function forget(){lastDraftJSON='';try{localStorage.removeItem(draftKey);}catch{}}
   window.clearDraftAfterWarReset=function(){forget();pendingFiles=[];clearUploadPreviews();lastReviewedDraft='';reviewMode='pending';};
   const outsideSet=row=>!!(draft?.stage&&row.teamId&&window.WarTournament&&!WarTournament.availableTeams(state,draft.stage).some(t=>t.id===row.teamId));
-  function valid(row){const team=state.teams.find(t=>t.id===row.teamId);return !!team&&!outsideSet(row)&&row.players.length===4&&row.players.every(p=>p.playerId&&(p.isSubstitute||team.players.some(x=>x.id===p.playerId))&&p.name.trim()&&Number.isInteger(p.kills)&&p.kills>=0&&p.kills<=99)&&new Set(row.players.map(p=>p.playerId)).size===4&&!draft.rows.some(r=>r!==row&&r.teamId===row.teamId);}
+  function valid(row){if(row.noResult)return true;const team=state.teams.find(t=>t.id===row.teamId);return !!team&&!outsideSet(row)&&row.players.length===4&&row.players.every(p=>p.playerId&&(p.isSubstitute||team.players.some(x=>x.id===p.playerId))&&p.name.trim()&&Number.isInteger(p.kills)&&p.kills>=0&&p.kills<=99)&&new Set(row.players.map(p=>p.playerId)).size===4&&!draft.rows.some(r=>r!==row&&r.teamId===row.teamId);}
   function cropMarkup(row,index){
     const source=images.find(s=>s.rows?.some(r=>r.placement===row.placement&&r.players[index]?.ocrRegion));
     const observed=source?.rows.find(r=>r.placement===row.placement)?.players[index],region=observed?.ocrRegion;
@@ -57,8 +57,7 @@
     return header('Match workflow',draft?'Check match results':'New match')+`<ol class="workflow"><li class="${draft?'done':'current'}"><b>1</b> Upload</li><li class="${draft?'current':''}"><b>2</b> Check results</li><li class="${reviewed===12?'current':''}"><b>3</b> Save & export</li></ol>
       <details class="panel intake-panel comfort-intake" ${draft?'':'open'}><summary>${draft?'Match setup & screenshots':'Set up this match'}</summary>
       <p class="comfort-intake-intro">Choose the tournament set and map, then add the final result screenshots.</p>
-      <div class="form-grid comfort-match-fields">${stagePicker(draft?.stage||'')}<label>Match name<input id="match-name" maxlength="70" value="${esc(draft?.name||'Match '+(state.matches.length+1))}" placeholder="For example, Set A · Match 1"></label><label>Map<select id="match-map" aria-label="Map played in this match">${MAPS.map(map=>`<option ${draft?.map===map?'selected':''}>${map}</option>`).join('')}</select></label></div>
-      <div class="comfort-set-context" id="comfort-set-context" role="status"></div>
+      <div class="form-grid comfort-match-fields">${stagePicker(draft?.stage||'')}<label>Match name<input id="match-name" maxlength="70" value="${esc(draft?.name||'Match '+(state.matches.length+1))}" placeholder="For example, Set A · Match 1"></label><label>Map<select id="match-map" aria-label="Map played in this match">${MAPS.map(map=>`<option ${draft?.map===map?'selected':''}>${map}</option>`).join('')}</select></label></div>      <div class="comfort-set-context" id="comfort-set-context" role="status"></div>
       <div class="dropzone" id="dropzone"><label for="screenshots" class="upload-picker"><span class="upload-symbol">${uiIcon('upload_file',{size:'lg'})}</span><strong>Add your match screenshots</strong><span>Drop images here or click to choose</span></label><p class="comfort-upload-help">Cover all 12 placements. Overlapping screenshots are okay.</p><input id="screenshots" class="native-file-input" aria-label="Result screenshots" type="file" accept="image/png,image/jpeg,image/webp" multiple ${busy?'disabled':''}><p id="file-summary" class="caption"></p><div id="selected-previews" class="selected-previews" aria-label="Selected screenshot previews" hidden></div></div>
       <div class="actions comfort-intake-actions"><button type="button" id="scan" class="primary brand-main-action" disabled>Read screenshots →</button></div><p class="comfort-file-status" id="comfort-file-status" aria-live="polite"></p>
       <div class="comfort-manual-path"><span>No screenshots?</span><button type="button" id="manual" class="plain-action comfort-manual" ${busy?'disabled':''}>Enter results by hand</button></div>
@@ -131,6 +130,8 @@
     autoConfirmed=done;
   };
   function rowSum(r){const complete=r.players.every(p=>Number.isInteger(p.kills)),kills=complete?r.players.reduce((n,p)=>n+p.kills,0):null;return {kills,points:kills===null?null:kills+(points[r.placement-1]||0)};}
+  // A placement nothing was read for and the organizer has not touched: the screenshots simply did not cover it.
+  const untouched=r=>!r.noResult&&!r.confirmed&&!r.teamId&&!r.hostTouched&&r.players.every(p=>!Number.isInteger(p.kills)&&!p.playerId&&!(p.name||'').trim());
   function counts(){const c={confirmed:0,ready:0,check:0};draft.rows.forEach(r=>c[stateOf(r)]++);return c;}
   // The screenshot crop for one player. When the screenshot is still loaded, the crop opens it full size
   // with that row outlined.
@@ -162,14 +163,14 @@
     return `<div class="desk-row-head">
       <span class="desk-place">#${r.placement}</span>
       <span class="desk-status desk-status-${s}">${ICON[s]}<span>${LABEL[s]}</span></span>
-      ${open?`<label class="desk-team"><span class="sr-only">Team that finished #${r.placement}</span><select data-team="${i}"><option value="">Pick the team…</option>${teamOptions}</select></label>`:`<strong class="desk-team-name">${esc(team?.name||'No team')}</strong>`}
-      <span class="desk-sum"><span><b>${sum.kills??'–'}</b> kills</span><span><b>${sum.points??'–'}</b> pts</span></span>
-      ${s==='confirmed'?`<button type="button" class="desk-edit" data-edit="${i}" aria-label="Change placement ${r.placement}">Change</button>`:`<button type="button" class="desk-confirm${s==='ready'?' is-ready':''}" data-confirm="${i}" aria-label="Confirm placement ${r.placement}">Confirm</button>`}
+      ${open?`<label class="desk-team"><span class="sr-only">Team that finished #${r.placement}</span><select data-team="${i}"><option value="">Pick the team…</option>${teamOptions}</select></label>`:`<strong class="desk-team-name">${r.noResult?'No result submitted':esc(team?.name||'No team')}</strong>`}
+      ${r.noResult?'':`<span class="desk-sum"><span><b>${sum.kills??'–'}</b> kills</span><span><b>${sum.points??'–'}</b> pts</span></span>`}
+      ${s==='confirmed'?`<button type="button" class="desk-edit" data-edit="${i}" aria-label="Change placement ${r.placement}">Change</button>`:`<button type="button" class="desk-confirm${s==='ready'?' is-ready':''}" data-confirm="${i}" aria-label="Confirm placement ${r.placement}">Confirm</button><button type="button" class="desk-noresult" data-noresult="${i}" aria-label="No result for placement ${r.placement}">No result</button>`}
     </div>${s==='check'?`<p class="desk-why">${problems(r).map(esc).join(' · ')}</p>`:''}`;
   }
   function deskRow(r,i){
     const s=stateOf(r),team=teamOf(r);
-    const body=s==='confirmed'
+    const body=r.noResult?`<p class="desk-summary caption">No screenshot covers this placement. The team that finished here is left out of this match's points and shown as missing, not zero.</p>`:s==='confirmed'
       ?`<p class="desk-summary">${r.players.map(p=>`<span>${esc(shortName(p.name)||'?')} <b>${p.kills??'?'}</b></span>`).join('')}</p>`
       :`<div class="desk-players">${r.players.map((_,j)=>deskPlayer(r,i,j,team)).join('')}</div>`;
     return `<section class="desk-row desk-${s}" id="review-team-${i}" data-row="${i}" aria-label="Placement ${r.placement}" ${rowHidden(i)?'hidden':''}>${rowHead(r,i)}${body}</section>`;
@@ -189,7 +190,7 @@
         ${c.check?'<button type="button" id="desk-next-check">Next to check →</button>':''}
         <label class="desk-toggle"><input type="checkbox" id="desk-one" ${oneAtATime?'checked':''}> One team at a time</label>
         ${oneAtATime?'':`<label class="desk-toggle"><input type="checkbox" id="desk-hide-confirmed" ${hideConfirmed?'checked':''}> Hide confirmed</label>`}
-        <details class="desk-more"><summary>More</summary><div><button type="button" onclick="rematchDraft()">Match names again</button><button type="button" onclick="exportOCRExamples()">Export reviewed OCR examples</button></div></details>
+        <details class="desk-more"><summary>More</summary><div><button type="button" onclick="rematchDraft()">Match names again</button>${draft.rows.some(untouched)?`<button type="button" id="desk-skip-empty">Mark ${draft.rows.filter(untouched).length} empty placement${draft.rows.filter(untouched).length===1?'':'s'} as No result</button>`:''}<button type="button" onclick="exportOCRExamples()">Export reviewed OCR examples</button></div></details>
       </div>${jumpList()}`;
   }
   function saveBar(){
@@ -255,17 +256,19 @@
   function settleEdit(i){const r=draft.rows[i];if(r&&!r.confirmed&&stateOf(r)==='ready')confirmAndNext(i);}
   function bindBar(){
     const ready=$('#desk-confirm-ready');if(ready)ready.onclick=()=>{const done=[];draft.rows.forEach((r,i)=>{if(stateOf(r)==='ready'){r.confirmed=true;r.warnings=[];done.push(i);}});lastBulk=done;lastConfirmed=null;redrawReview();toast(done.length+' team'+(done.length===1?'':'s')+' confirmed.'+(counts().check?' Now check the ones marked “Check”.':''));const first=draft.rows.findIndex(r=>!r.confirmed);if(first>=0)focusNeed(first);};
-    const undo=$('#desk-undo-bulk');if(undo)undo.onclick=()=>{(lastBulk||[]).forEach(i=>{draft.rows[i].confirmed=false;});const n=lastBulk?.length||0;lastBulk=null;redrawReview();toast(n+' confirmation'+(n===1?'':'s')+' undone.');};
+    const skip=$('#desk-skip-empty');if(skip)skip.onclick=()=>{const done=[];draft.rows.forEach((r,i)=>{if(untouched(r)){r.noResult=true;r.confirmed=true;r.flags=[];r.warnings=[];done.push(i);}});lastBulk=done;lastConfirmed=null;redrawReview();toast(done.length+' empty placement'+(done.length===1?'':'s')+' marked No result. Those teams stay missing, not zero.');};
+    const undo=$('#desk-undo-bulk');if(undo)undo.onclick=()=>{(lastBulk||[]).forEach(i=>{draft.rows[i].confirmed=false;draft.rows[i].noResult=false;});const n=lastBulk?.length||0;lastBulk=null;redrawReview();toast(n+' confirmation'+(n===1?'':'s')+' undone.');};
     const next=$('#desk-next-check');if(next)next.onclick=()=>{const i=draft.rows.findIndex(r=>stateOf(r)==='check');if(i>=0)focusNeed(i);};
     const hide=$('#desk-hide-confirmed');if(hide)hide.onchange=()=>{hideConfirmed=hide.checked;redrawReview();};
     const one=$('#desk-one');if(one)one.onchange=()=>{oneAtATime=one.checked;oneAtATimeExplicit=true;redrawReview();focusNeed(currentRow);};
     document.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>focusNeed(+b.dataset.jump));
-    const undoOne=$('#desk-undo-one');if(undoOne)undoOne.onclick=()=>{const i=lastConfirmed;draft.rows[i].confirmed=false;lastConfirmed=null;redrawReview();focusNeed(i);toast('Placement '+draft.rows[i].placement+' is open again.');};
+    const undoOne=$('#desk-undo-one');if(undoOne)undoOne.onclick=()=>{const i=lastConfirmed;draft.rows[i].confirmed=false;draft.rows[i].noResult=false;lastConfirmed=null;redrawReview();focusNeed(i);toast('Placement '+draft.rows[i].placement+' is open again.');};
   }
   function bindRow(row){
     row.querySelectorAll('[data-evidence]').forEach(el=>el.onclick=()=>{const [i,j]=el.dataset.evidence.split(',').map(Number);openEvidence(i,j);});
     row.querySelectorAll('[data-confirm]').forEach(el=>el.onclick=()=>confirmAndNext(+el.dataset.confirm));
-    row.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{const i=+el.dataset.edit;draft.rows[i].confirmed=false;lastBulk=null;lastConfirmed=null;currentRow=i;redrawKeeping(`[data-kills="${i},0"]`);});
+    row.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>{const i=+el.dataset.edit;draft.rows[i].confirmed=false;draft.rows[i].noResult=false;lastBulk=null;lastConfirmed=null;currentRow=i;redrawKeeping(`[data-kills="${i},0"]`);});
+    row.querySelectorAll('[data-noresult]').forEach(el=>el.onclick=()=>{const i=+el.dataset.noresult,r=draft.rows[i];r.noResult=true;r.confirmed=true;r.teamId='';r.players.forEach(p=>{p.playerId='';p.kills=null;p.isSubstitute=false;});r.flags=[];r.warnings=[];lastBulk=null;lastConfirmed=i;redrawReview();focusNext(i);});
     row.querySelectorAll('[data-team]').forEach(el=>el.onchange=()=>{
       const i=+el.dataset.team,r=draft.rows[i];r.teamId=el.value;r.confirmed=false;r.hostTouched=true;
       r.players.forEach(p=>{p.playerId='';p.isSubstitute=false;p.identityEdited=false;p.name=p.rawName||p.name;});

@@ -1,0 +1,22 @@
+{
+  "note": "Room lobby screenshots (Nov 5 2026), 12 slots of four players. Names as shown on screen; decorative symbols simplified. Checked by eye against the images.",
+  "files": {
+    "slots-01-04.jpeg": [1, 2, 3, 4],
+    "slots-05-08.jpeg": [5, 6, 7, 8],
+    "slots-09-12.jpeg": [9, 10, 11, 12]
+  },
+  "slots": {
+    "1": ["TNG FLASH", "MR LEGEND+1", "NB-ABXIT", "GODZILLA7"],
+    "2": ["RU CYPHA FF", "RU RAM FF", "RU SENNU FF", "RU DISTROYER"],
+    "3": ["RBU GOAT", "RBU M4RCO", "RBU STRICKER", "W!^Luffy~"],
+    "4": ["MHK.Aravv05!", "AMAR <3", "SOULTITAN", "THE FEARLESS"],
+    "5": ["AD SUKUNA!!", "UTKARSH", "OGs.PRIME.!!", "D4C SAIFA"],
+    "6": ["9X.TOTTEx45", "NS.IGL", "NVM_RUPESH", "WAX DNMYIC!"],
+    "7": ["AG Swmao !!", "DW-VOID", "DarK COBRA", "LEGEND"],
+    "8": ["MNM.Nikaa!!", "H2G $KYL!X", "H2G SARANG", "H2G NVRDIE"],
+    "9": ["FRX BHUV!!!", "GGH-ARIJIT", "KAKASHI", "GGH~Sujay"],
+    "10": ["VIPER M1", "Ux-instAll", "Ux-KAI01", "DESTROYER"],
+    "11": ["JITESH_STXZ", "PRIME NIKHIL", "KRiSh@39", "LokCanSolo!!"],
+    "12": ["TBU_IMMORTAL", "TXB RUSHER", "Strexxie", "8G DEEPAK"]
+  }
+}

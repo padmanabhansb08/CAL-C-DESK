@@ -4,8 +4,11 @@ Players change from week to week; the IGL (first name in each slot) is the const
 matched to an existing team by its IGL and the team's players are replaced with the poster's four.
 Player identities are kept where the same name is still listed, so earlier results stay attached.
 """
+import json
 import re
 import uuid
+
+_PLACEHOLDER = re.compile(r'^Slot \d+$')
 
 VERSION = 'ffk-set-a-week-v1'
 SET_A = [
@@ -77,18 +80,39 @@ def apply_lobby(state, entries):
 
     The slot number is the team's identity for the event; its name comes from the slot list and its
     players from the lobby. A team already registered under the same name keeps its ID and its players'
-    IDs (matched by name), so earlier results stay attached. Returns the teams in slot order."""
+    IDs (matched by name), so earlier results stay attached. Without a matching name, the registered team
+    sharing at least two of the players is reused (keeping its name); otherwise the IGL names the new team.
+    Unused "Slot N" stand-ins from an earlier load are removed. Returns the teams in slot order."""
     teams = state.setdefault('teams', [])
+    used = json.dumps(state.get('matches', []))
+    # A "Slot N" team that no match refers to was only a stand-in from an earlier load: replace it, don't keep it.
+    teams[:] = [t for t in teams if not (_PLACEHOLDER.match(t.get('name', '')) and t['id'] not in used)]
     taken, week = set(), []
     for entry in sorted(entries, key=lambda e: e['slot']):
         names = [n.strip() for n in entry.get('players', []) if n and n.strip()]
-        name = (entry.get('name') or '').strip() or f"Slot {entry['slot']}"
-        if not names and not entry.get('name'):
+        given = (entry.get('name') or '').strip()
+        if not names and not given:
             continue
-        team = next((t for t in teams if t['id'] not in taken and key(t['name']) == key(name)), None)
+        free = [t for t in teams if t['id'] not in taken]
+        team = next((t for t in free if given and key(t['name']) == key(given)), None)
+        if team is None:
+            # The same squad under no (or a new) team name: the team sharing most players, at least two.
+            # Ties go to the team whose captain leads this slot (the IGL is the steady member week to week).
+            wanted, igl = {key(n) for n in names}, key(names[0]) if names else ''
+
+            def shared(t):
+                players = t.get('players', [])
+                lead = next((p for p in players if p.get('isCaptain')), players[0] if players else None)
+                return sum(key(p['name']) in wanted for p in players) + (0.5 if lead and key(lead['name']) == igl else 0)
+            best = max(free, default=None, key=shared)
+            if best is not None and shared(best) >= 2:
+                team = best
         if team is None:
             team = {'id': str(uuid.uuid4()), 'players': []}
             teams.append(team)
+        kept = team.get('name') if team.get('name') and not _PLACEHOLDER.match(team['name']) else ''
+        # With no team name anywhere, the IGL names the team (how the FFK posters label squads).
+        name = given or kept or (names[0] if names else f"Slot {entry['slot']}")
         taken.add(team['id'])
         previous = team.get('players', [])
         players = []
@@ -130,15 +154,26 @@ def apply_set_a(state, slots=None):
     # Set A teams first, in slot order, so the roster page reads like the poster.
     state['teams'] = week + [t for t in teams if t['id'] not in taken]
 
+    suggest_set(state, [t['id'] for t in week], 'A')
+    return True
+
+
+def suggest_set(state, ids, stage):
+    """Suggest these teams as Set A or Set B (the 12 the match reader looks for). Returns True when applied.
+
+    Only a suggestion: a set that already has saved results or qualifiers keeps its own teams, and a team
+    already suggested for the other set is never moved."""
+    if stage not in ('A', 'B'):
+        return False
+    other = 'B' if stage == 'A' else 'A'
     war = state.get('war')
-    ids = [t['id'] for t in week]
-    started = any(m.get('stage') == 'A' for m in state.get('matches', []))
     if war is None:
         war = {'groups': {'A': [], 'B': []}, 'targets': {'A': 6, 'B': 6, 'C': 6},
                'qualified': {}, 'decisions': {}, 'cs': {}, 'csFormat': PLAYOFF_FORMAT}
     groups = war.setdefault('groups', {'A': [], 'B': []})
-    # Only a suggestion: a set that already has saved results or qualifiers keeps its own teams.
-    if not started and not (war.get('qualified') or {}).get('A') and not set(ids) & set(groups.get('B') or []):
-        groups['A'] = ids
-        state['war'] = war
+    started = any(m.get('stage') == stage for m in state.get('matches', []))
+    if started or (war.get('qualified') or {}).get(stage) or set(ids) & set(groups.get(other) or []):
+        return False
+    groups[stage] = list(ids)
+    state['war'] = war
     return True

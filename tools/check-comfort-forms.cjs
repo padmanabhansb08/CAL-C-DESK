@@ -116,12 +116,16 @@ async function run(){
         if(i===0&&j===0)assert(await row.locator('.desk-player').first().evaluate(el=>!el.classList.contains('is-missing')),'Entering a kill count clears the missing mark');
       }
       if(i===0){
+        // A clean row confirms itself once its last edit settles (blur), so reopen it to test typing in the open row.
+        await row.locator('[data-kills="0,3"]').blur();await page.waitForFunction(()=>draft.rows[0].confirmed);await row.locator('[data-edit]').click();
         await row.locator('[data-kills="0,1"]').fill('x7');assert.equal(await row.locator('[data-kills="0,1"]').inputValue(),'7','Only digits are kept');
         await row.locator('[data-kills="0,1"]').press('ArrowDown');assert.equal(await page.evaluate(()=>draft.rows[0].players[1].kills),6,'Arrow keys change a kill count');
         await row.locator('[data-kills="0,1"]').fill('1');
         assert.equal(await row.locator('.desk-sum').innerText().then(t=>t.replace(/\s+/g,' ').trim()),'4 kills 16 pts','Row total updates while typing');
       }
       if(i===11){
+        // The clean last row already confirmed itself when its edit settled; reopen it so the bulk action has something to do.
+        await page.evaluate(()=>{document.activeElement?.blur();draft.rows[11].confirmed=false;redrawReview();});
         await page.locator('#desk-confirm-ready').click();assert(await page.evaluate(()=>draft.rows[11].confirmed),'Bulk confirm');
         await page.locator('#desk-undo-bulk').click();assert(await page.evaluate(()=>!draft.rows[11].confirmed),'Bulk confirm can be undone');
       }

@@ -6,7 +6,7 @@ from pathlib import Path
 import local_ocr
 import default_rosters
 from ffk_core import policy, backup, logs, validate, weekly
-from ffk_core.scan_gate import ScanGate, Busy, TimedOut
+from ffk_core.scan_gate import ScanGate, Busy, TimedOut, warm_reader
 
 ROOT = Path(__file__).parent
 DB = Path(os.environ.get('DB_PATH', ROOT / 'war.sqlite3'))
@@ -22,7 +22,7 @@ def _reader_workers():
 
 
 scan_gate = ScanGate(float(os.environ.get('SCAN_WAIT_SECONDS', '25')), float(os.environ.get('SCAN_TIMEOUT_SECONDS', '120')),
-                     isolate=os.environ.get('SCAN_ISOLATE', '1') != '0', workers=_reader_workers())
+                     isolate=os.environ.get('SCAN_ISOLATE', '1') != '0', workers=_reader_workers(), warm=warm_reader)
 MAX_CONNECTIONS = int(os.environ.get('MAX_CONNECTIONS', '64'))
 log = logs.setup()
 
@@ -341,7 +341,10 @@ class Handler(SimpleHTTPRequestHandler):
                 if entries is None:
                     weekly.apply_set_a(current, slots)
                 else:
-                    weekly.apply_lobby(current, entries)
+                    week = weekly.apply_lobby(current, entries)
+                    # Optional: the list is this week's Set A or Set B, so match reading looks for these 12 teams.
+                    if data.get('set') in ('A', 'B'):
+                        weekly.suggest_set(current, [t['id'] for t in week], data['set'])
                 db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', ('state', json.dumps(current)))
             return self.reply(200, current)
         if self.path == '/api/ocr':
@@ -438,4 +441,6 @@ if __name__ == '__main__':
         print(f'Backups: every {os.environ.get("BACKUP_HOURS", "6")} h into {backup.backup_dir(DB)} (keeping {os.environ.get("BACKUP_KEEP", "30")})', flush=True)
     if os.environ.get('RENDER') or os.environ.get('FLY_APP_NAME') or os.environ.get('TRUST_PROXY'):
         print(f'Trusting {policy.trusted_hops()} reverse proxy hop(s) for client addresses.', flush=True)
+    if scanner() is not None:
+        scan_gate.prewarm()  # readers load their models now, so the first screenshot is read at full speed
     WarDeskServer(('0.0.0.0', port), Handler).serve_forever()

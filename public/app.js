@@ -17,14 +17,25 @@ if (typeof window !== 'undefined') window.uiIcon = uiIcon;
 
 // The workspace reopens where the organizer left it. Add results is never restored: it needs a deliberate start.
 function lastPage(){try{const saved=localStorage.getItem('ffk-last-page-v1');return ['war','roster','results'].includes(saved)?saved:'war';}catch{return 'war';}}
-let state={teams:[],matches:[]}, page=lastPage(), selected=null, tab='teams', draft=null, images=[], busy=false, rosterQuery='';
+let serverError=null,state={teams:[],matches:[]}, page=lastPage(), selected=null, tab='teams', draft=null, images=[], busy=false, rosterQuery='';
 
 // Heavy tools load on first use, in order: the screenshot reader on the results check page, the export
 // tools when Export is chosen, and the in-browser reader only when the server cannot read screenshots.
 const MODULES={reader:['digit-templates.js?v=2','layout.js?v=1','ocr.js?v=16','ocr-learning.js?v=1','ocr-batch.js?v=1','panel-editor.js?v=2'],export:['scoreboard.js?v=5','scoreboard-pdf.js?v=4','templates.js?v=2','export-ui.js?v=4'],tesseract:['vendor/tesseract.min.js']};
-const loadedModules={};
+const loadedModules={},loadedScripts=new Set();
+// A failed group can be retried: scripts that already ran are skipped, so only the missing ones are requested again.
 function loadModules(name){
-  return loadedModules[name]||=MODULES[name].reduce((ready,src)=>ready.then(()=>new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=resolve;script.onerror=()=>{delete loadedModules[name];reject(Error('Could not load '+src.split('?')[0]+'. Check the connection and try again.'));};document.head.append(script);})),Promise.resolve());
+  return loadedModules[name]||=MODULES[name].reduce((ready,src)=>ready.then(()=>loadedScripts.has(src)?undefined:new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=src;script.onload=()=>{loadedScripts.add(src);resolve();};script.onerror=()=>{script.remove();delete loadedModules[name];reject(Error('Could not load '+src.split('?')[0]+'. Check the connection and try again.'));};document.head.append(script);})),Promise.resolve()).then(()=>{if(name==='reader')readerReady=true;});
+}
+let readerReady=false;
+// The upload page waits for every reader script. If one fails, say which and offer a retry that reloads only that script.
+function loadReaderPage(){
+  loadModules('reader').then(()=>{if(page==='upload')render();}).catch(e=>{
+    const box=document.querySelector('.content .empty');if(!box)return;
+    box.innerHTML=`<p role="alert"></p><div class="actions"><button type="button" class="primary" id="reader-retry">Retry screenshot tools</button></div>`;
+    box.querySelector('p').textContent=e.message;
+    box.querySelector('#reader-retry').onclick=()=>{box.innerHTML='<p>Loading the screenshot tools…</p>';loadReaderPage();};
+  });
 }
 async function exportResults(){try{await loadModules('export');openExportChooser();}catch(e){toast(e.message,'error');}}
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -190,8 +201,8 @@ function render(){
     <button type="button" class="host-access-button" onclick="openHostAccess()">${uiIcon('manage_accounts',{size:'md'})}<span>Host desk</span></button>
     <div class="sidebar-footer">${socialLinks()}${signout}</div></aside>
     <main class="main"><header class="topbar"><span class="comfort-top-title"><span>FFK WAR DESK</span><strong>${title}</strong></span><div class="topbar-right"><button type="button" class="sync-button" onclick="refreshWorkspace(true)" aria-label="Refresh saved data" title="Refresh saved data"><span id="sync-status">Up to date</span> ↻</button><details class="mobile-account"><summary aria-label="Channel and account menu">•••</summary><div class="mobile-account-panel"><button type="button" class="mobile-host-btn" onclick="this.closest('details').open=false;openHostAccess()">${uiIcon('manage_accounts',{size:'sm'})}<span>Host desk</span></button>${socialLinks()}${signout}</div></details></div></header>
-    <div class="content">${page==='war'?renderWar():page==='roster'?roster():page==='upload'?(window.WarOCR?intake():'<div class="panel empty" role="status"><p>Loading the screenshot tools…</p></div>'):results()}</div></main></div>`;
-  if(page==='upload'&&!window.WarOCR){loadModules('reader').then(()=>{if(page==='upload')render();}).catch(e=>{const box=document.querySelector('.content .empty p');if(box)box.textContent=e.message;});return;}
+    <div class="content">${page==='war'?renderWar():page==='roster'?roster():page==='upload'?(readerReady?intake():'<div class="panel empty" role="status"><p>Loading the screenshot tools…</p></div>'):results()}</div></main></div>`;
+  if(page==='upload'&&!readerReady){loadReaderPage();return;}
   bind();
   // A new page starts at the top with focus on its heading, so keyboard and screen-reader users land there.
   if(renderedPage!==page){window.scrollTo({top:0,behavior:'instant'});const heading=document.querySelector('.content h1');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}
@@ -208,7 +219,71 @@ function header(kicker,title,action=''){return `<div class="eyebrow">${kicker}</
 function roster(){
   const groups=state.war?.groups||{},setOf=id=>['A','B'].find(set=>(groups[set]||[]).includes(id));
   const name=text=>{const m=/^(FFK\s+)(.*)$/i.exec(text||'');return m?`<span class="ffk-prefix">${esc(m[1].trim())}</span> ${esc(m[2])}`:esc(text);};
-  return header('Before the first drop','Your teams',`<span id="roster-count" class="caption roster-result-count" role="status">${state.teams.length} of ${state.teams.length} teams</span><button type="button" class="primary brand-main-action" onclick="teamForm()">${uiIcon('add',{size:'sm'})} <span>Register team</span></button>`)+`<div class="search-bar topbar-search"><label for="roster-search">Find a team or player<input id="roster-search" type="search" placeholder="Search teams or players" value="${esc(rosterQuery)}"></label></div><p class="team-list-intro">Keep team and player names up to date. Use the exact in-game names to make result checking easier.</p><p id="roster-empty" hidden>No teams match your search.</p><div class="team-grid team-list">${state.teams.map((t,i)=>{const set=setOf(t.id);return `<article class="team-card team-row"><div class="team-row-id"><h2>${name(t.name)}</h2><span class="team-row-meta">${t.rosterList?`List ${t.rosterList} · slot ${t.slot}`:`Team ${i+1}`}${set?` · <span class="team-set">Set ${set}</span>`:''}</span></div><ol class="team-row-players">${t.players.map((p,j)=>`<li${j>3?' class="team-row-sub" title="Substitute"':''}>${name(p.name)}</li>`).join('')}</ol><div class="actions"><button onclick="teamForm('${t.id}')" aria-label="Edit roster for ${esc(t.name)}">Edit</button><button class="danger" onclick="deleteTeam('${t.id}')" aria-label="Remove ${esc(t.name)}">Remove</button></div></article>`;}).join('')||'<div class="empty"><h3>No teams registered yet</h3><p>Add your first team.</p></div>'}</div>`;}
+  return header('Before the first drop','Your teams',`<span id="roster-count" class="caption roster-result-count" role="status">${state.teams.length} of ${state.teams.length} teams</span><button type="button" onclick="slotListForm()">Load slot list</button><button type="button" class="primary brand-main-action" onclick="teamForm()">${uiIcon('add',{size:'sm'})} <span>Register team</span></button>`)+`<div class="search-bar topbar-search"><label for="roster-search">Find a team or player<input id="roster-search" type="search" placeholder="Search teams or players" value="${esc(rosterQuery)}"></label></div><p class="team-list-intro">Keep team and player names up to date. Use the exact in-game names to make result checking easier.</p><p id="roster-empty" hidden>No teams match your search.</p><div class="team-grid team-list">${state.teams.map((t,i)=>{const set=setOf(t.id);return `<article class="team-card team-row"><div class="team-row-id"><h2>${name(t.name)}</h2><span class="team-row-meta">${t.rosterList?`List ${t.rosterList} · slot ${t.slot}`:t.slot?`Slot ${t.slot}`:`Team ${i+1}`}${set?` · <span class="team-set">Set ${set}</span>`:''}</span></div><ol class="team-row-players">${t.players.map((p,j)=>`<li${j>3?' class="team-row-sub" title="Substitute"':''}>${name(p.name)}</li>`).join('')}</ol><div class="actions"><button onclick="teamForm('${t.id}')" aria-label="Edit roster for ${esc(t.name)}">Edit</button><button class="danger" onclick="deleteTeam('${t.id}')" aria-label="Remove ${esc(t.name)}">Remove</button></div></article>`;}).join('')||'<div class="empty"><h3>No teams registered yet</h3><p>Add your first team.</p></div>'}</div>`;}
+
+// The week's slot list: one slot per line, four players each, IGL first. Teams are matched by their IGL, so
+// changed players keep the team's history and results stay attached.
+function slotListForm(){
+  // Each line is "N. Team name" or "N. Player1, Player2, Player3, Player4" (optionally "N. Team: P1, P2, P3, P4").
+  // Players may be split by commas, "|", tabs or 2+ spaces; lines without a number count in order.
+  const readList=text=>{const names={},players={};let order=0;
+    String(text||'').split(/\r?\n/).forEach(raw=>{const line=raw.trim().replace(/\*/g,'');if(!line)return;
+      const m=/^\W*?(\d{1,2})\s*[.):\-]\s*(.+?)\s*$/.exec(line);const n=m?+m[1]:++order,body=(m?m[2]:line).trim();if(m)order=n;
+      let parts=body.split(/\s*(?:,|\||\t|\s{2,})\s*/).filter(Boolean);
+      if(parts.length>=4){let team='';const colon=/^([^:]+):\s*(.+)$/.exec(body);
+        if(colon&&colon[2].split(/\s*(?:,|\||\t|\s{2,})\s*/).filter(Boolean).length>=4){team=colon[1].trim();parts=colon[2].split(/\s*(?:,|\||\t|\s{2,})\s*/).filter(Boolean);}
+        else if(parts.length>4)team=parts.shift();
+        if(!(n in players))players[n]=parts.slice(0,4).map(p=>p.replace(/^IGL\s*[-:]\s*/i,''));if(team&&!(n in names))names[n]=team;}
+      else if(m&&body&&!(n in names))names[n]=body.replace(/\W+$/,'');});
+    return {names,players};};
+  const dataUrl=file=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsDataURL(file);});
+  const merge=reads=>{const by={};reads.forEach(r=>r.slots.forEach(s=>{const cur=by[s.slot]||(by[s.slot]=['','','','']),n=a=>a.filter(Boolean).length;
+    const [fuller,other]=n(s.players)>n(cur)?[s.players,cur]:[cur,s.players];by[s.slot]=fuller.map((v,i)=>v||other[i]);}));return by;};
+  let slots=null;
+  modal(`<h2>Load slots from the lobby</h2><p class="comfort-form-intro">Paste the slot list and, if you have them, add the lobby screenshots. A list line can be a team name ("1. TEAM ONE") or the four players ("1. P1, P2, P3, P4"). Players read from the lobby are used first, the list fills the rest. Players are matched by slot, so a changed or misread name needs no roster edit.</p>
+    <form id="slot-form"><label>These teams play in<select name="set"><option value="">No set yet</option><option value="A">Set A</option><option value="B">Set B</option></select></label>
+    <label>Slot list<textarea name="text" rows="7" placeholder="1. TEAM ONE&#10;2. P1, P2, P3, P4"></textarea></label>
+    <label>Lobby screenshots (optional when the list has players)<input type="file" name="files" accept="image/*" multiple></label>
+    <div id="slot-preview"></div>
+    <div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary" type="submit" id="slot-submit">Read lobby</button></div>
+    <p id="slot-status" role="status"></p><p id="slot-error" class="error" role="alert"></p></form>`);
+  const form=$('#slot-form'),status=t=>{$('#slot-status').textContent=t;},fail=t=>{$('#slot-error').textContent=t;};
+  form.onsubmit=async e=>{
+    e.preventDefault();fail('');const submit=$('#slot-submit');
+    if(slots){
+      const entries=slots.map(n=>({slot:n,name:form.querySelector(`[data-slot="${n}"][data-f="name"]`).value.trim(),
+        players:[0,1,2,3].map(j=>form.querySelector(`[data-slot="${n}"][data-f="p${j}"]`).value.trim())}));
+      submit.disabled=true;
+      const set=form.elements.set.value,body=set?{entries,set}:{entries};
+      try{state=await api('slots',body);closeModal();render();
+        const placed=set&&(state.war?.groups?.[set]||[]).length===entries.length;
+        toast(`${entries.length} teams loaded by slot`+(set?(placed?` for Set ${set}`:`; Set ${set} already has results or shares a team, so its teams were not changed`):''),set&&!placed?'warning':undefined);}
+      catch(err){fail(err.message);submit.disabled=false;}
+      return;
+    }
+    const files=[...form.elements.files.files],list=readList(form.elements.text.value);
+    if(!files.length&&!Object.keys(list.players).length)return fail('Add the lobby screenshots, or put four players on each line of the slot list.');
+    submit.disabled=true;const reads=[];
+    try{
+      for(let i=0;i<files.length;i++){
+        status(`Reading screenshot ${i+1} of ${files.length}…`);const image=await dataUrl(files[i]);
+        for(let attempt=0;;attempt++){
+          try{reads.push(await api('lobby/scan',{image}));break;}
+          catch(err){if(!err.busy||attempt>=5)throw err;await new Promise(r=>setTimeout(r,4000));}
+        }
+      }
+      const names=list.names,by=merge(reads);
+      Object.entries(list.players).forEach(([n,ps])=>{const cur=by[n]||['','','',''];by[n]=cur.map((v,i)=>v||ps[i]||'');});
+      slots=Object.keys(by).map(Number).sort((a,b)=>a-b);
+      if(!slots.length){slots=null;throw new Error('No slots were found. Use screenshots of the room lobby with the slot numbers showing.');}
+      const warn=[...new Set(reads.flatMap(r=>r.warnings||[]))];
+      $('#slot-preview').innerHTML=`<p class="comfort-help">Check the names, fix any misreading, then save.${warn.length?' Some slots are only partly visible: fill in the blanks or add another screenshot.':''}</p>`+
+        slots.map(n=>`<fieldset class="slot-card" style="margin:.5rem 0;padding:.5rem"><legend>Slot ${n}</legend><label>Team name<input data-slot="${n}" data-f="name" value="${esc(names[n]||'')}" placeholder="Slot ${n}"></label>`+
+          by[n].map((p,j)=>`<label>Player ${j+1}<input data-slot="${n}" data-f="p${j}" value="${esc(p)}"></label>`).join('')+`</fieldset>`).join('');
+      submit.textContent=`Save ${slots.length} teams`;submit.disabled=false;status(`${slots.length} slots read.`);
+    }catch(err){fail(err.message);submit.disabled=false;status('');}
+  };
+}
 
 // Each roster slot keeps its player's identity. Editing the text renames that player (spelling fixes keep
 // their ID, history and learned aliases); "New person" explicitly replaces the slot with someone else.
@@ -293,14 +368,18 @@ function reviewSummary(){
 
 async function finalize(){
   if(busy||!draft)return;
-  if(draft.rows.some(r=>!r.confirmed))return toast('Confirm all 12 team results before saving.','error');
-  if(new Set(draft.rows.map(r=>r.teamId)).size!==12)return toast('Every placement needs a different team.','error');
+  if(draft.rows.some(r=>!r.confirmed))return toast('Confirm every placement, or mark it “No result”, before saving.','error');
+  // Placements marked "No result" are not saved: teams without a result are missing from this match, never scored as zero.
+  const results=draft.rows.filter(r=>!r.noResult);
+  if(!results.length)return toast('Record at least one team result before saving.','error');
+  if(draft.stage&&results.length!==12)return toast('Tournament set matches need all 12 results before they can be saved.','error');
+  if(new Set(results.map(r=>r.teamId)).size!==results.length)return toast('Every placement needs a different team.','error');
   draft.name=$('#match-name').value.trim();draft.map=$('#match-map').value;if(!draft.name)return toast('Enter a match name.','error');
   const warBefore=state.war===undefined?undefined:structuredClone(state.war);
   if(draft.stage){try{WarTournament.registerResult(state,draft);}catch(e){return toast(e.message,'error');}}
   const rosterBefore=structuredClone(state.teams);
   const learnedNames=WarOCR.rememberAliases(state.teams,draft.rows);
-  const m=structuredClone(draft);m.rows.forEach(r=>{r.teamName=state.teams.find(t=>t.id===r.teamId).name;delete r.flags;delete r._read;delete r.hostTouched;r.players.forEach(p=>{delete p.ocrRegion;delete p.killEdited;delete p.evidenceCrop;delete p.identityEdited;});});m.created=new Date().toISOString();
+  const m=structuredClone(draft);m.rows=m.rows.filter(r=>!r.noResult);if(m.rows.length<12&&state.teams.length<=12)m.pool=state.teams.map(t=>t.id);m.rows.forEach(r=>{r.teamName=state.teams.find(t=>t.id===r.teamId).name;delete r.flags;delete r._read;delete r.hostTouched;r.players.forEach(p=>{delete p.ocrRegion;delete p.killEdited;delete p.evidenceCrop;delete p.identityEdited;});});m.created=new Date().toISOString();
   busy=true;state.matches.push(m);
   try{await save();}catch(e){state.matches.pop();state.teams=rosterBefore;if(warBefore===undefined)delete state.war;else state.war=warBefore;busy=false;toast(e.message,'error');return;}
   let message='Verified match saved'+(learnedNames?' · '+learnedNames+' player name corrections remembered':'');
@@ -368,10 +447,10 @@ async function scan(skipConfirm=false){
     images=files.map((file,i)=>{const url=URL.createObjectURL(file),image=new Image();image.src=url;return {url,image,bounds:previousBounds[i],fileKey:file.name+':'+file.size};});
     await Promise.all(images.map(source=>source.image.decode()));showSources();showScanCard(files);
     const candidates=typeof WarTournament==='undefined'?state.teams:WarTournament.scanTeams(state,incoming.stage);
-    let rowsByScreenshot=null;
+    let rowsByScreenshot=null;serverError=null;
     if(localOCR.scan){
       try{rowsByScreenshot=await scanOnServer(images,files,candidates,updateProgress,signal,localOCR.workers||1);}
-      catch(e){if(e.name==='AbortError')throw e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
+      catch(e){if(e.name==='AbortError')throw e;serverError=e;console.warn('Server screenshot reader failed; using the in-browser reader:',e);$('#ocr-status').textContent='Switching to the in-browser reader…';progress.fill(0);}
     }
     if(!rowsByScreenshot)await loadModules('tesseract').catch(()=>{});
     if(!rowsByScreenshot&&!window.Tesseract)throw Error('The in-browser reader could not load (it needs an internet connection). Use a server with the screenshot reader installed, or enter results by hand.');
@@ -410,9 +489,11 @@ async function scan(skipConfirm=false){
       return;
     }
     console.error('Screenshot processing failed',e);
-    $('#ocr-status').textContent='Unable to read these screenshots.'+kept;
+    // Say why the server reader failed: "unable to read" alone hid a server error behind the browser fallback.
+    const reason=serverError?.message?' Server reader: '+serverError.message:'';
+    $('#ocr-status').textContent='Unable to read these screenshots.'+reason+kept;
     if(draft)redrawReview();else $('#review').innerHTML='';
-    toast('Unable to read these screenshots. Try clearer screenshots or enter results by hand.'+kept,'error');
+    toast('Unable to read these screenshots. Try clearer screenshots or enter results by hand.'+reason+kept,'error');
   }finally{
     busy=false;setMatchLoading(false);$('#scan').disabled=false;$('#manual').disabled=false;$('#screenshots').disabled=false;showSources();window.refreshUploadStatus?.();
   }
@@ -451,7 +532,7 @@ function details(teamId){
   modal(`<h2>${esc(r.teamName)}</h2><p class="caption">${esc(m.name)} · finished #${r.placement} · ${score(r).total} pts</p>
     <form id="correct" class="details-section"><h3>Players and kills</h3>
       ${r.players.map((p,j)=>`<div class="correct-row"><label for="correct-k${j}">${esc(p.name)}${p.isSubstitute?' <span class="badge">SUB</span>':''}</label><input id="correct-k${j}" name="k${j}" type="number" inputmode="numeric" min="0" max="99" step="1" required value="${p.kills}" ${locked?'disabled':''}></div>`).join('')}
-      <div class="correct-row"><label for="correct-place">Finish</label><select id="correct-place" name="placement" ${locked?'disabled':''}>${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${r.placement===i+1?'selected':''}>#${i+1}${i+1===r.placement?'':' · swaps with '+esc(m.rows.find(x=>x.placement===i+1)?.teamName||'')}</option>`).join('')}</select></div>
+      <div class="correct-row"><label for="correct-place">Finish</label><select id="correct-place" name="placement" ${locked?'disabled':''}>${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${r.placement===i+1?'selected':''}>#${i+1}${i+1===r.placement?'':m.rows.some(x=>x.placement===i+1)?' · swaps with '+esc(m.rows.find(x=>x.placement===i+1).teamName):' · free'}</option>`).join('')}</select></div>
       ${locked?`<p class="notice">Set ${esc(m.stage)} is locked. Reopen it in Tournament to correct this result.</p>`:`<label>Reason for the correction<input name="reason" maxlength="200" placeholder="e.g. Kill feed review showed 6, not 5"></label><div class="actions"><button type="submit">Save correction</button></div>`}
       <p id="correct-error" class="error" role="alert"></p>
       ${history.length?`<details class="correction-log"><summary>${history.length} earlier correction${history.length===1?'':'s'}</summary>${history.map(c=>`<p>${esc(c.changes.join(' · '))}<br><small>${esc(c.reason)} · ${new Date(c.at).toLocaleString('en-IN')}</small></p>`).join('')}</details>`:''}
@@ -482,6 +563,44 @@ function details(teamId){
 }
 
 
+// A result that arrives after the match was saved (a team's own screenshot). It fills only that team's gap;
+// a team that already has a result is never offered, so the same evidence cannot be added twice.
+function lateResult(teamId){
+  const m=state.matches.find(x=>x.id===selected),team=state.teams.find(t=>t.id===teamId);
+  if(!m||!team||m.rows.some(r=>r.teamId===teamId)||(m.stage&&state.war?.qualified?.[m.stage]))return;
+  const free=Array.from({length:12},(_,i)=>i+1).filter(n=>!m.rows.some(r=>r.placement===n));
+  const roster=team.players||[];
+  modal(`<h2>${esc(team.name)}</h2><p class="caption">${esc(m.name)} · add a result that arrived after the match was saved</p>
+    <form id="late" class="details-section">
+      <div class="correct-row"><label for="late-place">Finished</label><select id="late-place" name="placement">${free.map(n=>`<option value="${n}">#${n}</option>`).join('')}</select></div>
+      ${[0,1,2,3].map(j=>`<div class="correct-row"><select name="p${j}" aria-label="Player ${j+1}">${roster.map((p,k)=>`<option value="${esc(p.id)}" ${k===j?'selected':''}>${esc(p.name)}</option>`).join('')}<option value="__sub">Substitute (not on roster)</option></select><input name="n${j}" maxlength="90" placeholder="Substitute name" aria-label="Substitute ${j+1} name"><input name="k${j}" type="number" inputmode="numeric" min="0" max="99" step="1" required placeholder="kills" aria-label="Player ${j+1} kills"></div>`).join('')}
+      <label>Evidence / source<input name="reason" required maxlength="200" placeholder="e.g. Screenshot sent by the team captain"></label>
+      <div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary" type="submit">Add result</button></div>
+      <p id="late-error" class="error" role="alert"></p></form>`);
+  $('#late').onsubmit=async e=>{
+    e.preventDefault();if(detailsWriting)return;const f=e.target,fail=t=>{$('#late-error').textContent=t;};
+    const placement=Number(f.elements.placement.value),reason=f.elements.reason.value.trim(),players=[];
+    for(let j=0;j<4;j++){
+      const kills=f.elements['k'+j].value===''?NaN:Number(f.elements['k'+j].value),pick=f.elements['p'+j].value;
+      if(!Number.isInteger(kills)||kills<0||kills>99)return fail('Kills must be whole numbers from 0 to 99.');
+      if(pick==='__sub'){const name=f.elements['n'+j].value.trim();if(!name)return fail('Name each substitute.');players.push({playerId:`sub:${teamId}:${m.id}:${j}`,name,kills,isSubstitute:true});}
+      else{const p=roster.find(x=>x.id===pick);if(!p)return fail('Pick a player for every slot.');players.push({playerId:p.id,name:p.name,kills});}
+    }
+    if(new Set(players.map(p=>p.playerId)).size!==4)return fail('Each player can only be picked once.');
+    if(!free.includes(placement)||m.rows.some(r=>r.placement===placement))return fail('That placement already has a team.');
+    if(!reason)return fail('Add where this result came from.');
+    detailsWriting=true;const before=structuredClone(m),buttons=[...f.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);
+    try{
+      m.rows.push({placement,teamId,teamName:team.name,players,warnings:[],confirmed:true,adjustments:[]});m.rows.sort((a,b)=>a.placement-b.placement);
+      const kills=players.reduce((n,p)=>n+p.kills,0);
+      m.corrections=[...(m.corrections||[]),{id:uid(),teamId,reason,changes:[`Late result added: finished #${placement}, ${kills} kills`],at:new Date().toISOString()}];
+      await save();closeModal();render();toast('Result added. Standings recalculated.');
+    }catch(err){restoreInPlace(m,before);fail(err.message);}
+    finally{detailsWriting=false;buttons.forEach(b=>{if(b.isConnected)b.disabled=false;});}
+  };
+}
+
+
 async function logout(){if(busy)return toast('Wait for reading to finish.','warning');if(draft&&!await confirmAction({title:'Sign out?',message:'Your unsaved match will be discarded.',accept:'Sign out',cancel:'Keep working'}))return;try{await api('logout',{});draft=null;clearImages();await init();}catch(e){toast(e.message,'error');}}
 
 
@@ -507,9 +626,13 @@ function markScanItem(index,value){
 }
 
 function openMatchManager(){
-  modal(`<div class="panel-head"><h2>Saved matches</h2><button type="button" onclick="closeModal()">Close</button></div><div id="saved-match-list"></div>`);
-  const list=document.querySelector('#saved-match-list');
-  state.matches.slice().reverse().forEach(match=>{
+  modal(`<div class="panel-head"><h2>Saved matches</h2><button type="button" onclick="closeModal()">Close</button></div><label class="saved-match-search">Find a match<input id="saved-match-search" type="search" autocomplete="off" placeholder="Name or map"></label><div id="saved-match-list"></div><p id="saved-match-empty" class="caption" hidden>No saved match fits that search.</p>`);
+  const list=document.querySelector('#saved-match-list'),search=document.querySelector('#saved-match-search'),empty=document.querySelector('#saved-match-empty');
+  const draw=()=>{
+  const needle=search.value.trim().toLowerCase();list.innerHTML='';
+  const shown=state.matches.slice().reverse().filter(m=>!needle||`${m.name} ${m.map||''}`.toLowerCase().includes(needle));
+  empty.hidden=shown.length>0;
+  shown.forEach(match=>{
     const row=document.createElement('div');row.className='saved-match-row';
     const info=document.createElement('div'),name=document.createElement('strong'),meta=document.createElement('p');
     name.textContent=match.name;meta.textContent=match.map;info.append(name,meta);
@@ -522,6 +645,8 @@ function openMatchManager(){
     };
     actions.append(open,remove);row.append(info,actions);list.append(row);
   });
+  };
+  search.oninput=draw;draw();
 }
 
 let pendingConfirmation = null;

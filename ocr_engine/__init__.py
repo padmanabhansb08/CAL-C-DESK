@@ -20,6 +20,23 @@ def _clip(page, regions):
         page.words = [w for w in page.words if any(b[0] <= w.cx <= b[2] and b[1] <= w.cy <= b[3] for b in boxes)]
 
 
+def warm():
+    """Load the models and run each of them once on a small made-up image.
+
+    ONNX Runtime prepares a model on its first run, so the first real screenshot is otherwise about a second
+    slower than the rest. Called in each reader process before it reports ready."""
+    from io import BytesIO
+    from PIL import Image, ImageDraw
+    from . import lobby, scoreboard  # noqa: F401  (imports are part of the first read's cost too)
+    im = Image.new('RGB', (1600, 720), (40, 30, 60))
+    draw = ImageDraw.Draw(im)
+    for i, text in enumerate(('FFK PLAYER 12', 'TEAM 7 KILLS 3', '#1 ELIMINATIONS 10')):
+        draw.text((200 + 300 * i, 200 + 120 * i), text, fill=(240, 240, 240))
+    out = BytesIO()
+    im.save(out, 'PNG')
+    scan(out.getvalue())
+
+
 def scan(image_bytes, roster=None, regions=None):
     """Read one screenshot and return structured, reasoned rows (JSON-serialisable).
 

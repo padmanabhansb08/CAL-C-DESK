@@ -148,8 +148,10 @@ def problems(state, previous=None):
         elif stage:
             staged[stage].append(match)
         rows = match.get('rows')
-        if not isinstance(rows, list) or len(rows) != 12:
-            out.add(path, 'rows', f'{label} must contain 12 team results.', rows)
+        # A match may hold only the results that have evidence; teams without one are missing, not zero.
+        # Tournament set matches still need all 12, because qualification is decided from complete matches.
+        if not isinstance(rows, list) or not 1 <= len(rows) <= 12 or (stage and len(rows) != 12):
+            out.add(path, 'rows', f'{label} must contain 12 team results.' if stage else f'{label} must contain between 1 and 12 team results.', rows)
             continue
         places, row_teams, match_players = set(), set(), set()
         row_occurrences = Counter()

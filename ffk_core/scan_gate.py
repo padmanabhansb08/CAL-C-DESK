@@ -22,12 +22,20 @@ class TimedOut(Exception):
     pass
 
 
-STARTUP_SECONDS = 60
+STARTUP_SECONDS = 180  # a fresh worker also loads the models (and on a new install may download one)
 _ERRORS = {'ValueError': ValueError, 'KeyError': KeyError, 'TypeError': TypeError}
 
 
-def _serve(conn):
-    """Worker loop: receive (function, args, kwargs), send back (ok, result or error)."""
+def _serve(conn, warm=None):
+    """Worker loop: receive (function, args, kwargs), send back (ok, result or error).
+
+    `warm` (a top-level function) runs before the worker reports ready: loading the models and one tiny read
+    happen here, while nobody is waiting, instead of inside the first real screenshot."""
+    if warm is not None:
+        try:
+            warm()
+        except Exception:  # a failed warm-up only means the first real read loads the models itself
+            pass
     conn.send('ready')
     while True:
         try:
@@ -45,14 +53,35 @@ def _serve(conn):
 
 
 class _Worker:
-    def __init__(self):
+    def __init__(self, warm=None):
         self.process = None
         self.conn = None
+        self.warm = warm
+        self.start_seconds = 0.0
+        self._starting = threading.Lock()
+
+    def ensure_started(self):
+        """Start (and warm) the worker process unless it is already running. Returns the seconds spent."""
+        with self._starting:
+            if self.process is not None and self.process.is_alive():
+                return 0.0
+            began = time.perf_counter()
+            self.stop()
+            self._start()
+            return time.perf_counter() - began
+
+    def warm_in_background(self):
+        def start():
+            try:
+                self.ensure_started()
+            except Exception:
+                pass  # the next read tries again and reports the failure
+        threading.Thread(target=start, daemon=True, name='ffk-reader-warmup').start()
 
     def _start(self):
         context = multiprocessing.get_context('spawn')  # same behaviour on Windows, macOS and Linux
         parent, child = context.Pipe()
-        process = context.Process(target=_serve, args=(child,), daemon=True, name='ffk-screenshot-reader')
+        process = context.Process(target=_serve, args=(child, self.warm), daemon=True, name='ffk-screenshot-reader')
         process.start()
         child.close()
         self.process, self.conn = process, parent
@@ -70,20 +99,18 @@ class _Worker:
         self.process = self.conn = None
 
     def call(self, fn, args, kwargs, timeout):
-        self.start_seconds = 0.0  # time spent launching a fresh worker for this call (0 when it was already running)
-        if self.process is None or not self.process.is_alive():
-            began = time.perf_counter()
-            self.stop()
-            self._start()
-            self.start_seconds = time.perf_counter() - began
+        # Time spent launching (or waiting for a warm-up of) a fresh worker for this call; 0 when it was ready.
+        self.start_seconds = self.ensure_started()
         self.conn.send((fn, args, kwargs))
         if not self.conn.poll(timeout):
             self.stop()
+            self.warm_in_background()  # the replacement loads its models now, not during the next read
             raise TimedOut()
         try:
             ok, payload = self.conn.recv()
         except (EOFError, OSError):
             self.stop()
+            self.warm_in_background()
             raise RuntimeError('The screenshot reader stopped unexpectedly; try again.')
         if ok:
             return payload
@@ -94,15 +121,26 @@ class _Worker:
 class ScanGate:
     """`workers` reader processes (isolate=True only; a thread-run read is always one at a time)."""
 
-    def __init__(self, wait_seconds=25.0, run_seconds=120.0, isolate=False, workers=1):
+    def __init__(self, wait_seconds=25.0, run_seconds=120.0, isolate=False, workers=1, warm=None):
         self.workers = max(1, workers) if isolate else 1
         self._gate = threading.Semaphore(self.workers)
         self.wait_seconds = wait_seconds
         self.run_seconds = run_seconds
         self.isolate = isolate
-        self._free = [_Worker() for _ in range(self.workers)] if isolate else []
+        self._free = [_Worker(warm) for _ in range(self.workers)] if isolate else []
         self._lock = threading.Lock()
         self._local = threading.local()
+        self._warm = warm
+
+    def prewarm(self):
+        """Start every reader now, in the background, so the first screenshot does not wait for start-up.
+
+        Without isolation the warm-up runs once on a background thread in this process."""
+        if self.isolate:
+            for worker in list(self._free):
+                worker.warm_in_background()
+        elif self._warm is not None:
+            threading.Thread(target=self._warm, daemon=True, name='ffk-reader-warmup').start()
 
     def last(self):
         """Queue wait and worker start time of this thread's most recent run(), in seconds."""
@@ -151,6 +189,13 @@ class ScanGate:
     def close(self):
         for worker in self._free:
             worker.stop()
+
+
+def warm_reader():
+    """Warm-up for the screenshot reader, imported inside the worker so the server itself stays light."""
+    import ocr_engine
+    if ocr_engine.available():
+        ocr_engine.warm()
 
 
 # Small top-level functions the isolation checks run in the worker process.

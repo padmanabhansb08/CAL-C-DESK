@@ -6073,3 +6073,4 @@ html,.sidebar,.main,.content,.table-wrap{scrollbar-width:thin;scrollbar-color:va
 .channel-shell .war-table-wrap .war-table th:first-child,.channel-shell .war-table-wrap .war-table td:first-child,
 .channel-shell .war-table-wrap .war-table th:nth-child(2),.channel-shell .war-table-wrap .war-table td:nth-child(2){position:static;box-shadow:none;background:transparent}
 .channel-shell .war-table-wrap .war-table tr:hover td:first-child,.channel-shell .war-table-wrap .war-table tr:hover td:nth-child(2){background:var(--c-surface-2)}
+.badge-missing{background:transparent;border:1px solid currentColor;color:var(--muted,#9aa0aa);font-weight:600;letter-spacing:0;text-transform:none;margin-left:.35rem}

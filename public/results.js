@@ -38,12 +38,12 @@
   }
   function teamTable(match,rows){
     const overall=match.isOverall;
-    const head=overall?['Rank','Team',['Played','extra'],['Wins','extra'],'Kills',['Place pts','extra'],['Adj.','extra'],'Points','']
+    const head=overall?['Rank','Team',['Matches','extra'],['Booyah','extra'],'Kills',['Place pts','extra'],['Adj.','extra'],'Points','']
       :['Rank','Team',['Finish','extra'],'Kills',['Place pts','extra'],['Adj.','extra'],'Points',''];
     const th=h=>Array.isArray(h)?`<th class="col-${h[1]}" scope="col">${h[0]}</th>`:h?`<th scope="col">${h}</th>`:'<th scope="col" class="no-print"><span class="sr-only">Details</span></th>';
     const sign=v=>(v>0?'+':'')+v;
     return `<table class="standings-table"><thead><tr>${head.map(th).join('')}</tr></thead><tbody>${rows.map(r=>{const s=score(r),open=overall?`overallBreakdown('${esc(r.teamId)}')`:`details('${esc(r.teamId)}')`;
-      return `<tr><td class="rank">${String(r.rank).padStart(2,'0')}</td><td class="team-cell"><strong>${esc(r.teamName)}</strong>${!overall&&r.placement===1?' <span class="badge">BOOYAH</span>':''}</td>${overall?`<td class="col-extra">${r.matches}</td><td class="col-extra">${r.wins}</td>`:`<td class="col-extra">#${r.placement}</td>`}<td>${s.kills}</td><td class="col-extra">${s.placement}</td><td class="col-extra">${sign(s.adjustment)}</td><td class="total">${s.total}</td><td class="no-print"><button type="button" class="row-details" onclick="${open}" aria-label="${overall?'Match breakdown':'Players, corrections and penalties'} for ${esc(r.teamName)}">Details</button></td></tr>`;}).join('')}</tbody></table>`;
+      return `<tr><td class="rank">${String(r.rank).padStart(2,'0')}</td><td class="team-cell"><strong>${esc(r.teamName)}</strong>${!overall&&r.placement===1?' <span class="badge">BOOYAH</span>':''}</td>${overall?`<td class="col-extra">${r.matches}${r.missing?` <span class="badge badge-missing" title="${r.missing} match${r.missing===1?'':'es'} without a verified result. Not counted as zero.">${r.missing} missing</span>`:''}</td><td class="col-extra">${r.wins}</td>`:`<td class="col-extra">#${r.placement}</td>`}<td>${s.kills}</td><td class="col-extra">${s.placement}</td><td class="col-extra">${sign(s.adjustment)}</td><td class="total">${s.total}</td><td class="no-print"><button type="button" class="row-details" onclick="${open}" aria-label="${overall?'Match breakdown':'Players, corrections and penalties'} for ${esc(r.teamName)}">Details</button></td></tr>`;}).join('')}</tbody></table>`;
   }
   function playerTable(match){
     const list=playerRows(match);
@@ -70,10 +70,12 @@
     const actions=`<div class="actions"><button type="button" class="primary brand-main-action" id="export-results" onclick="exportResults()">${uiIcon('download',{size:'sm'})}<span>Export ${viewLabel(tab).toLowerCase()}</span></button></div>`;
     const select=`<label>Match<select id="match-select"><option value="__overall__" ${overall?'selected':''}>Overall points table · ${state.matches.length} match${state.matches.length===1?'':'es'}</option>${state.matches.map(x=>`<option value="${esc(x.id)}" ${!overall&&match.id===x.id?'selected':''}>${esc(x.name)} · ${esc(x.map)}</option>`).join('')}</select></label>`;
     const views=`<div class="tabs" role="group" aria-label="Result views">${VIEWS.map(([id,text])=>`<button type="button" class="${tab===id?'active':''}" aria-pressed="${tab===id}" onclick="tab='${id}';render()">${text}</button>`).join('')}</div>`;
-    const context=overall?`Totals across all ${match.matchCount} saved matches, including practice and every set. Equal records share a rank.`
+    const context=overall?`Totals across all ${match.matchCount} saved matches, including practice and every set. Equal records share a rank.${match.provisional?' Totals are provisional: some teams have no verified result in one or more matches (shown as “missing”, never as zero).':''}`
       :`${esc(match.map)} · ${match.stage?'Set '+esc(match.stage):'Practice'} · ${new Date(match.created).toLocaleDateString('en-IN')}`;
     let body;
-    if(tab==='teams')body=`${podium(match,rows)}<section class="panel table-wrap">${teamTable(match,rows)}</section><p class="caption">Ranking: points → kills → ${overall?'wins':'Booyah'} → placement points.${overall?' Only teams that played are included.':''}</p>`;
+    const gapIds=overall?[]:WarOverall.missingTeams(state,match),gaps=state.teams.filter(t=>gapIds.includes(t.id));
+    const missingPanel=gaps.length?`<section class="panel"><h3>Missing results · ${gaps.length}</h3><p class="caption">These teams have no verified result in this match. Their points are not counted, not even as zero. Add a result when their screenshot arrives.</p><p>${gaps.map(t=>`<button type="button" class="link-button" onclick="lateResult('${esc(t.id)}')">${esc(t.name)} · add result</button>`).join(' ')}</p></section>`:'';
+    if(tab==='teams')body=`${podium(match,rows)}<section class="panel table-wrap">${teamTable(match,rows)}</section>${missingPanel}<p class="caption">Ranking: points → kills → ${overall?'wins':'Booyah'} → placement points.${overall?' Only teams that played are included.':''}</p>`;
     else if(tab==='players')body=`<section class="panel table-wrap">${playerTable(match)}</section><p class="caption">${overall?'Total kills across saved matches':'Kills in this match'}; registered players only. Substitutes still count in their team's kills and points.</p>`;
     else body=`<section class="panel graph-panel">${graphPanel(match)}</section>`;
     return header(overall?'All saved matches':'Verified match results',overall?'Overall points table':esc(match.name),actions)+`<div class="results-toolbar no-print"><div class="form-grid no-print results-controls compact-results-controls">${select}<button type="button" class="manage-matches" onclick="openMatchManager()">Manage matches</button></div>${views}</div><p class="results-context">${context}</p>${body}`;
@@ -87,7 +89,7 @@
   // CSV of exactly the view on screen.
   root.downloadCSV=function(){
     const match=resultMatch();if(!match)return;let records;
-    if(tab==='teams')records=match.isOverall?[['Rank','Team','Matches','Wins','Kills','Placement points','Adjustment','Total'],...match.rows.map(r=>[r.rank,r.teamName,r.matches,r.wins,r.kills,r.placementPoints,r.adjustment,r.total])]
+    if(tab==='teams')records=match.isOverall?[['Rank','Team','Matches','Missing results','Booyah','Kills','Placement points','Adjustment','Total'],...match.rows.map(r=>[r.rank,r.teamName,r.matches,r.missing||0,r.wins,r.kills,r.placementPoints,r.adjustment,r.total])]
       :[['Rank','Team','Finish','Kills','Placement points','Adjustment','Total'],...teamRows(match).map(r=>{const s=score(r);return [r.rank,r.teamName,r.placement,s.kills,s.placement,s.adjustment,s.total];})];
     else if(tab==='players')records=[['Rank','Player','Team','Kills'],...playerRows(match).map(p=>[p.rank,p.name,p.teamName,p.kills])];
     else if(tab==='kills')records=[['Team','Kills'],...WarGraphs.kills(match).map(r=>[r.name,r.kills])];

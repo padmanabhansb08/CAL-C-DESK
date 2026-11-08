@@ -59,6 +59,14 @@ refused(lambda s: s['matches'][0]['rows'][0]['adjustments'].extend([{'id': 'a1',
 refused(lambda s: s['matches'][0]['rows'][0]['adjustments'].append({'value': 0, 'reason': 'x'}), 'non-zero')
 refused(lambda s: s['teams'][1].update(name='ffk team 0'), 'used twice')
 
+# Unstaged matches may hold only the results that have evidence; set matches still need all 12.
+partial = copy.deepcopy(good)
+partial['matches'].append(match(9, ['t3', 't7', 't20']))
+partial['matches'][-1]['rows'][2]['placement'] = 10
+assert validate.problems(partial) == [], validate.problems(partial)
+refused(lambda s: s['matches'].append({**match(9, ['t3']), 'rows': []}), 'between 1 and 12')
+refused(lambda s: s['matches'][0].update(rows=s['matches'][0]['rows'][:6]), 'must contain 12 team results')
+
 # A fictional champion: the bracket must be followed from the final four.
 qualified = copy.deepcopy(good)
 qualified['war']['qualified'] = {'A': [f't{i}' for i in range(6)], 'B': [f't{i}' for i in range(12, 18)],

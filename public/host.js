@@ -10,7 +10,8 @@
  const LABEL={all:'All saved matches',A:'Set A · Qualifier',B:'Set B · Qualifier',C:'Set C · Semi-final',finals:'Clash Squad finals'};
  function activeStage(){
   const w=state.war;if(!w)return 'all';if(w.qualified?.C?.length)return 'finals';
-  const staged=state.matches.filter(m=>m.stage);return staged.at(-1)?.stage||'all';
+  // Same rule as War manager: the first set that has no confirmed qualifiers, not whichever set was saved last.
+  if(!state.matches.some(m=>m.stage))return 'all';return ['A','B','C'].find(set=>!w.qualified?.[set])||'finals';
  }
  const stage=()=>mode==='auto'?activeStage():mode;
  // Only the matches of the chosen stage count; every set starts from zero, as in Tournament.
