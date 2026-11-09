@@ -1,0 +1,48 @@
+/* FFK Prasanth brand pieces shared by the live screens (map wheel, broadcast standings).
+   Palette from the brand sheet: deep black #0A0A0A, surface #1C1C1C, red #E10600, hot red #FF3B3B, white #F5F5F5, grey #A1A1A1. */
+:root { --ffk-black: #0a0a0a; --ffk-surface: #1c1c1c; --ffk-red: #e10600; --ffk-red-hot: #ff3b3b; --ffk-dark-red: #8b0e0e; --ffk-white: #f5f5f5; --ffk-grey: #a1a1a1;
+  --ffk-chrome: linear-gradient(180deg, #ffffff 0%, #f0f0f0 38%, #9a9a9a 52%, #e6e6e6 70%, #bdbdbd 100%); }
+
+/* Atmosphere: red smoke at the edges, a dark centre, angular red slashes in two corners. */
+.ffk-smoke { position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(700px 520px at 0% 100%, rgba(225, 6, 0, .34), transparent 70%),
+    radial-gradient(640px 480px at 100% 0%, rgba(225, 6, 0, .26), transparent 70%),
+    radial-gradient(900px 600px at 100% 100%, rgba(139, 14, 14, .35), transparent 70%),
+    radial-gradient(800px 500px at 0% 0%, rgba(139, 14, 14, .25), transparent 70%),
+    #0a0a0a; }
+.ffk-slash { position: absolute; width: 520px; height: 26px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--ffk-red) 30%, var(--ffk-red-hot) 60%, transparent);
+  box-shadow: 0 0 24px rgba(255, 40, 30, .6); transform: skewX(-40deg); opacity: .85; }
+.ffk-slash::after { content: ""; position: absolute; left: 60px; right: 120px; top: 34px; height: 8px; background: inherit; opacity: .6; }
+.ffk-slash.tl { left: -120px; top: 6px; transform: rotate(-24deg) skewX(-40deg); }
+.ffk-slash.br { right: -140px; bottom: 120px; transform: rotate(-24deg) skewX(-40deg); }
+
+/* Lockup: avatar in a glowing ring, white crown, chrome FFK over red PRASANTH, and a tag. */
+.ffk-brand { display: flex; align-items: center; gap: 18px; }
+.ffk-ring { position: relative; width: 120px; height: 120px; flex: none; border-radius: 50%; padding: 5px; background: conic-gradient(from 0deg, var(--ffk-red-hot), #5a0000, var(--ffk-red-hot), #5a0000, var(--ffk-red-hot));
+  box-shadow: 0 0 26px rgba(255, 40, 30, .75), 0 0 60px rgba(225, 6, 0, .35); animation: ffk-ring 6s linear infinite; }
+.ffk-ring img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #0a0a0a; animation: ffk-ring 6s linear infinite reverse; }
+@keyframes ffk-ring { to { transform: rotate(360deg); } }
+.ffk-word { position: relative; display: grid; transform: skewX(-10deg); line-height: .86; padding-top: 12px; }
+.ffk-word b { font: 800 78px/0.86 var(--display, "Barlow Condensed", sans-serif); letter-spacing: .01em; background: var(--ffk-chrome); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 4px 0 #000) drop-shadow(0 0 10px rgba(255, 255, 255, .25)); }
+.ffk-word strong { font: 800 46px/0.9 var(--display, "Barlow Condensed", sans-serif); letter-spacing: .02em; color: var(--ffk-red-hot); text-shadow: 0 3px 0 #2a0000, 0 0 18px rgba(255, 40, 30, .6); }
+.ffk-word .ffk-crown { position: absolute; left: 6px; top: -20px; width: 46px; height: 30px; filter: drop-shadow(0 0 8px rgba(255, 255, 255, .5)); }
+.ffk-crown svg { display: block; width: 100%; height: 100%; }
+.ffk-tag { justify-self: start; margin-top: 8px; padding: 3px 16px 3px 12px; font: 800 18px var(--display, "Barlow Condensed", sans-serif); letter-spacing: .2em; color: #fff; line-height: 1.3;
+  background: linear-gradient(90deg, var(--ffk-red), var(--ffk-dark-red)); clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+.ffk-tag::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: #fff; vertical-align: 1px; animation: ffk-live 1.2s ease-in-out infinite; }
+@keyframes ffk-live { 50% { opacity: .2; } }
+
+/* Footer: the energy wave across the width, the crowned FFK emblem in the middle, the motto on both sides. */
+.ffk-footer { position: absolute; left: 0; right: 0; bottom: 0; height: 70px; z-index: 6; display: flex; align-items: center; justify-content: space-between; padding: 0 70px;
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0), rgba(10, 10, 10, .92) 40%); border-top: 1px solid rgba(255, 40, 30, .35); }
+.ffk-footer canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ffk-footer span { position: relative; font: 800 24px var(--display, "Barlow Condensed", sans-serif); letter-spacing: .22em; color: var(--ffk-white); transform: skewX(-10deg); }
+.ffk-foot-l, .ffk-foot-r { padding: 2px 14px; background: rgba(10, 10, 10, .85); }
+.ffk-emblem { position: absolute !important; left: 50%; top: -14px; translate: -50% 0; display: grid; place-items: center; width: 150px; height: 74px; padding-top: 14px;
+  font: 800 40px/1 var(--display, "Barlow Condensed", sans-serif) !important; letter-spacing: .04em !important; background: #0a0a0a;
+  clip-path: polygon(14% 0, 86% 0, 100% 50%, 86% 100%, 14% 100%, 0 50%); box-shadow: inset 0 0 0 2px var(--ffk-red); }
+.ffk-emblem::before { content: ""; position: absolute; inset: 0; clip-path: inherit; border: 3px solid var(--ffk-red-hot); box-shadow: inset 0 0 18px rgba(255, 40, 30, .6); }
+.ffk-emblem .ffk-crown { position: absolute; top: 4px; width: 30px; height: 19px; }
+@media (prefers-reduced-motion: reduce) { .ffk-ring, .ffk-ring img, .ffk-tag::before { animation: none; } }

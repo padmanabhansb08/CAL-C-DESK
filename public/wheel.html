@@ -1,28 +1,22 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a0101"><meta name="referrer" content="no-referrer"><title>FFK · Final map wheel</title><link rel="stylesheet" href="fonts.css?v=1"><link rel="stylesheet" href="wheel.css?v=6"><script src="wheel.js?v=3" defer></script></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a0101"><meta name="referrer" content="no-referrer"><title>FFK · Final map wheel</title><link rel="stylesheet" href="fonts.css?v=1"><link rel="stylesheet" href="brand.css?v=1"><link rel="stylesheet" href="wheel.css?v=7"><script src="brand-fx.js?v=1" defer></script><script src="wheel.js?v=4" defer></script></head><body>
 <div id="viewport">
  <div id="stage" aria-live="polite">
+  <div class="ffk-smoke" aria-hidden="true"></div>
+  <img class="wheel-mascot" src="assets/ffk-mascot.webp" alt="" aria-hidden="true">
+  <i class="ffk-slash tl" aria-hidden="true"></i><i class="ffk-slash br" aria-hidden="true"></i>
   <div class="rays" aria-hidden="true"></div>
+  <canvas id="bolts" width="1920" height="1080" aria-hidden="true"></canvas>
   <canvas id="embers" width="1920" height="1080" aria-hidden="true"></canvas>
-  <header class="brand">
-   <svg class="brand-shield" viewBox="0 0 132 156" aria-hidden="true"><defs>
-    <linearGradient id="sh-red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff3b30"/><stop offset=".6" stop-color="#b00000"/><stop offset="1" stop-color="#5a0000"/></linearGradient>
-    <linearGradient id="sh-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset=".5" stop-color="#ffc21a"/><stop offset="1" stop-color="#b86b00"/></linearGradient></defs>
-    <path d="M34 30 L28 6 L48 20 L66 0 L84 20 L104 6 L98 30 Z" fill="url(#sh-gold)" stroke="#6e3600" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M66 34 L124 50 V96 C124 124 98 144 66 154 C34 144 8 124 8 96 V50 Z" fill="url(#sh-red)" stroke="url(#sh-gold)" stroke-width="6" stroke-linejoin="round"/>
-    <path d="M66 46 L113 59 V95 C113 117 93 133 66 142 C39 133 19 117 19 95 V59 Z" fill="none" stroke="rgba(255,243,160,.35)" stroke-width="2"/>
-    <path d="M30 70 L102 52 L96 64 L36 80 Z" fill="rgba(255,255,255,.18)"/>
-    <text x="66" y="112" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="46" fill="#fff" stroke="#2a0000" stroke-width="4" paint-order="stroke" transform="skewX(-8) translate(14 0)">FFK</text></svg>
-   <div class="lockup"><span class="lockup-presents">FFK PRASANTH</span><span class="lockup-word"><b>FFK</b> WAR</span><span class="lockup-tag">OFFICIAL MAP DRAW</span></div>
-  </header>
+  <header class="brand"><div class="ffk-brand"><span class="ffk-ring"><img src="assets/ffk-avatar.jpg" alt=""></span><div class="ffk-word"><i class="ffk-crown"><svg viewBox="0 0 64 40" aria-hidden="true"><path d="M6 36 L2 8 L18 20 L32 2 L46 20 L62 8 L58 36 Z" fill="none" stroke="#f5f5f5" stroke-width="4" stroke-linejoin="round"/><circle cx="2" cy="8" r="3" fill="#f5f5f5"/><circle cx="32" cy="2" r="3" fill="#f5f5f5"/><circle cx="62" cy="8" r="3" fill="#f5f5f5"/><path d="M14 30 H50" stroke="#ff2a1a" stroke-width="4"/></svg></i><b>FFK</b><strong>PRASANTH</strong><span class="ffk-tag">OFFICIAL MAP DRAW</span></div></div></header>
   <div class="wheel-wrap">
    <div class="wheel-glow" aria-hidden="true"></div>
    <canvas id="rim" width="1000" height="1000" aria-hidden="true"></canvas>
    <canvas id="wheel" width="1000" height="1000" role="img" aria-label="Map wheel"></canvas>
    <div class="hub" aria-hidden="true"><div class="hub-face"></div></div>
-   <div class="pointer" id="pointer" aria-hidden="true"><svg viewBox="0 0 120 170"><defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4a3a"/><stop offset="1" stop-color="#8a0000"/></linearGradient><linearGradient id="pgold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset=".5" stop-color="#ffc21a"/><stop offset="1" stop-color="#b86b00"/></linearGradient></defs>
-    <path d="M24 46 L18 14 L40 32 L60 6 L80 32 L102 14 L96 46 Z" fill="url(#pgold)" stroke="#6e3600" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M14 52 H106 L60 164 Z" fill="url(#pg)" stroke="url(#pgold)" stroke-width="7" stroke-linejoin="round"/>
-    <path d="M38 66 H82 L60 124 Z" fill="#ff7a5a" opacity=".45"/><circle cx="60" cy="74" r="9" fill="#fff3a0"/></svg></div>
+   <div class="pointer" id="pointer" aria-hidden="true"><svg viewBox="0 0 120 170"><defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff3b3b"/><stop offset="1" stop-color="#6a0000"/></linearGradient><linearGradient id="psil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#cfcfcf"/><stop offset="1" stop-color="#7a7a7a"/></linearGradient></defs>
+    <path d="M24 46 L18 14 L40 32 L60 6 L80 32 L102 14 L96 46 Z" fill="#0a0a0a" stroke="#f5f5f5" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M14 52 H106 L60 164 Z" fill="url(#pg)" stroke="url(#psil)" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M38 66 H82 L60 124 Z" fill="#ff8a7a" opacity=".35"/><circle cx="60" cy="74" r="8" fill="#ffffff"/></svg></div>
   </div>
   <aside class="panel">
    <span class="eyebrow" id="eyebrow">FFK WAR · FINAL MATCH</span>
@@ -31,7 +25,7 @@
    <ul class="pool" id="pool"></ul>
    <article class="result" id="result" hidden><div class="result-art" id="result-art"></div><span class="result-kicker">THE FINAL MATCH WILL BE PLAYED ON</span><strong id="result-name"></strong></article>
   </aside>
-  <footer class="ticker"><span>ONE TEAM</span><i></i><span>ONE DREAM</span><i></i><span class="red">FFK</span><i></i><span>STRONGER TOGETHER</span></footer>
+  <footer class="ffk-footer"><canvas width="1920" height="70" aria-hidden="true"></canvas><span class="ffk-foot-l">ONE TEAM · ONE DREAM</span><span class="ffk-emblem"><i class="ffk-crown"><svg viewBox="0 0 64 40" aria-hidden="true"><path d="M6 36 L2 8 L18 20 L32 2 L46 20 L62 8 L58 36 Z" fill="none" stroke="#f5f5f5" stroke-width="4" stroke-linejoin="round"/><circle cx="2" cy="8" r="3" fill="#f5f5f5"/><circle cx="32" cy="2" r="3" fill="#f5f5f5"/><circle cx="62" cy="8" r="3" fill="#f5f5f5"/><path d="M14 30 H50" stroke="#ff2a1a" stroke-width="4"/></svg></i>FFK</span><span class="ffk-foot-r">STRONGER TOGETHER</span></footer>
   <canvas id="confetti" width="1920" height="1080" aria-hidden="true"></canvas>
  </div>
 </div>

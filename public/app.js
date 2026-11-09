@@ -232,14 +232,15 @@ function wheelPage(){
   const saved=wheelSaved();
   return header('Final match','Map wheel',`<button type="button" id="wheel-copy">Copy broadcast link</button><button type="button" id="wheel-open">${uiIcon('open_in_new',{size:'sm'})} <span>Open broadcast screen</span></button>`)
     +`<p class="team-list-intro">Choose the maps, then spin. The server draws the map at random and every broadcast screen plays the same spin live.</p>
-    <div class="wheel-layout"><div class="wheel-frame"><iframe id="wheel-frame" src="/wheel.html?v=3#embed=1" title="Final map wheel" allow="autoplay; fullscreen"></iframe>
-    <button type="button" class="wheel-fullscreen" id="wheel-fullscreen" aria-label="Show the wheel full screen" title="Full screen">${uiIcon('fullscreen',{size:'md'})}</button></div>
+    <div class="wheel-layout"><div class="wheel-frame"><iframe id="wheel-frame" src="/wheel.html?v=4#embed=1" title="Final map wheel" allow="autoplay; fullscreen"></iframe>
+    <button type="button" class="wheel-fullscreen" id="wheel-fullscreen" aria-label="Show the wheel full screen" title="Full screen">${uiIcon('fullscreen',{size:'md'})}</button>
+    <div class="wheel-fs-bar" aria-label="Full screen wheel controls"><button type="button" class="primary wheel-fs-spin" id="wheel-fs-spin">${uiIcon('casino',{size:'md'})} <span>Spin the wheel</span></button><button type="button" class="wheel-fs-exit" id="wheel-fs-exit">Exit full screen</button></div></div>
     <section class="wheel-controls" aria-label="Wheel controls"><fieldset class="wheel-maps" id="wheel-maps"><legend>Maps on the wheel</legend>${WHEEL_MAPS.map(m=>`<label class="wheel-map"><input type="checkbox" value="${m}" ${!saved||saved.includes(m)?'checked':''}><span class="wheel-map-art" style="background-image:url('assets/${WHEEL_ART[m]}')"></span><span class="wheel-map-name">${m}</span></label>`).join('')}</fieldset>
     <div class="wheel-actions"><button type="button" class="primary brand-main-action wheel-spin" id="wheel-spin">${uiIcon('casino',{size:'md'})} <span>Spin the wheel</span></button><label class="wheel-sound"><input type="checkbox" id="wheel-sound" ${wheelSoundOn()?'checked':''}> Sound</label></div>
     <p id="wheel-note" class="caption" role="status"></p></section></div>`;
 }
 function wheelSelected(){return [...document.querySelectorAll('#wheel-maps input')].filter(b=>b.checked).map(b=>b.value);}
-function wheelSync(){const b=$('#wheel-spin');if(b)b.disabled=wheelSpinning||wheelSelected().length<2;}
+function wheelSync(){const off=wheelSpinning||wheelSelected().length<2;['#wheel-spin','#wheel-fs-spin'].forEach(id=>{const b=$(id);if(b)b.disabled=off;});$('.wheel-frame')?.classList.toggle('is-spinning',wheelSpinning);}
 function wheelSend(message){$('#wheel-frame')?.contentWindow?.postMessage(message,location.origin);}
 // The wheel tells the desk when a spin starts and ends, so Spin is off while one is playing.
 window.addEventListener('message',e=>{if(e.origin!==location.origin||e.data?.type!=='wheel-state')return;wheelSpinning=!!e.data.spinning;wheelSync();});
@@ -248,14 +249,16 @@ function bindWheel(){
   const note=$('#wheel-note');
   $('#wheel-maps').onchange=()=>{const list=wheelSelected();try{localStorage.setItem('ffk-wheel-maps',JSON.stringify(list));}catch{}note.textContent=list.length<2?'Choose at least two maps.':'';wheelSync();wheelSend({type:'wheel-maps',maps:list});};
   $('#wheel-sound').onchange=e=>{try{localStorage.setItem('ffk-wheel-sound',e.target.checked?'1':'0');}catch{}wheelSend({type:'wheel-sound',on:e.target.checked});};
-  $('#wheel-spin').onclick=async()=>{const list=wheelSelected();if(list.length<2)return;
+  $('#wheel-spin').onclick=$('#wheel-fs-spin').onclick=async()=>{const list=wheelSelected();if(list.length<2)return;
     // A spin is live on every broadcast screen and cannot be taken back, so it is confirmed first.
     const current=await api('wheel').then(d=>d.spin?.result).catch(()=>null);
     if(!await confirmAction({title:'Spin the wheel live?',message:`The draw is final and plays on every broadcast screen now. Maps on the wheel: ${list.join(', ')}.${current?` This replaces the current result, ${current}.`:''}`,accept:'Spin now',cancel:'Not yet'}))return;
     wheelSpinning=true;wheelSync();note.textContent='';
     try{wheelSend({type:'wheel-spun',data:await api('wheel/spin',{maps:list})});}
     catch(e){note.textContent='Could not spin: '+e.message;wheelSpinning=false;wheelSync();}};
-  $('#wheel-fullscreen').onclick=()=>{const f=$('#wheel-frame');(f.requestFullscreen||f.webkitRequestFullscreen)?.call(f);};
+  // Full screen shows the wheel and its own Spin button (the page controls are hidden behind it).
+  $('#wheel-fullscreen').onclick=()=>{const f=$('.wheel-frame');(f.requestFullscreen||f.webkitRequestFullscreen)?.call(f);};
+  $('#wheel-fs-exit').onclick=()=>(document.exitFullscreen||document.webkitExitFullscreen)?.call(document);
   // The broadcast link carries the host key, like the host desk's broadcast link.
   const link=async()=>{if(!wheelBroadcastURL){const {key}=await api('host/access',{});const url=new URL('/wheel.html',location.origin);url.hash=new URLSearchParams({key,screen:'1'}).toString();wheelBroadcastURL=url.href;}return wheelBroadcastURL;};
   $('#wheel-open').onclick=async()=>{const w=window.open('about:blank','_blank');if(w)w.opener=null;try{const url=await link();if(w)w.location=url;else location.href=url;}catch(e){w?.close();toast(e.message,'error');}};

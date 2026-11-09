@@ -6118,3 +6118,12 @@ html,.sidebar,.main,.content,.table-wrap{scrollbar-width:thin;scrollbar-color:va
 .storage-warning-text{color:var(--c-amber)}
 .backup-file input[type=file]{display:block;margin-top:8px;width:100%}
 @media (max-width:760px){.storage-warning{flex-wrap:wrap}.storage-warning button{width:100%}}
+
+/* Full-screen wheel: its own Spin button, hidden while the wheel turns so the stream sees only the wheel. */
+.wheel-fs-bar{display:none}
+.wheel-frame:fullscreen{border:0;border-radius:0;aspect-ratio:auto;width:100vw;height:100vh;background:#0a0101}
+.wheel-frame:fullscreen .wheel-fullscreen{display:none}
+.wheel-frame:fullscreen .wheel-fs-bar{display:flex;position:absolute;right:28px;bottom:84px;gap:12px;align-items:center;transition:opacity .3s}
+.wheel-frame.is-spinning:fullscreen .wheel-fs-bar{opacity:0;pointer-events:none}
+.wheel-fs-spin{min-height:60px;padding:0 34px;font-size:20px;box-shadow:0 0 0 3px var(--c-gold),0 0 30px rgb(229 9 26/.7)}
+.wheel-fs-exit{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid rgb(255 255 255/.25);background:rgb(0 0 0/.6);color:#fff;cursor:pointer}

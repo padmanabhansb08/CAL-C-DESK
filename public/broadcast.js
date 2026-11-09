@@ -9,31 +9,28 @@
   let stage=null,lastTotals=new Map(),lastSignature='',first=true,pageTimer=null,page=0,current=null;
 
   // ---------- Stage (built once) ----------
-  const SHIELD=`<svg class="bc-shield" viewBox="0 0 132 156" aria-hidden="true"><defs>
-    <linearGradient id="bc-red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff3b30"/><stop offset=".6" stop-color="#b00000"/><stop offset="1" stop-color="#5a0000"/></linearGradient>
-    <linearGradient id="bc-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3a0"/><stop offset=".5" stop-color="#ffc21a"/><stop offset="1" stop-color="#b86b00"/></linearGradient></defs>
-    <path d="M34 30 L28 6 L48 20 L66 0 L84 20 L104 6 L98 30 Z" fill="url(#bc-gold)" stroke="#6e3600" stroke-width="2.5" stroke-linejoin="round"/>
-    <path d="M66 34 L124 50 V96 C124 124 98 144 66 154 C34 144 8 124 8 96 V50 Z" fill="url(#bc-red)" stroke="url(#bc-gold)" stroke-width="6" stroke-linejoin="round"/>
-    <path d="M30 70 L102 52 L96 64 L36 80 Z" fill="rgba(255,255,255,.18)"/>
-    <text x="66" y="112" text-anchor="middle" font-family="Barlow Condensed, sans-serif" font-weight="800" font-size="46" fill="#fff" stroke="#2a0000" stroke-width="4" paint-order="stroke" transform="skewX(-8) translate(14 0)">FFK</text></svg>`;
-  const CROWN=`<svg viewBox="0 0 64 40" aria-hidden="true"><path d="M6 36 L2 8 L18 20 L32 2 L46 20 L62 8 L58 36 Z" fill="url(#bc-gold)" stroke="#6e3600" stroke-width="2.5" stroke-linejoin="round"/><circle cx="32" cy="24" r="4" fill="#ff3b30"/></svg>`;
+  const CROWN=`<svg viewBox="0 0 64 40" aria-hidden="true"><path d="M6 36 L2 8 L18 20 L32 2 L46 20 L62 8 L58 36 Z" fill="none" stroke="#f5f5f5" stroke-width="4" stroke-linejoin="round"/><circle cx="2" cy="8" r="3" fill="#f5f5f5"/><circle cx="32" cy="2" r="3" fill="#f5f5f5"/><circle cx="62" cy="8" r="3" fill="#f5f5f5"/><path d="M14 30 H50" stroke="#ff2a1a" stroke-width="4"/></svg>`;
+  // Brand lockup: the channel avatar in a glowing red ring, a white crown, and the FFK PRASANTH wordmark.
+  const BRAND=(tag)=>`<div class="ffk-brand"><span class="ffk-ring"><img src="assets/ffk-avatar.jpg" alt=""></span><div class="ffk-word"><i class="ffk-crown">${CROWN}</i><b>FFK</b><strong>PRASANTH</strong><span class="ffk-tag">${tag}</span></div></div>`;
   function build(){
     document.body.classList.add('bc-on');
     const vp=document.createElement('div');vp.id='bc-viewport';
-    vp.innerHTML=`<div id="bc-stage" aria-live="polite"><div class="bc-rays" aria-hidden="true"></div><canvas id="bc-embers" width="1920" height="1080" aria-hidden="true"></canvas>
+    vp.innerHTML=`<div id="bc-stage" aria-live="polite"><div class="ffk-smoke" aria-hidden="true"></div><img class="bc-mascot" src="assets/ffk-mascot.webp" alt="" aria-hidden="true"><i class="ffk-slash tl" aria-hidden="true"></i><i class="ffk-slash br" aria-hidden="true"></i>
+      <canvas id="bc-bolts" width="1920" height="1080" aria-hidden="true"></canvas><canvas id="bc-embers" width="1920" height="1080" aria-hidden="true"></canvas>
       <section class="bc-left"><div class="bc-title"><span class="bc-chip" id="bc-chip"></span><h1 id="bc-h1"></h1><p class="bc-context" id="bc-context"></p></div><div id="bc-body"></div></section>
-      <aside class="bc-right"><header class="bc-brand">${SHIELD}<div class="bc-lockup"><span class="bc-presents">FFK PRASANTH</span><span class="bc-word"><b>FFK</b> WAR</span><span class="bc-tag">LIVE STANDINGS</span></div></header><div id="bc-cards"></div></aside>
+      <aside class="bc-right"><header class="bc-brand">${BRAND('LIVE STANDINGS')}</header><div id="bc-cards"></div></aside>
       <div class="bc-banner" id="bc-banner" hidden><span>STANDINGS UPDATED</span><b id="bc-banner-text"></b></div>
-      <footer class="bc-ticker"><span>ONE TEAM</span><i></i><span>ONE DREAM</span><i></i><span class="gold">FFK</span><i></i><span>STRONGER TOGETHER</span></footer></div>`;
+      <footer class="ffk-footer"><canvas width="1920" height="70" aria-hidden="true"></canvas><span class="ffk-foot-l">ONE TEAM · ONE DREAM</span><span class="ffk-emblem"><i class="ffk-crown">${CROWN}</i>FFK</span><span class="ffk-foot-r">STRONGER TOGETHER</span></footer></div>`;
     document.body.prepend(vp);stage=vp.querySelector('#bc-stage');
     const fit=()=>{const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`;};
     addEventListener('resize',fit);fit();embers();
+    if(window.BrandFX){BrandFX.lightning(stage.querySelector('#bc-bolts'));BrandFX.wave(stage.querySelector('.ffk-footer canvas'));}
   }
   function embers(){
     const ctx=stage.querySelector('#bc-embers').getContext('2d'),dots=Array.from({length:55},()=>({x:Math.random()*1920,y:Math.random()*1080,r:1+Math.random()*2.6,v:.3+Math.random()*1,d:Math.random()*6}));
     const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
     (function tick(){ctx.clearRect(0,0,1920,1080);for(const e of dots){if(!still){e.y-=e.v;e.x+=Math.sin(e.d+=.02)*.5;if(e.y<-10){e.y=1090;e.x=Math.random()*1920;}}
-      ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fillStyle=`rgba(255,${90+e.r*30|0},40,${.3+e.r*.12})`;ctx.shadowColor='#ff3b1a';ctx.shadowBlur=8;ctx.fill();}
+      ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fillStyle=`rgba(255,${60+e.r*25|0},40,${.25+e.r*.1})`;ctx.shadowColor='#ff3b1a';ctx.shadowBlur=8;ctx.fill();}
       if(!still)requestAnimationFrame(tick);})();
   }
 

@@ -1,7 +1,7 @@
 /* Final-map wheel: a fixed 1920 x 1080 broadcast stage, scaled to fit the window (OBS Browser Source ready). */
 :root {
-  --red: #e50914; --red-hot: #ff3b30; --red-deep: #7a0000; --gold: #ffc21a; --gold-light: #fff3a0;
-  --ink: #0a0101; --text: #ffffff; --muted: #c9b8b8;
+  --red: #e10600; --red-hot: #ff3b3b; --red-deep: #4a0505; --gold: #f5f5f5; --gold-light: #ffffff;
+  --ink: #0a0a0a; --text: #f5f5f5; --muted: #a1a1a1;
   --display: "Barlow Condensed", "DM Sans", sans-serif; --sans: "DM Sans", system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
@@ -10,79 +10,60 @@ html, body { margin: 0; height: 100%; background: var(--ink); color: var(--text)
 
 #viewport { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
 #stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden;
-  background: radial-gradient(1100px 760px at 37% 52%, #6a0508 0%, #2a0304 48%, #0a0101 100%); }
+  background: #0a0a0a; }
 
 /* Light rays turning slowly behind the wheel, and a red glow. */
 .rays { position: absolute; left: 740px; top: 560px; width: 2600px; height: 2600px; margin: -1300px 0 0 -1300px; border-radius: 50%;
-  background: repeating-conic-gradient(from 0deg, rgba(255, 60, 40, .16) 0deg 6deg, rgba(255, 60, 40, 0) 6deg 18deg);
+  background: repeating-conic-gradient(from 0deg, rgba(225, 6, 0, .1) 0deg 5deg, rgba(225, 6, 0, 0) 5deg 18deg);
   -webkit-mask: radial-gradient(circle, #000 18%, transparent 62%); mask: radial-gradient(circle, #000 18%, transparent 62%);
   animation: rays 60s linear infinite; }
 #stage.is-spinning .rays { animation-duration: 6s; }
-#stage.is-won .rays { background: repeating-conic-gradient(from 0deg, rgba(255, 200, 40, .22) 0deg 6deg, rgba(255, 200, 40, 0) 6deg 18deg); animation-duration: 20s; }
+#stage.is-won .rays { background: repeating-conic-gradient(from 0deg, rgba(255, 59, 59, .2) 0deg 6deg, rgba(255, 59, 59, 0) 6deg 18deg); animation-duration: 20s; }
 @keyframes rays { to { transform: rotate(360deg); } }
-#embers, #confetti { position: absolute; inset: 0; pointer-events: none; }
+#bolts, #embers, #confetti { position: absolute; inset: 0; pointer-events: none; }
 #confetti { z-index: 20; }
 
-/* Brand block, top left. */
-/* Brand lockup: crowned FFK shield + "FFK PRASANTH / FFK WAR / OFFICIAL MAP DRAW". Kept left of the wheel's edge. */
-.brand { position: absolute; left: 40px; top: 30px; display: flex; align-items: center; gap: 18px; z-index: 5; }
-.brand-shield { width: 118px; height: 140px; flex: none; filter: drop-shadow(0 6px 0 #2a0000) drop-shadow(0 0 22px rgba(229, 9, 20, .65)); }
-.lockup { display: flex; flex-direction: column; align-items: flex-start; transform: skewX(-9deg); }
-.lockup-presents { font: 700 22px var(--display); letter-spacing: .32em; color: var(--gold); padding-left: 4px; }
-.lockup-word { font: 800 84px/0.92 var(--display); color: #fff; letter-spacing: .01em; white-space: nowrap;
-  -webkit-text-stroke: 3px #1a0000; text-shadow: 0 6px 0 #3a0000, 0 0 24px rgba(0, 0, 0, .6); }
-.lockup-word b { color: var(--red-hot); text-shadow: 0 6px 0 #3a0000, 0 0 26px rgba(255, 40, 30, .55); }
-.lockup-tag { margin-top: 8px; padding: 4px 18px 4px 14px; font: 800 22px var(--display); letter-spacing: .2em; color: #fff;
-  background: linear-gradient(90deg, #e50914, #8a0000); clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
-  box-shadow: inset 4px 0 0 var(--gold); }
+/* Brand lockup (brand.css), top left; the mascot huge and dark behind the right column. */
+.brand { position: absolute; left: 40px; top: 40px; z-index: 5; }
+.wheel-mascot { position: absolute; right: -200px; top: 60px; width: 1080px; height: 1080px; opacity: .28; pointer-events: none;
+  filter: grayscale(1) brightness(.55) sepia(1) hue-rotate(-50deg) saturate(5); -webkit-mask: linear-gradient(90deg, transparent 0%, #000 50%); mask: linear-gradient(90deg, transparent 0%, #000 50%); }
 
 /* The wheel. */
 .wheel-wrap { position: absolute; left: 290px; top: 115px; width: 900px; height: 900px; z-index: 4; }
 .wheel-wrap canvas { position: absolute; inset: 0; width: 900px; height: 900px; }
 .wheel-glow { position: absolute; inset: -40px; border-radius: 50%; box-shadow: 0 0 120px 30px rgba(229, 9, 20, .45), inset 0 0 0 0 transparent; }
-#stage.is-won .wheel-glow { box-shadow: 0 0 150px 46px rgba(255, 194, 26, .45); }
+#stage.is-won .wheel-glow { box-shadow: 0 0 150px 46px rgba(255, 59, 59, .5); }
 #wheel { will-change: transform; }
 .hub { position: absolute; left: 50%; top: 50%; width: 214px; height: 214px; margin: -107px 0 0 -107px; border-radius: 50%; overflow: hidden; z-index: 3;
-  background: #120102; border: 8px solid var(--gold);
-  box-shadow: 0 0 0 6px #3a0000, 0 0 0 10px var(--red), 0 0 46px 10px rgba(229, 9, 20, .8), inset 0 0 30px rgba(0, 0, 0, .9); }
-/* The mascot artwork (512 x 424) is cropped to a square around the character (centre x 262, y 196, side 300), so
-   the face sits exactly in the middle of the hub and the badge's own frame and caption stay out of view. */
-.hub-face { position: absolute; inset: 0; background: url("assets/mascot-badge.png") no-repeat;
-  background-size: calc(100% * 512 / 300) auto; background-position: calc(100% * (262 - 150) / (512 - 300)) calc(100% * (196 - 150) / (424 - 300)); }
+  background: radial-gradient(circle at 50% 40%, #5a0505, #120202 70%); border: 7px solid #f5f5f5;
+  box-shadow: 0 0 0 5px #0a0a0a, 0 0 0 10px var(--red-hot), 0 0 46px 10px rgba(229, 9, 20, .8), inset 0 0 30px rgba(0, 0, 0, .9); }
+/* The mascot's head (assets/ffk-mascot-head.webp, cut from the brand mascot), centred in the hub. */
+.hub-face { position: absolute; inset: 0; background: url("assets/ffk-mascot-head.webp") center 30% / 112% auto no-repeat; }
 .pointer { position: absolute; left: 50%; top: -58px; width: 120px; height: 170px; margin-left: -60px; z-index: 6; transform-origin: 50% 40%;
-  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .7)) drop-shadow(0 0 16px rgba(255, 60, 30, .7)); transition: transform .12s cubic-bezier(.3, 1.8, .5, 1); }
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .7)) drop-shadow(0 0 18px rgba(255, 40, 30, .8)); transition: transform .12s cubic-bezier(.3, 1.8, .5, 1); }
 .pointer svg { width: 100%; height: 100%; display: block; }
 .pointer.flick { transform: rotate(-16deg); transition: transform .04s ease-out; }
 
 /* Right column: title, pool, result. */
 .panel { position: absolute; left: 1270px; top: 92px; width: 600px; z-index: 5; }
-.eyebrow { display: inline-block; font: 700 30px var(--display); letter-spacing: .14em; color: var(--gold); padding: 6px 18px; border: 2px solid rgba(255, 194, 26, .55); border-radius: 4px; transform: skewX(-9deg); background: rgba(0, 0, 0, .35); }
-.panel h1 { margin: 16px 0 0; font: 800 150px/0.9 var(--display); transform: skewX(-9deg); color: #fff; -webkit-text-stroke: 4px #1a0000; text-shadow: 0 8px 0 #3a0000; }
-.panel h1 span { color: var(--gold); text-shadow: 0 8px 0 #3a0000, 0 0 28px rgba(255, 190, 0, .55); }
+.eyebrow { display: inline-block; font: 700 28px var(--display); letter-spacing: .18em; color: #fff; padding: 6px 22px 6px 16px; transform: skewX(-12deg); background: linear-gradient(90deg, var(--red), #4a0505); clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%); }
+.panel h1 { margin: 16px 0 0; font: 800 150px/0.9 var(--display); transform: skewX(-10deg); background: linear-gradient(180deg, #fff 0%, #f0f0f0 40%, #9a9a9a 55%, #e6e6e6 72%, #bdbdbd 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 8px 0 #000); }
+.panel h1 span { background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--red-hot); text-shadow: 0 0 30px rgba(255, 40, 30, .7); }
 .status { margin: 18px 0 26px; font: 700 34px var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); min-height: 42px; }
 #stage.is-spinning .status { color: #fff; animation: pulse .6s ease-in-out infinite alternate; }
 @keyframes pulse { from { opacity: .55; } to { opacity: 1; } }
 .pool { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.pool li { position: relative; height: 112px; border-radius: 10px; overflow: hidden; border: 2px solid rgba(255, 255, 255, .14); background: #1a0203 center / cover no-repeat;
-  box-shadow: inset 0 0 0 999px rgba(20, 0, 0, .45); display: flex; align-items: flex-end; padding: 10px 16px; transition: opacity .3s, transform .3s, border-color .3s; }
-.pool li span { font: 800 40px var(--display); transform: skewX(-9deg); -webkit-text-stroke: 2px #1a0000; text-shadow: 0 3px 0 #000; }
+.pool li { position: relative; height: 112px; overflow: hidden; border: 2px solid rgba(255, 255, 255, .14); background: #141414 center / cover no-repeat; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%); box-shadow: inset 0 0 0 999px rgba(10, 10, 10, .5); display: flex; align-items: flex-end; padding: 10px 16px; transition: opacity .3s, transform .3s, border-color .3s; }
+.pool li span { font: 800 40px var(--display); transform: skewX(-10deg); text-shadow: 0 3px 0 #000, 0 0 12px rgba(0, 0, 0, .8); }
 .pool li.off { opacity: .28; filter: grayscale(1); }
-.pool li.hot { border-color: var(--gold); box-shadow: inset 0 0 0 999px rgba(20, 0, 0, .15), 0 0 28px rgba(255, 194, 26, .6); transform: scale(1.04); }
+.pool li.hot { border-color: var(--red-hot); box-shadow: inset 0 0 0 999px rgba(20, 0, 0, .1), 0 0 28px rgba(255, 40, 30, .6); transform: scale(1.04); }
 
-.result { position: relative; margin-top: 4px; border-radius: 16px; overflow: hidden; border: 4px solid var(--gold); background: #120102;
-  box-shadow: 0 0 60px rgba(255, 194, 26, .45), 0 24px 60px rgba(0, 0, 0, .7); animation: reveal .9s cubic-bezier(.2, 1.4, .4, 1) both; }
+.result { position: relative; margin-top: 4px; overflow: hidden; background: #0e0e0e; clip-path: polygon(0 0, calc(100% - 30px) 0, 100% 30px, 100% 100%, 30px 100%, 0 calc(100% - 30px)); box-shadow: inset 0 0 0 3px var(--red-hot), inset 0 0 60px rgba(225, 6, 0, .35); animation: reveal .9s cubic-bezier(.2, 1.4, .4, 1) both; }
 .result-art { height: 330px; background: center / cover no-repeat; position: relative; }
-.result-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 40%, #120102 100%); }
-.result-kicker { display: block; padding: 6px 26px 0; font: 700 26px var(--display); letter-spacing: .12em; color: var(--gold); }
-.result strong { display: block; padding: 0 26px 18px; font: 800 132px/1 var(--display); transform: skewX(-9deg); color: #fff; -webkit-text-stroke: 4px #1a0000; text-shadow: 0 8px 0 var(--red-deep), 0 0 34px rgba(255, 60, 30, .6); }
+.result-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 40%, #0e0e0e 100%); }
+.result-kicker { display: block; padding: 6px 26px 0; font: 700 26px var(--display); letter-spacing: .14em; color: var(--red-hot); }
+.result strong { display: block; padding: 0 26px 18px; font: 800 132px/1 var(--display); transform: skewX(-10deg); color: #fff; text-shadow: 0 6px 0 #000, 0 0 34px rgba(255, 40, 30, .75); }
 @keyframes reveal { from { opacity: 0; transform: translateY(60px) scale(.85); } to { opacity: 1; transform: none; } }
-
-/* Ticker footer. */
-.ticker { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; display: flex; align-items: center; justify-content: center; gap: 34px; z-index: 5;
-  background: linear-gradient(90deg, rgba(122, 0, 0, 0), rgba(160, 0, 0, .95) 20%, rgba(160, 0, 0, .95) 80%, rgba(122, 0, 0, 0));
-  font: 800 34px var(--display); letter-spacing: .12em; transform: skewX(-9deg); }
-.ticker .red { color: var(--gold); }
-.ticker i { width: 12px; height: 12px; background: #fff; transform: rotate(45deg); }
 
 #gate { position: fixed; inset: auto 0 40% 0; text-align: center; font: 600 22px var(--sans); color: #fff; }
 #gate a { color: var(--gold); }
