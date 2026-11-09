@@ -6055,6 +6055,9 @@ html,.sidebar,.main,.content,.table-wrap{scrollbar-width:thin;scrollbar-color:va
   /* The next action stays in reach above the tab bar. */
   .comfort-shell[data-page="war"] .page-actions{position:fixed;left:0;right:0;bottom:calc(76px + env(safe-area-inset-bottom));z-index:30;padding:10px 16px;background:var(--c-bg);border-top:1px solid var(--c-line)}
   .comfort-shell[data-page="war"] .page-actions button{width:100%;min-height:48px;font-size:16px;justify-content:center}
+  /* Two actions (e.g. "Use registered teams" + "Load Set A teams") share one row, so the bar stays one button tall. */
+  .comfort-shell[data-page="war"] .page-actions:has(> button:nth-child(2)){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:8px}
+  .comfort-shell[data-page="war"] .page-actions:has(> button:nth-child(2)) button{font-size:14px;padding-inline:10px;line-height:1.2}
   .comfort-shell[data-page="war"] .content{padding-bottom:200px}
   /* The stage strip becomes a compact four-step progress bar. */
   .stage-strip{grid-template-columns:repeat(4,minmax(0,1fr))}
@@ -6136,3 +6139,9 @@ html,.sidebar,.main,.content,.table-wrap{scrollbar-width:thin;scrollbar-color:va
 .wheel-frame.is-spinning:fullscreen .wheel-fs-bar{opacity:0;pointer-events:none}
 .wheel-fs-spin{min-height:60px;padding:0 34px;font-size:20px;box-shadow:0 0 0 3px var(--c-gold),0 0 30px rgb(229 9 26/.7)}
 .wheel-fs-exit{min-height:44px;padding:0 18px;border-radius:999px;border:1px solid rgb(255 255 255/.25);background:rgb(0 0 0/.6);color:#fff;cursor:pointer}
+
+/* Slot list and lobby form: labels above full-width fields, in the desk's dark field style. */
+#slot-form label{display:grid;gap:6px;margin:0 0 14px;font-weight:600}
+#slot-form textarea{width:100%;min-height:150px;resize:vertical;box-sizing:border-box;padding:12px 13px;border:1px solid var(--c-line-strong,#3a3a3a);border-radius:8px;background:var(--c-bg,#0a0a0a);color:var(--c-text,#f5f5f5);font-size:14px;line-height:1.5}
+#slot-form textarea::placeholder{color:var(--c-text-dim,#8a8a8a)}
+#slot-form input[type=file]{width:100%;box-sizing:border-box}

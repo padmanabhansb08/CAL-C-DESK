@@ -1,9 +1,10 @@
 FROM python:3.11-slim
 
-# System libraries needed by OpenCV / ONNX Runtime (server-side OCR)
+# System libraries needed by OpenCV / ONNX Runtime (server-side OCR), and gosu for the entrypoint to drop root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -25,9 +26,11 @@ COPY public/ ./public/
 RUN python -c "import ocr_engine; ocr_engine.warm()" \
  && chmod -R a+rX "$(python -c 'import os, rapidocr; print(os.path.join(os.path.dirname(rapidocr.__file__), "models"))')"
 
-# Run as an unprivileged user; /data is the persistent volume for the SQLite database
+# The server runs as an unprivileged user; /data is the persistent volume for the SQLite database. The image starts
+# as root only so the entrypoint can take ownership of a root-owned mounted volume (Railway), then drops to "app".
 RUN useradd --create-home --uid 10001 app && mkdir -p /data && chown app:app /data
-USER app
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 ENV DB_PATH=/data/war.sqlite3
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
@@ -36,4 +39,5 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD python -c "import os,urllib.request;urllib.request.urlopen('http://127.0.0.1:%s/health'%os.environ.get('PORT','8080'),timeout=4)"
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["python", "server.py"]
