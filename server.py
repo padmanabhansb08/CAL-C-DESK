@@ -174,6 +174,13 @@ def get(key):
         row = db.execute('SELECT value FROM settings WHERE key=?', (key,)).fetchone()
         return row[0] if row else None
 
+def database_id():
+    """A random ID made when this database is first used. A server whose disk was replaced (a redeploy without a
+    volume) gets a new one, so the desk can tell "this server lost its data" from "the organizer reset the war"."""
+    put_if_absent('db_id', secrets.token_hex(12))
+    return get('db_id')
+
+
 def put(key, value):
     with connect() as db:
         db.execute('INSERT OR REPLACE INTO settings VALUES (?,?)', (key, value))
@@ -261,7 +268,7 @@ class Handler(SimpleHTTPRequestHandler):
             setup = get('password') is None
             signed_in = self.authorized()
             return self.reply(200, {'setup': setup, 'authenticated': signed_in, 'setupRequiresToken': False,
-                                    **({'persistentStorage': storage_persistent()} if signed_in else {})})
+                                    **({'persistentStorage': storage_persistent(), 'databaseId': database_id()} if signed_in else {})})
         if self.path == '/api/backup':
             # The whole tournament as one file the organizer keeps: survives a lost or wiped server.
             if not self.authorized(): return self.reply(401, {'error': 'Please sign in.'})

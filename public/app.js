@@ -136,7 +136,7 @@ async function go(next){if(busy){toast('Wait for screenshot reading to finish.',
 
 window.addEventListener('beforeunload',e=>{if(busy||(draft&&(!window.isMatchDraftSaved||!window.isMatchDraftSaved()))){e.preventDefault();e.returnValue='';}});
 
-async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup);storageTemporary=session.persistentStorage===false;state=await api('state');render();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
+async function init(){try{const session=await api('session');if(!session.authenticated)return auth(session.setup);storageTemporary=session.persistentStorage===false;databaseId=session.databaseId||null;state=await api('state');render();offerLocalCopy();}catch(e){$('#app').innerHTML='<div class="auth"><h1>Unable to connect</h1><p>'+esc(e.message)+'</p><button onclick="location.reload()">Retry</button></div>';}}
 
 function auth(setup){
   const action=setup?'Create organizer password':'Sign in';
@@ -215,7 +215,7 @@ function render(){
   bind();
   // A new page starts at the top with focus on its heading, so keyboard and screen-reader users land there.
   if(renderedPage!==page){window.scrollTo({top:0,behavior:'instant'});const heading=document.querySelector('.content h1');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}}
-  renderedPage=page;window.pageMounted?.(page);
+  renderedPage=page;window.pageMounted?.(page);scheduleLocalCopy();
 }
 // "Add results" goes straight to the next tournament match when one is due.
 function navAddResults(){
@@ -771,4 +771,32 @@ async function openHostAccess(){
     $('#wheel-link').value=wheelURL;$('#open-wheel-link').href=wheelURL;$('#copy-wheel-link').onclick=()=>copy(wheelURL.href,'#wheel-link');
     $('#rotate-host-key').onclick=async()=>{if(!await confirmAction({title:'Reset host links?',message:'Existing host and broadcast links will stop working. Share the new links with your host.',accept:'Reset links',cancel:'Keep links'}))return;try{await api('host/access',{rotate:true});await openHostAccess();}catch(e){toast(e.message,'error');}};
   }catch(e){toast('Could not open host access: '+e.message,'error');}
+}
+
+// A copy of the tournament kept in this browser. Without a volume, a redeploy gives the server a fresh, empty
+// database; the copy lets the organizer put everything back in one click. Each server database has its own ID:
+// a copy from a different database that holds more than the server now has means the server lost its data (an
+// organizer's own "Reset the war" keeps the ID, so it is never offered back). The copy is only refreshed once
+// that check is done, so the empty new server can never overwrite it first.
+const LOCAL_COPY_KEY='ffk-desk-copy-v1';let databaseId=null,localCopyReady=false,localCopyTimer=0;
+function readLocalCopy(){try{return JSON.parse(localStorage.getItem(LOCAL_COPY_KEY)||'null');}catch{return null;}}
+function scheduleLocalCopy(){
+  if(!localCopyReady||!databaseId)return;clearTimeout(localCopyTimer);
+  localCopyTimer=setTimeout(()=>{if(!state.teams?.length&&!state.matches?.length)return;
+    try{localStorage.setItem(LOCAL_COPY_KEY,JSON.stringify({databaseId,savedAt:Date.now(),state}));}catch(e){console.warn('Browser copy not saved:',e);}},800);
+}
+async function offerLocalCopy(){
+  const copy=readLocalCopy(),held=copy?.state,count=s=>(s?.matches?.length||0);
+  if(databaseId&&held&&copy.databaseId!==databaseId&&count(held)>count(state)){
+    const when=new Date(copy.savedAt).toLocaleString();
+    const ok=await confirmAction({title:'Restore your tournament?',message:`This server has a new, empty database (it was probably redeployed without a volume). This browser kept a copy from ${when}: ${held.teams?.length||0} teams and ${count(held)} match${count(held)===1?'':'es'}. Restore it now? Your copy stays in this browser either way.`,accept:'Restore my tournament',cancel:'Start fresh'});
+    if(ok){
+      try{const r=await api('state/restore',{format:'ffk-war-desk-backup',version:1,savedAt:copy.savedAt/1000,state:held});state=await api('state');render();toast(`Tournament restored from this browser: ${r.teams} teams, ${r.matches} matches.`);}
+      catch(e){toast('Could not restore the browser copy: '+e.message,'error');return;}
+    }else{
+      // Keep the old copy under a second key so "Start fresh" never loses it outright.
+      try{localStorage.setItem(LOCAL_COPY_KEY+'-previous',JSON.stringify(copy));}catch{}
+    }
+  }
+  localCopyReady=true;scheduleLocalCopy();
 }
