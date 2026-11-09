@@ -74,7 +74,7 @@ async function run(){
     assert(await page.evaluate(()=>document.documentElement.scrollHeight<=1080),'The full twelve-team broadcast fits 1920×1080.');
     // The broadcast graphic: all twelve rows inside the stage, above the ticker, and the semi-final cut after #4.
     await page.waitForTimeout(1500);
-    assert(await page.evaluate(()=>{const s=document.querySelector('#bc-stage').getBoundingClientRect(),return [...document.querySelectorAll('.bc-row')].every(r=>{const b=r.getBoundingClientRect();return b.top>=s.top&&b.bottom<=s.bottom+1;});}),'Every standings row sits inside the stage.');
+    assert(await page.evaluate(()=>{const s=document.querySelector('#bc-stage').getBoundingClientRect();return [...document.querySelectorAll('.bc-row')].every(r=>{const b=r.getBoundingClientRect();return b.top>=s.top&&b.bottom<=s.bottom+1;});}),'Every standings row sits inside the stage.');
     assert.match(await page.locator('.bc-cut').textContent(),/TOP 4 ADVANCE/);
     await capture('verified-host-broadcast.png');
 

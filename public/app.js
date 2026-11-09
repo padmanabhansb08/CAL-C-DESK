@@ -195,7 +195,7 @@ function auth(setup){
 }
 
 // The workspace shell, rendered once in its final form: sidebar, top bar and the current page.
-const NAV=[['war','Tournament','emoji_events'],['upload','Add results','upload_file'],['roster','Teams','groups'],['results','Standings','leaderboard'],['wheel','Map wheel','casino']];
+const NAV=[['war','Tournament','emoji_events'],['roster','Teams','groups'],['results','Standings','leaderboard'],['wheel','Map wheel','casino']];
 const SOCIAL_ICON={instagram:'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0M17.5 6.5h.01',youtube:'M9 8l7 4-7 4zM3 5h18v14H3z'};
 const socialLinks=()=>`<div class="channel-socials">${[['instagram','https://www.instagram.com/ffk_prasanth/','Instagram'],['youtube','https://www.youtube.com/@FFK_Prasanth','YouTube']].map(([k,href,label])=>`<a href="${href}" target="_blank" rel="noopener noreferrer" aria-label="FFK Prasanth on ${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${SOCIAL_ICON[k]}"/></svg></a>`).join('')}</div>`;
 let renderedPage=null;
@@ -274,7 +274,7 @@ function roster(){
 
 // The week's slot list: one slot per line, four players each, IGL first. Teams are matched by their IGL, so
 // changed players keep the team's history and results stay attached.
-function slotListForm(){
+function slotListForm(presetSet=''){
   // Each line is "N. Team name" or "N. Player1, Player2, Player3, Player4" (optionally "N. Team: P1, P2, P3, P4").
   // Players may be split by commas, "|", tabs or 2+ spaces; lines without a number count in order.
   const readList=text=>{const names={},players={};let order=0;
@@ -291,26 +291,27 @@ function slotListForm(){
   const merge=reads=>{const by={};reads.forEach(r=>r.slots.forEach(s=>{const cur=by[s.slot]||(by[s.slot]=['','','','']),n=a=>a.filter(Boolean).length;
     const [fuller,other]=n(s.players)>n(cur)?[s.players,cur]:[cur,s.players];by[s.slot]=fuller.map((v,i)=>v||other[i]);}));return by;};
   let slots=null;
-  modal(`<h2>Load slots from the lobby</h2><p class="comfort-form-intro">Paste the slot list and, if you have them, add the lobby screenshots. A list line can be a team name ("1. TEAM ONE") or the four players ("1. P1, P2, P3, P4"). Players read from the lobby are used first, the list fills the rest. Players are matched by slot, so a changed or misread name needs no roster edit.</p>
-    <form id="slot-form"><label>These teams play in<select name="set"><option value="">No set yet</option><option value="A">Set A</option><option value="B">Set B</option></select></label>
+  modal(`<h2>${presetSet?'Set '+presetSet+' teams':'Load slots from the lobby'}</h2><p class="comfort-form-intro">Paste the slot list and add the room lobby screenshots. Each lobby slot gives that team its four players, so match screenshots are matched to the right team without checking names. A list line can be a team name ("1. TEAM ONE") or the four players ("1. P1, P2, P3, P4").</p>
+    <form id="slot-form"><label>These teams play in<select name="set"><option value="">No set yet</option><option value="A" ${presetSet==='A'?'selected':''}>Set A</option><option value="B" ${presetSet==='B'?'selected':''}>Set B</option></select></label>
     <label>Slot list<textarea name="text" rows="7" placeholder="1. TEAM ONE&#10;2. P1, P2, P3, P4"></textarea></label>
     <label>Lobby screenshots (optional when the list has players)<input type="file" name="files" accept="image/*" multiple></label>
     <div id="slot-preview"></div>
     <div class="actions"><button type="button" onclick="closeModal()">Cancel</button><button class="primary" type="submit" id="slot-submit">Read lobby</button></div>
     <p id="slot-status" role="status"></p><p id="slot-error" class="error" role="alert"></p></form>`);
   const form=$('#slot-form'),status=t=>{$('#slot-status').textContent=t;},fail=t=>{$('#slot-error').textContent=t;};
+  const saveSlots=async entries=>{
+    const submit=$('#slot-submit');submit.disabled=true;
+    const set=form.elements.set.value,body=set?{entries,set}:{entries};
+    try{state=await api('slots',body);closeModal();render();
+      const placed=set&&(state.war?.groups?.[set]||[]).length===entries.length;
+      toast(`${entries.length} teams loaded by slot`+(set?(placed?` for Set ${set}`:`; Set ${set} already has results or shares a team, so its teams were not changed`):''),set&&!placed?'warning':undefined);}
+    catch(err){fail(err.message);submit.disabled=false;}
+  };
   form.onsubmit=async e=>{
     e.preventDefault();fail('');const submit=$('#slot-submit');
     if(slots){
-      const entries=slots.map(n=>({slot:n,name:form.querySelector(`[data-slot="${n}"][data-f="name"]`).value.trim(),
-        players:[0,1,2,3].map(j=>form.querySelector(`[data-slot="${n}"][data-f="p${j}"]`).value.trim())}));
-      submit.disabled=true;
-      const set=form.elements.set.value,body=set?{entries,set}:{entries};
-      try{state=await api('slots',body);closeModal();render();
-        const placed=set&&(state.war?.groups?.[set]||[]).length===entries.length;
-        toast(`${entries.length} teams loaded by slot`+(set?(placed?` for Set ${set}`:`; Set ${set} already has results or shares a team, so its teams were not changed`):''),set&&!placed?'warning':undefined);}
-      catch(err){fail(err.message);submit.disabled=false;}
-      return;
+      return saveSlots(slots.map(n=>({slot:n,name:form.querySelector(`[data-slot="${n}"][data-f="name"]`).value.trim(),
+        players:[0,1,2,3].map(j=>form.querySelector(`[data-slot="${n}"][data-f="p${j}"]`).value.trim())})));
     }
     const files=[...form.elements.files.files],list=readList(form.elements.text.value);
     if(!files.length&&!Object.keys(list.players).length)return fail('Add the lobby screenshots, or put four players on each line of the slot list.');
@@ -328,7 +329,10 @@ function slotListForm(){
       slots=Object.keys(by).map(Number).sort((a,b)=>a-b);
       if(!slots.length){slots=null;throw new Error('No slots were found. Use screenshots of the room lobby with the slot numbers showing.');}
       const warn=[...new Set(reads.flatMap(r=>r.warnings||[]))];
-      $('#slot-preview').innerHTML=`<p class="comfort-help">Check the names, fix any misreading, then save.${warn.length?' Some slots are only partly visible: fill in the blanks or add another screenshot.':''}</p>`+
+      // Sure enough to save without a check: no reader warnings, slots 1..N with no gaps (12 for a set), four names in each.
+      const complete=!warn.length&&slots.every((n,i)=>n===i+1&&by[n].every(p=>p.trim()))&&(!form.elements.set.value||slots.length===12);
+      if(complete){status(`${slots.length} slots read · saving…`);return saveSlots(slots.map(n=>({slot:n,name:names[n]||'',players:by[n].map(p=>p.trim())})));}
+      $('#slot-preview').innerHTML=`<p class="comfort-help">Some slots need a look before saving: fill in the blanks${form.elements.set.value?' (a set needs slots 1 to 12)':''} or add another lobby screenshot.</p>`+
         slots.map(n=>`<fieldset class="slot-card" style="margin:.5rem 0;padding:.5rem"><legend>Slot ${n}</legend><label>Team name<input data-slot="${n}" data-f="name" value="${esc(names[n]||'')}" placeholder="Slot ${n}"></label>`+
           by[n].map((p,j)=>`<label>Player ${j+1}<input data-slot="${n}" data-f="p${j}" value="${esc(p)}"></label>`).join('')+`</fieldset>`).join('');
       submit.textContent=`Save ${slots.length} teams`;submit.disabled=false;status(`${slots.length} slots read.`);
@@ -417,7 +421,7 @@ function reviewSummary(){
 }
 
 
-async function finalize(){
+async function finalize(auto=false){
   if(busy||!draft)return;
   if(draft.rows.some(r=>!r.confirmed))return toast('Confirm every placement, or mark it “No result”, before saving.','error');
   // Placements marked "No result" are not saved: teams without a result are missing from this match, never scored as zero.
@@ -433,12 +437,13 @@ async function finalize(){
   const m=structuredClone(draft);m.rows=m.rows.filter(r=>!r.noResult);if(m.rows.length<12&&state.teams.length<=12)m.pool=state.teams.map(t=>t.id);m.rows.forEach(r=>{r.teamName=state.teams.find(t=>t.id===r.teamId).name;delete r.flags;delete r._read;delete r.hostTouched;r.players.forEach(p=>{delete p.ocrRegion;delete p.killEdited;delete p.evidenceCrop;delete p.identityEdited;});});m.created=new Date().toISOString();
   busy=true;state.matches.push(m);
   try{await save();}catch(e){state.matches.pop();state.teams=rosterBefore;if(warBefore===undefined)delete state.war;else state.war=warBefore;busy=false;toast(e.message,'error');return;}
-  let message='Verified match saved'+(learnedNames?' · '+learnedNames+' player name corrections remembered':'');
+  let message=(auto?'Saved automatically: all 12 teams read with confidence':'Verified match saved')+(learnedNames?' · '+learnedNames+' player name corrections remembered':'');
   try{
     const records=WarOCRLearning.capture({...draft,created:m.created},images,(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;});
     const count=await WarOCRLearning.store(records);if(count)message+=` · ${count} reviewed OCR examples saved in this browser`;
   }catch(e){console.warn(e);message+=' · OCR examples could not be saved in this browser';}
-  draft=null;clearImages();selected=m.id;page='results';busy=false;render();toast(message);
+  // A tournament match goes back to the Tournament page, where the next step is waiting.
+  draft=null;clearImages();selected=m.id;page=m.stage?'war':'results';busy=false;render();toast(message);
 }
 
 async function exportOCRExamples(){try{const count=await WarOCRLearning.download();toast(count+' reviewed OCR examples exported');}catch(e){toast('Could not export OCR examples: '+e.message,'error');}}
@@ -532,6 +537,15 @@ async function scan(skipConfirm=false){
     // Teams that read cleanly are confirmed here; the organizer is only shown the ones that need a look.
     if(window.autoConfirmDraft)autoConfirmDraft();
     const sum=reviewSummary();
+    // A tournament match saves itself only when every team read with confidence AND every screenshot is full size:
+    // the reader is verified error-free on full-size game screenshots (1600 x 720 from WhatsApp), while half-size
+    // or blurred copies can be misread with high confidence, so those always get the organizer's check.
+    const fullSize=images.every(s=>{const w=s.image.naturalWidth||0,h=s.image.naturalHeight||0;return Math.max(w,h)>=1400&&Math.min(w,h)>=640;});
+    const sure=draft.stage&&draft.rows.length===12&&draft.rows.every(r=>r.confirmed&&r.teamId)&&new Set(draft.rows.map(r=>r.teamId)).size===12&&$('#match-name').value.trim();
+    if(sure&&fullSize){
+      setMatchLoading(false);busy=false;$('#ocr-status').textContent='All 12 teams read with confidence · saving…';redrawReview();await finalize(true);return;
+    }
+    if(sure&&!fullSize){$('#ocr-status').textContent='Every team read, but the screenshots are smaller than full size, so check them before saving.';redrawReview();return;}
     $('#ocr-status').textContent=`Results ready · ${sum.read} of ${sum.total} kill counts read · ${sum.confirmed} teams confirmed automatically, ${sum.ready+sum.look} to check`;redrawReview();
   }catch(e){
     restore();setMatchLoading(false);
@@ -549,7 +563,8 @@ async function scan(skipConfirm=false){
     if(draft)redrawReview();else $('#review').innerHTML='';
     toast('Unable to read these screenshots. Try clearer screenshots or enter results by hand.'+reason+kept,'error');
   }finally{
-    busy=false;setMatchLoading(false);$('#scan').disabled=false;$('#manual').disabled=false;$('#screenshots').disabled=false;showSources();window.refreshUploadStatus?.();
+    // After an automatic save the page has moved on to the Tournament, so there are no reader controls left to restore.
+    busy=false;if($('#scan')){setMatchLoading(false);$('#scan').disabled=false;$('#manual').disabled=false;$('#screenshots').disabled=false;showSources();window.refreshUploadStatus?.();}
   }
 }
 

@@ -6031,7 +6031,7 @@ html,.sidebar,.main,.content,.table-wrap{scrollbar-width:thin;scrollbar-color:va
 /* Selected and informational states are neutral; red is only ever the action. */
 .comfort-set-context{background:var(--c-surface-2)!important;border-color:var(--c-line-strong)!important}
 @media (max-width:760px){
-  .comfort-shell .nav{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+  .comfort-shell .nav{grid-template-columns:repeat(4,minmax(0,1fr))!important}
   .comfort-shell .sidebar{background:var(--c-black)}
   .comfort-shell .nav button.active{border-top-color:var(--c-text)!important;background:var(--c-surface-2)}
 }

@@ -28,7 +28,7 @@ const server=http.createServer((req,res)=>{
       if(p==='/api/state'){if(method==='POST'){const incoming=route.request().postDataJSON();if(failReset&&!incoming.matches.length)return route.fulfill({status:503,json:{error:'Reset failed for test'}});remote=incoming;}return route.fulfill({json:method==='POST'?{ok:true}:remote});}
       return route.fulfill({status:404,json:{error:'Unsupported test route'}});
     });
-    await page.goto(base);await page.getByRole('button',{name:'Add Set A match 1',exact:true}).click();
+    await page.goto(base);await page.getByRole('button',{name:'Use registered teams',exact:true}).click();
     assert.equal(await page.locator('.guide-group').count(),0,'No team allocation screen');
     assert.equal(remote.war,undefined,'Opening intake must not assign teams');
     assert.equal(await page.locator('#war-stage').inputValue(),'A');assert.equal(await page.locator('#match-name').inputValue(),'Set A · Match 1');

@@ -58,11 +58,16 @@
     }
     const p=progress(state,set),cut=cutOf(set);
     if(p.locked){const dest=next(state);return {meta:`${label(set)} · complete · top ${cut} confirmed`,action:action(`Continue to ${label(dest)}`,`warTab('${dest}')`,true)};}
-    if(!ready(set)){
-      if(set==='C')return {meta:'Semi-final · waiting for the top 6 from Set A and Set B',action:action(`Open ${label(next(state))}`,`warTab('${next(state)}')`,true)};
-      if(WarTournament.availableTeams(state,set).length<12)return {meta:`${label(set)} · needs 12 teams that are not playing in the other set`,action:action('Open teams',"go('roster')",true)};
-      return {meta:`${label(set)} · not started · ${p.target} matches planned`,action:action(`Add ${label(set)} match 1`,`warNew('${set}')`,true)};
+    if(!ready(set)&&set==='C')return {meta:'Semi-final · waiting for the top 6 from Set A and Set B',action:action(`Open ${label(next(state))}`,`warTab('${next(state)}')`,true)};
+    // Before a set's first match: step 1 is its slot list and lobby screenshots, which give every team its players,
+    // so match screenshots are matched to teams without checking names. Step 2 is the first match.
+    if(set!=='C'&&p.played===0){
+      const ids=w().groups?.[set]||[],loaded=ids.length===12&&new Set(ids).size===12&&ids.every(id=>team(id));
+      const skip=WarTournament.availableTeams(state,set).length>=12?action('Use registered teams',`warNew('${set}')`):'';
+      if(!loaded)return {meta:`${label(set)} · step 1 of 2 · load the slot list and lobby screenshots`,action:skip+action(`Load ${label(set)} teams`,`slotListForm('${set}')`,true)};
+      return {meta:`${label(set)} · 12 teams ready · step 2: match 1`,action:action('Reload teams',`slotListForm('${set}')`)+action(`Add ${label(set)} match 1`,`warNew('${set}')`,true)};
     }
+    if(!ready(set))return {meta:`${label(set)} · needs 12 teams that are not playing in the other set`,action:action(`Load ${label(set)} teams`,`slotListForm('${set}')`,true)};
     if(p.played>=p.target)return {meta:`${label(set)} · ${p.played}/${p.target} matches · Next: confirm the top ${cut}`,action:action(`Review the top ${cut}`,`comfortQualify('${set}')`,true)};
     return {meta:`${label(set)} · ${p.played}/${p.target} matches · Next: match ${p.played+1}`,action:action(`Add match ${p.played+1}`,`warNew('${set}')`,true)};
   }
@@ -220,7 +225,7 @@
   }
   window.renderWar=function(){
     const current=view||next(state),st=status(current),items=attention(current),fresh=!state.matches.length&&!Object.keys(w().qualified||{}).length;
-    const start=`<section class="war-section" aria-labelledby="start-title"><div class="section-head"><h2 id="start-title">Getting started</h2></div><ol class="home-steps"><li><strong>Check the teams.</strong> ${state.teams.length} registered; each set needs 12.</li><li><strong>Add Set A results.</strong> The first saved points table defines the set.</li><li><strong>Confirm qualifiers, then play the finals.</strong></li></ol></section>`;
+    const start=`<section class="war-section" aria-labelledby="start-title"><div class="section-head"><h2 id="start-title">Getting started</h2></div><ol class="home-steps"><li><strong>Load the teams.</strong> Paste the slot list and add the room lobby screenshots; each slot gives its team four players.</li><li><strong>Add match screenshots.</strong> A match that reads with confidence saves itself; you only check a doubtful reading.</li><li><strong>Confirm qualifiers, then play the finals.</strong></li></ol></section>`;
     return `<div class="war-workspace">${pageHead('Tournament',st.meta,st.action)}<p id="war-feedback" class="error" role="alert" tabindex="-1" hidden></p>${facts(current,items)}${attentionList(items)}${stageStrip()}${fresh?start:''}${current==='finals'?finalsView():stageView(current)}${tools()}</div>`;
   };
   // The bracket's lines are drawn after the cards are on screen.
