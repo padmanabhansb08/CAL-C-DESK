@@ -6145,3 +6145,76 @@ html,.sidebar,.main,.content,.table-wrap{scrollbar-width:thin;scrollbar-color:va
 #slot-form textarea{width:100%;min-height:150px;resize:vertical;box-sizing:border-box;padding:12px 13px;border:1px solid var(--c-line-strong,#3a3a3a);border-radius:8px;background:var(--c-bg,#0a0a0a);color:var(--c-text,#f5f5f5);font-size:14px;line-height:1.5}
 #slot-form textarea::placeholder{color:var(--c-text-dim,#8a8a8a)}
 #slot-form input[type=file]{width:100%;box-sizing:border-box}
+
+/* ── Refinement layer ─────────────────────────────────────────────────────────────────────────
+   A calm match-control room: graphite surfaces, sentence-case labels, one red action per screen.
+   The only display type is the page title (Barlow Condensed, the scoreboard face of the broadcast
+   graphics); everything operational stays in DM Sans. Red marks the primary action and the active
+   page, nothing else: ranks, row buttons and destructive buttons stay quiet until hovered. */
+.comfort-shell .content h1,
+.comfort-shell .page-head h1{font-family:var(--font-display)!important;font-weight:600!important;font-size:clamp(34px,4vw,46px)!important;line-height:1!important;letter-spacing:.005em!important;text-transform:none!important;color:var(--c-text)!important;margin:0!important}
+.comfort-shell .page-head{align-items:flex-end;padding-bottom:22px!important;border-bottom:1px solid var(--c-line)!important}
+.comfort-shell .page-head .page-meta{margin:10px 0 0!important;font-size:15px!important;font-weight:500!important;color:var(--c-text-2)!important;letter-spacing:0!important}
+.comfort-shell .content > .eyebrow,.comfort-shell .page-head > div > .eyebrow{display:none}
+
+/* Top bar: a plain breadcrumb, not a tracked caps label. */
+.comfort-shell .comfort-top-title span{text-transform:none!important;letter-spacing:0!important;font-size:13px!important;color:var(--c-text-3)!important;font-weight:500!important}
+.comfort-shell .comfort-top-title strong{font-size:13px!important;font-weight:600!important}
+
+/* Sidebar: the two utilities read as quiet links under the main pages, not as big pills. */
+.comfort-shell .sidebar .host-access-button,
+.comfort-shell .sidebar .nav ~ button,
+.comfort-shell .sidebar .nav ~ div > button{border-color:transparent!important;background:transparent!important;color:var(--c-text-2)!important;justify-content:flex-start!important;border-radius:10px!important;font-weight:500!important}
+.comfort-shell .sidebar .host-access-button:hover,
+.comfort-shell .sidebar .nav ~ button:hover,
+.comfort-shell .sidebar .nav ~ div > button:hover{background:var(--c-surface-2)!important;color:var(--c-text)!important}
+@media (min-width:701px){.comfort-shell .nav button.active{box-shadow:inset 3px 0 0 var(--c-red)!important;background:var(--c-surface-2)!important;border-color:transparent!important}}
+
+/* Tournament summary: four facts in one quiet strip instead of four boxes. */
+.comfort-shell .war-facts{border:0!important;background:transparent!important;gap:0!important;margin-top:22px!important}
+.comfort-shell .war-facts > div{background:transparent!important;border:0!important;border-left:1px solid var(--c-line)!important;padding:4px 20px!important}
+.comfort-shell .war-facts > div:first-child{border-left:0!important;padding-left:0!important}
+.comfort-shell .war-facts dt{font-size:12px!important;color:var(--c-text-3)!important;text-transform:none!important;letter-spacing:0!important}
+.comfort-shell .war-facts dd{font-size:26px!important;font-weight:600!important;margin:2px 0!important}
+.comfort-shell .war-facts small{color:var(--c-text-3)!important}
+/* Needs attention: an amber rule on the left, not a whole amber box. */
+.comfort-shell .war-attention{background:transparent!important;border:0!important;border-left:3px solid var(--c-amber)!important;border-radius:0!important;padding:4px 0 4px 16px!important}
+.comfort-shell .war-attention h2{font-size:14px!important;color:var(--c-amber)!important}
+
+/* Teams: name, slot and players read as one line; Edit and Remove stay quiet until wanted. */
+.comfort-shell .team-row{background:transparent!important;border:0!important;border-bottom:1px solid var(--c-line)!important;border-radius:0!important;padding:14px 4px!important;box-shadow:none!important}
+.comfort-shell .team-row:hover{background:var(--c-surface)!important}
+.comfort-shell .team-row-players li{background:transparent!important;border:0!important;padding:0!important;color:var(--c-text-2)!important;font-size:13px!important}
+.comfort-shell .team-row-players{gap:4px 18px!important}
+.comfort-shell .team-row-meta{color:var(--c-text-3)!important}
+.comfort-shell .team-row .actions button{background:transparent!important;border-color:transparent!important;color:var(--c-text-2)!important;min-height:34px!important;padding:6px 12px!important;font-weight:500!important}
+.comfort-shell .team-row .actions button:hover{background:var(--c-surface-3)!important;color:var(--c-text)!important}
+.comfort-shell .team-row .actions button.danger{color:var(--c-text-3)!important}
+.comfort-shell .team-row .actions button.danger:hover{color:var(--c-red-text)!important;background:rgb(var(--c-red-rgb)/.12)!important}
+.comfort-shell .team-set{color:var(--c-text-2)!important;font-weight:600}
+
+/* Standings: sentence-case headers, quiet ranks (the top three a step brighter), the total carries the weight. */
+.comfort-shell .standings-table th{text-transform:none!important;letter-spacing:0!important;font-size:12px!important;font-weight:600!important;color:var(--c-text-3)!important}
+.comfort-shell .standings-table td.rank{color:var(--c-text-3)!important;font-weight:600!important;font-variant-numeric:tabular-nums}
+.comfort-shell .standings-table tbody tr:nth-child(-n+3) td.rank{color:var(--c-text)!important}
+.comfort-shell .standings-table td{font-variant-numeric:tabular-nums}
+.comfort-shell .standings-table td.total{font-size:16px!important;font-weight:700!important;color:var(--c-text)!important}
+.comfort-shell .standings-table .team-cell strong{font-weight:600!important}
+.comfort-shell .row-details{background:transparent!important;border-color:transparent!important;color:var(--c-text-2)!important;font-weight:500!important}
+.comfort-shell .row-details:hover{background:var(--c-surface-3)!important;color:var(--c-text)!important}
+/* Primary actions are solid red with no glow; the red itself is the emphasis. */
+.comfort-shell .brand-main-action,.comfort-shell button.primary{box-shadow:none!important}
+.comfort-shell .brand-main-action:hover,.comfort-shell button.primary:hover{background:var(--c-red-hover)!important}
+/* The page title already names the stage, so the summary strip leaves it out. */
+.comfort-shell .war-facts > div:first-child{display:none!important}
+.comfort-shell .war-facts > div:nth-child(2){border-left:0!important;padding-left:0!important}
+.comfort-shell .war-workspace > .war-facts{margin-top:18px!important}
+/* Podium: the rank already shows at the top of each card; the bottom band only says "Shared" on a tie. */
+.comfort-shell .podium-team:not(.podium-tied) .podium-step{display:none!important}
+.comfort-shell .podium-team{padding-bottom:18px!important}
+/* Three facts in one row at every width. */
+.comfort-shell .war-facts{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.comfort-shell .war-facts > div{padding:4px 16px!important}
+.comfort-shell .war-facts > div:nth-child(2){padding-left:0!important}
+.comfort-shell .war-workspace > .page-head{margin-bottom:0!important}
+@media (max-width:700px){.comfort-shell .war-facts dd{font-size:22px!important}.comfort-shell .war-facts > div{padding:2px 10px!important}.comfort-shell .war-facts > div:nth-child(2){padding-left:0!important}}

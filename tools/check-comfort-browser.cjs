@@ -85,7 +85,7 @@ const server=http.createServer((req,res)=>{
     assert.equal(await page.locator('#setup-token').count(),0,'Setup token field is only for first-run setup');
     await page.getByRole('button',{name:'Show organizer password',exact:true}).click();assert.equal(await page.locator('#organizer-password').getAttribute('type'),'text');
     await page.locator('#organizer-password').fill('synthetic-test-password');await page.getByRole('button',{name:/Sign in/}).click();
-    await page.getByRole('heading',{name:'Tournament',exact:true}).waitFor();
+    await page.locator('.war-workspace .page-head h1').waitFor();
     await page.locator('.champion').waitFor();
     const beforeReset=structuredClone(remote);
     await page.evaluate(()=>{draft={id:'reset-draft',name:'Unfinished',map:'Bermuda',rows:[]};window.dispatchEvent(new Event('pagehide'));});

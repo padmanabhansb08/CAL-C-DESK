@@ -226,7 +226,8 @@
   window.renderWar=function(){
     const current=view||next(state),st=status(current),items=attention(current),fresh=!state.matches.length&&!Object.keys(w().qualified||{}).length;
     const start=`<section class="war-section" aria-labelledby="start-title"><div class="section-head"><h2 id="start-title">Getting started</h2></div><ol class="home-steps"><li><strong>Load the teams.</strong> Paste the slot list and add the room lobby screenshots; each slot gives its team four players.</li><li><strong>Add match screenshots.</strong> A match that reads with confidence saves itself; you only check a doubtful reading.</li><li><strong>Confirm qualifiers, then play the finals.</strong></li></ol></section>`;
-    return `<div class="war-workspace">${pageHead('Tournament',st.meta,st.action)}<p id="war-feedback" class="error" role="alert" tabindex="-1" hidden></p>${facts(current,items)}${attentionList(items)}${stageStrip()}${fresh?start:''}${current==='finals'?finalsView():stageView(current)}${tools()}</div>`;
+    const title=label(current),meta=st.meta.startsWith(title+' · ')?st.meta.slice(title.length+3):st.meta;
+    return `<div class="war-workspace">${pageHead(title,meta.charAt(0).toUpperCase()+meta.slice(1),st.action)}<p id="war-feedback" class="error" role="alert" tabindex="-1" hidden></p>${facts(current,items)}${attentionList(items)}${stageStrip()}${fresh?start:''}${current==='finals'?finalsView():stageView(current)}${tools()}</div>`;
   };
   // The bracket's lines are drawn after the cards are on screen.
   root.pageMounted=current=>{
