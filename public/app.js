@@ -327,7 +327,15 @@ function slotListForm(presetSet=''){
         }
       }
       const names=list.names,by=merge(reads);
-      Object.entries(list.players).forEach(([n,ps])=>{const cur=by[n]||['','','',''];by[n]=cur.map((v,i)=>v||ps[i]||'');});
+      // Typed players in the slot list are exact spellings; the lobby read can garble a stylised name ("SOULITITANV").
+      // A lobby name close to a typed one takes the typed spelling (keeping the lobby's order); typed names left over
+      // fill the slot's empty places.
+      const key=t=>String(t||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+      const lev=(a,b)=>{let row=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const next=[i];for(let j=1;j<=b.length;j++)next.push(Math.min(next[j-1]+1,row[j]+1,row[j-1]+(a[i-1]!==b[j-1])));row=next;}return row[b.length];};
+      const like=(a,b)=>{a=key(a);b=key(b);return a&&b?1-lev(a,b)/Math.max(a.length,b.length):0;};
+      Object.entries(list.players).forEach(([n,ps])=>{const cur=(by[n]||['','','','']).slice(),free=ps.filter(Boolean);
+        cur.forEach((v,i)=>{if(!v)return;let best=-1,score=.6;free.forEach((t,j)=>{const k=like(v,t);if(k>=score){score=k;best=j;}});if(best>=0)cur[i]=free.splice(best,1)[0];});
+        by[n]=cur.map(v=>v||free.shift()||'');});
       slots=Object.keys(by).map(Number).sort((a,b)=>a-b);
       if(!slots.length){slots=null;throw new Error('No slots were found. Use screenshots of the room lobby with the slot numbers showing.');}
       const warn=[...new Set(reads.flatMap(r=>r.warnings||[]))];
