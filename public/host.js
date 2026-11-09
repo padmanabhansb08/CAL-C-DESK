@@ -29,6 +29,8 @@
  function render(){
   const set=stage(),scoped=stageState(set);
   $('#stage-select').value=mode;document.body.dataset.stage=set;
+  // The broadcast screen (OBS) is its own 1920 x 1080 graphic; the caster page below keeps the full detail.
+  if(screen&&window.BroadcastScreen){BroadcastScreen.render({state,set,label:LABEL[set],scoped,teamName});return;}
   $('#stage-label').textContent=mode==='auto'?LABEL[set]+' · following the tournament':LABEL[set];
   const showFinals=set==='finals';$('#finals').hidden=!showFinals;document.querySelectorAll('.stage-standings').forEach(el=>el.hidden=showFinals);
   $('h1').textContent=showFinals?'Clash Squad finals':set==='all'?'Overall standings':LABEL[set]+' standings';

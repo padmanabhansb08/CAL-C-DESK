@@ -69,20 +69,21 @@ async function run(){
     fixture.matches.push(match('c1','C',C));
     await page.setViewportSize({width:1920,height:1080});
     await page.goto(origin+'/host.html#key=fixture&screen=1');
-    await page.waitForFunction(()=>document.body.dataset.stage==='C'&&document.querySelectorAll('#standings-body tr').length===12);
+    await page.waitForFunction(()=>document.body.dataset.stage==='C'&&document.querySelectorAll('#bc-stage .bc-row').length===12);
     assert.deepEqual(await visibleTextBelowFloor(page),[],'Broadcast text is at least 12px.');
     assert(await page.evaluate(()=>document.documentElement.scrollHeight<=1080),'The full twelve-team broadcast fits 1920×1080.');
+    // The broadcast graphic: all twelve rows inside the stage, above the ticker, and the semi-final cut after #4.
+    await page.waitForTimeout(1500);
+    assert(await page.evaluate(()=>{const s=document.querySelector('#bc-stage').getBoundingClientRect(),t=document.querySelector('.bc-ticker').getBoundingClientRect();return [...document.querySelectorAll('.bc-row')].every(r=>{const b=r.getBoundingClientRect();return b.top>=s.top&&b.bottom<=t.top+1;});}),'Every standings row sits above the ticker.');
+    assert.match(await page.locator('.bc-cut').textContent(),/TOP 4 ADVANCE/);
     await capture('verified-host-broadcast.png');
 
     // Switch from a populated BR table to finals: hidden author-level grids must truly disappear.
     fixture.war.qualified.C=C.slice(0,4);
     await page.goto(origin+'/host.html#key=fixture&screen=1');
     await page.waitForFunction(()=>document.body.dataset.stage==='finals');
-    assert(await page.locator('#finals').isVisible(),'The final bracket is visible.');
-    for(const el of await page.locator('.stage-standings').all()){
-      assert.equal(await el.evaluate(node=>getComputedStyle(node).display),'none','Hidden BR sections must not survive their grid/block layout rules.');
-      assert.equal(await el.isVisible(),false);
-    }
+    assert(await page.locator('#bc-stage .bc-bracket').isVisible(),'The final bracket is visible.');
+    assert.equal(await page.locator('#bc-stage .bc-row').count(),0,'No standings rows on the finals broadcast.');
     assert.deepEqual(await visibleTextBelowFloor(page),[],'Finals broadcast type keeps the same floor.');
     await capture('verified-finals-broadcast.png');
     await page.goto(origin+'/host.html#key=fixture');

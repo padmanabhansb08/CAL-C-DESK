@@ -195,8 +195,8 @@ async function run(){
     await host.selectOption('#stage-select','all');
     assert((await host.locator('#match-context').textContent()).includes('every set'),'#36 all-matches mode says what it includes');
     fixture.war.qualified={A:A.slice(0,6),B:B.slice(0,6),C:[A[0],A[1],B[0],B[1]]};
-    await host.goto(origin+'/host.html#key=k&screen=1');await host.waitForFunction(()=>!document.querySelector('#finals').hidden);
-    assert((await host.locator('#finals').textContent()).includes('Qualifier 1'),'#36 the broadcast shows the CS bracket during the finals');
+    await host.goto(origin+'/host.html#key=k&screen=1');await host.waitForFunction(()=>!!document.querySelector('#bc-stage .bc-bracket'));
+    assert((await host.locator('#bc-stage .bc-bracket').textContent()).includes('QUALIFIER 1'),'#36 the broadcast shows the CS bracket during the finals');
     fixture=initial();
 
     assert.deepEqual(pageErrors,[],'no browser errors');
