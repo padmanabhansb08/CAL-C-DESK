@@ -110,12 +110,14 @@ function sessionExpired(){
 // Notifications say what kind they are; nothing is guessed from the wording.
 // 'error' stays until dismissed and is announced as an alert; 'warning' and 'success' dismiss themselves.
 let toastTimer;
-function toast(message,type='success'){
+function toast(message,type='success',actions=[]){
   const node=$('#toast');if(!node)return;clearTimeout(toastTimer);const error=type==='error';
   node.className=error?'toast-error':type==='warning'?'toast-warning':'toast-success';node.setAttribute('role',error?'alert':'status');node.replaceChildren();
   const text=document.createElement('span');text.textContent=message;node.append(text);
+  // Optional buttons ("Review", "Undo"): a toast with actions stays up longer so there is time to use them.
+  actions.forEach(a=>{const b=document.createElement('button');b.type='button';b.className='toast-action';b.textContent=a.label;b.onclick=()=>{node.style.display='none';a.run();};node.append(b);});
   const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','Dismiss notification');close.onclick=()=>node.style.display='none';node.append(close);node.style.display='flex';
-  if(!error)toastTimer=setTimeout(()=>node.style.display='none',type==='warning'?8000:6000);
+  if(!error)toastTimer=setTimeout(()=>node.style.display='none',actions.length?15000:type==='warning'?8000:6000);
 }
 
 async function save(){await api('state',state);}
@@ -443,7 +445,9 @@ async function finalize(auto=false){
     const count=await WarOCRLearning.store(records);if(count)message+=` · ${count} reviewed OCR examples saved in this browser`;
   }catch(e){console.warn(e);message+=' · OCR examples could not be saved in this browser';}
   // A tournament match goes back to the Tournament page, where the next step is waiting.
-  draft=null;clearImages();selected=m.id;page=m.stage?'war':'results';busy=false;render();toast(message);
+  draft=null;clearImages();selected=m.id;page=m.stage?'war':'results';busy=false;render();
+  // Nobody checked an automatic save, so its result is one click away, and so is taking it back.
+  toast(message,'success',auto?[{label:'Review',run:()=>{selected=m.id;go('results');}},{label:'Undo',run:()=>{selected=m.id;deleteMatch();}}]:[]);
 }
 
 async function exportOCRExamples(){try{const count=await WarOCRLearning.download();toast(count+' reviewed OCR examples exported');}catch(e){toast('Could not export OCR examples: '+e.message,'error');}}

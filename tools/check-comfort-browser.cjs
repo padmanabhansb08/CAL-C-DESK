@@ -25,7 +25,7 @@ const server=http.createServer((req,res)=>{
       if(p==='/api/session')return route.fulfill({json:{authenticated,...sessionExtra}});
       if(p==='/api/login'){authenticated=true;return route.fulfill({json:{ok:true}});}
       if(p==='/api/ocr/status')return route.fulfill({json:{available:false}});
-      if(p==='/api/state'){if(method==='POST'){const incoming=route.request().postDataJSON();if(failReset&&!incoming.matches.length)return route.fulfill({status:503,json:{error:'Reset failed for test'}});remote=incoming;}return route.fulfill({json:method==='POST'?{ok:true}:remote});}
+      if(p==='/api/state'){if(method==='POST'){const incoming=route.request().postDataJSON();if(failReset&&!incoming.matches.length)return route.fulfill({status:500,json:{error:'Reset failed for test'}});remote=incoming;}return route.fulfill({json:method==='POST'?{ok:true}:remote});}
       return route.fulfill({status:404,json:{error:'Unsupported test route'}});
     });
     await page.goto(base);await page.getByRole('button',{name:'Use registered teams',exact:true}).click();
@@ -35,7 +35,8 @@ const server=http.createServer((req,res)=>{
     await page.getByRole('button',{name:'Tournament',exact:true}).click();
     assert.equal(await page.locator('.war-facts dt').count(),4,'The summary row shows stage, matches, confirmed and attention');
     assert.equal(await page.locator('.war-attention').count(),0,'Nothing needs attention on a clean event');
-    await page.keyboard.press('n');await page.locator('#war-stage').waitFor();assert.equal(await page.locator('#war-stage').inputValue(),'A','N opens the next match');
+    // Before a set's teams are loaded from the lobby, the next step (and N) is loading them.
+    await page.keyboard.press('n');await page.locator('#slot-form').waitFor();assert.equal(await page.locator('#slot-form select[name=set]').inputValue(),'A','N opens the Set A slot list and lobby step');await page.evaluate(()=>closeModal());
     await page.getByRole('button',{name:'Tournament',exact:true}).click();
     assert.equal(await page.locator('#war-target').inputValue(),'6','New sets default to six matches');
     await page.locator('#war-target').fill('2');await page.getByRole('button',{name:'Save match count',exact:true}).click();

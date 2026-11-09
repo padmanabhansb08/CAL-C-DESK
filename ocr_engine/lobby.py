@@ -37,6 +37,25 @@ def _join(words):
     return re.sub(r'\s+', ' ', text).strip()
 
 
+# Decorative glyphs players put around their names (stars, crosses, crowns, hearts). The reader returns them, or
+# "?" for a glyph it cannot render; they are not part of the name the scoreboard shows, so they are trimmed from
+# the ends. "!", "~", "<3" and the like are kept: players type those.
+_DECOR = set('★☆✦✧✪✯✰✶✹×✕✖✗✘♛♕♔♚❤♡♥❥◆◇◈•●○◉¤†‡♪♫⚡〆々「」『』【】〔〕ツ彡')
+
+
+def clean_name(text):
+    text = (text or '').strip()
+    while text and (text[0] in _DECOR or text[0] in '?¿' or text[0].isspace()):
+        text = text[1:]
+    # Trailing: a run of decoration, "?" and dots, when it holds at least one decoration or "?".
+    end = len(text)
+    while end and (text[end - 1] in _DECOR or text[end - 1] in '?¿.' or text[end - 1].isspace()):
+        end -= 1
+    if any(c in _DECOR or c in '?¿' for c in text[end:]):
+        text = text[:end]
+    return text.strip() or ''
+
+
 def parse_lobby(page):
     """Return {'slots': [{'slot': n, 'players': [4 names, '' when not visible], 'complete': bool}], 'warnings': [...]}."""
     W, H = page.width, page.height
@@ -86,7 +105,7 @@ def parse_lobby(page):
             while j < 3 and entry[j]:
                 j += 1
             if not entry[j]:
-                entry[j] = row['text']
+                entry[j] = clean_name(row['text'])
     out = [{'slot': n, 'players': p, 'complete': all(p)} for n, p in sorted(slots.items())]
     warnings = [f'Slot {s["slot"]} is partly hidden: scroll the lobby so all four names show' for s in out if not s['complete']]
     return {'slots': out, 'warnings': warnings}

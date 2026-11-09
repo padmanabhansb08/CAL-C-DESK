@@ -1168,6 +1168,15 @@ details .actions {
   color: inherit;
   font-size: 20px;
 }
+#toast button.toast-action {
+  flex: none;
+  padding: 4px 12px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+#toast button.toast-action:hover, #toast button.toast-action:focus-visible { background: var(--c-surface-2, rgba(255,255,255,.08)); }
 
 /* ── Team card hidden state ─────────────────────────────────── */
 .team-card[hidden] {
