@@ -232,7 +232,7 @@ function wheelPage(){
   const saved=wheelSaved();
   return header('Final match','Map wheel',`<button type="button" id="wheel-copy">Copy broadcast link</button><button type="button" id="wheel-open">${uiIcon('open_in_new',{size:'sm'})} <span>Open broadcast screen</span></button>`)
     +`<p class="team-list-intro">Choose the maps, then spin. The server draws the map at random and every broadcast screen plays the same spin live.</p>
-    <div class="wheel-layout"><div class="wheel-frame"><iframe id="wheel-frame" src="/wheel.html?v=5#embed=1" title="Final map wheel" allow="autoplay; fullscreen"></iframe>
+    <div class="wheel-layout"><div class="wheel-frame"><iframe id="wheel-frame" src="/wheel.html?v=7#embed=1" title="Final map wheel" allow="autoplay; fullscreen"></iframe>
     <button type="button" class="wheel-fullscreen" id="wheel-fullscreen" aria-label="Show the wheel full screen" title="Full screen">${uiIcon('fullscreen',{size:'md'})}</button>
     <div class="wheel-fs-bar" aria-label="Full screen wheel controls"><button type="button" class="primary wheel-fs-spin" id="wheel-fs-spin">${uiIcon('casino',{size:'md'})} <span>Spin the wheel</span></button><button type="button" class="wheel-fs-exit" id="wheel-fs-exit">Exit full screen</button></div></div>
     <section class="wheel-controls" aria-label="Wheel controls"><fieldset class="wheel-maps" id="wheel-maps"><legend>Maps on the wheel</legend>${WHEEL_MAPS.map(m=>`<label class="wheel-map"><input type="checkbox" value="${m}" ${!saved||saved.includes(m)?'checked':''}><span class="wheel-map-art" style="background-image:url('assets/${WHEEL_ART[m]}')"></span><span class="wheel-map-name">${m}</span></label>`).join('')}</fieldset>

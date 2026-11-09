@@ -73,28 +73,31 @@
   BrandFX.fire($('#embers'));
   const conf=$('#confetti').getContext('2d');let pieces=[];
   function burst(){const colors=['#ff3b3b','#ffffff','#e10600','#cfcfcf','#8b0e0e'];
-    for(let i=0;i<260;i++){const a=-Math.PI/2+(Math.random()-.5)*2.2,s=8+Math.random()*16;pieces.push({x:740,y:150,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.4,w:8+Math.random()*10,h:4+Math.random()*6,c:colors[i%colors.length],life:1});}
-    for(let i=0;i<160;i++){const a=Math.random()*Math.PI*2,s=4+Math.random()*10;pieces.push({x:1570,y:520,vx:Math.cos(a)*s,vy:Math.sin(a)*s-6,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.4,w:8+Math.random()*10,h:4+Math.random()*6,c:colors[i%colors.length],life:1});}}
+    for(let i=0;i<260;i++){const a=-Math.PI/2+(Math.random()-.5)*2.2,s=8+Math.random()*16;pieces.push({x:1410,y:120,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.4,w:8+Math.random()*10,h:4+Math.random()*6,c:colors[i%colors.length],life:1});}
+    for(let i=0;i<160;i++){const a=Math.random()*Math.PI*2,s=4+Math.random()*10;pieces.push({x:960,y:470,vx:Math.cos(a)*s,vy:Math.sin(a)*s-6,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.4,w:8+Math.random()*10,h:4+Math.random()*6,c:colors[i%colors.length],life:1});}}
 
   // ---------- Spin. Pointer is at the top; segment i is centred at (i + .5) * seg clockwise from the top.
   const seg=()=>360/shown.length;
   function hash(s){let h=2166136261;for(const c of String(s)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0)/4294967296;}
   function landing(spin){const k=spin.maps.indexOf(spin.result),jitter=(hash(spin.id)-.5)*.6*seg();return ((-((k+.5)*seg()+jitter))%360+360)%360;}
   const ease=t=>1-Math.pow(1-t,4.2);
+  let revealTimer=0;
+  function hideReveal(){clearTimeout(revealTimer);$('#reveal').hidden=true;}
+  // The X (or Esc) closes the pop-up on this screen only; the result stays on the wheel.
+  $('#reveal-close').addEventListener('click',hideReveal);
+  addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#reveal').hidden)hideReveal();});
   function startSpin(spin,ageMs){
     const target=landing(spin),from=angle,delta=((target-from)%360+360)%360+TURNS*360;
     spinning={spin,from,to:from+delta,start:performance.now()-Math.max(0,ageMs),lastSeg:Math.floor(from/seg())};
-    won=null;stage.classList.add('is-spinning');stage.classList.remove('is-won');$('#result').hidden=true;$('#pool').hidden=false;
-    $('#status').textContent='Spinning…';tellDesk();
+    won=null;stage.classList.add('is-spinning');stage.classList.remove('is-won');hideReveal();tellDesk();
   }
   async function settle(spin,celebrate){
     spinning=null;angle=((landing(spin))%360);won=spin.result;stage.classList.remove('is-spinning');stage.classList.add('is-won');
     await drawWheel(shown,won);
-    $('#status').textContent='The final match map is decided';
     document.querySelectorAll('#pool li').forEach(li=>li.classList.toggle('hot',li.dataset.map===won));
     $('#result-art').style.backgroundImage=`url("assets/${ART[won]}")`;$('#result-name').textContent=won.toUpperCase();
-    $('#pool').hidden=true;$('#result').hidden=false;
-    if(celebrate){flash=48;burst();fanfare();}
+    // Let viewers see the pointer land first, then bring up the result pop-up with the celebration.
+    if(celebrate){flash=48;fanfare();revealTimer=setTimeout(()=>{$('#reveal').hidden=false;burst();},1400);}else $('#reveal').hidden=false;
     tellDesk();
   }
 
@@ -147,7 +150,7 @@
 
   // ---------- Desk controls (the desk's Map wheel page embeds this page; the maps chosen there are saved on this device).
   function selected(){let saved=null;try{saved=JSON.parse(localStorage.getItem('ffk-wheel-maps')||'null');}catch{}const all=maps.length?maps:Object.keys(ART);return Array.isArray(saved)?all.filter(m=>saved.includes(m)):all;}
-  function resetTo(list){if(spinning)return;won=null;stage.classList.remove('is-won');$('#result').hidden=true;$('#pool').hidden=false;$('#status').textContent='Ready to spin';setShown(list);}
+  function resetTo(list){if(spinning)return;won=null;stage.classList.remove('is-won');hideReveal();setShown(list);}
   function setupEmbed(){
     document.body.classList.add('embed');
     try{soundOn=localStorage.getItem('ffk-wheel-sound')!=='0';}catch{soundOn=true;}

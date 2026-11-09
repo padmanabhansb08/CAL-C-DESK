@@ -1,12 +1,12 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a0101"><meta name="referrer" content="no-referrer"><title>FFK · Final map wheel</title><link rel="stylesheet" href="fonts.css?v=1"><link rel="stylesheet" href="brand.css?v=2"><link rel="stylesheet" href="wheel.css?v=8"><script src="brand-fx.js?v=6" defer></script><script src="wheel.js?v=6" defer></script></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0a0101"><meta name="referrer" content="no-referrer"><title>FFK · Final map wheel</title><link rel="stylesheet" href="fonts.css?v=1"><link rel="stylesheet" href="brand.css?v=2"><link rel="stylesheet" href="wheel.css?v=11"><script src="brand-fx.js?v=6" defer></script><script src="wheel.js?v=8" defer></script></head><body>
 <div id="viewport">
  <div id="stage" aria-live="polite">
   <div class="ffk-smoke" aria-hidden="true"></div>
-  <img class="wheel-mascot" src="assets/ffk-mascot.webp" alt="" aria-hidden="true">
   <i class="ffk-slash tl" aria-hidden="true"></i><i class="ffk-slash br" aria-hidden="true"></i>
   <div class="rays" aria-hidden="true"></div>
   <canvas id="bolts" width="1920" height="1080" aria-hidden="true"></canvas>
   <canvas id="embers" width="1920" height="1080" aria-hidden="true"></canvas>
+  <div class="fighter" aria-hidden="true"><i class="fighter-ring"></i><i class="fighter-ring two"></i><img src="assets/ffk-fighter.webp" alt=""></div>
   <header class="brand"><div class="ffk-brand"><span class="ffk-ring"><img src="assets/ffk-avatar.jpg" alt=""></span><div class="ffk-word"><i class="ffk-crown"><svg viewBox="0 0 64 40" aria-hidden="true"><path d="M6 36 L2 8 L18 20 L32 2 L46 20 L62 8 L58 36 Z" fill="none" stroke="#f5f5f5" stroke-width="4" stroke-linejoin="round"/><circle cx="2" cy="8" r="3" fill="#f5f5f5"/><circle cx="32" cy="2" r="3" fill="#f5f5f5"/><circle cx="62" cy="8" r="3" fill="#f5f5f5"/><path d="M14 30 H50" stroke="#ff2a1a" stroke-width="4"/></svg></i><b>FFK</b><strong>PRASANTH</strong><span class="ffk-tag">OFFICIAL MAP DRAW</span></div></div></header>
   <div class="wheel-wrap">
    <div class="wheel-glow" aria-hidden="true"></div>
@@ -18,13 +18,16 @@
     <path d="M14 52 H106 L60 164 Z" fill="url(#pg)" stroke="url(#psil)" stroke-width="6" stroke-linejoin="round"/>
     <path d="M38 66 H82 L60 124 Z" fill="#ff8a7a" opacity=".35"/><circle cx="60" cy="74" r="8" fill="#ffffff"/></svg></div>
   </div>
-  <aside class="panel">
-   <span class="eyebrow" id="eyebrow">FFK WAR · FINAL MATCH</span>
-   <h1>FINAL <span>MAP</span></h1>
-   <p class="status" id="status">Waiting for the organizer to spin</p>
-   <ul class="pool" id="pool"></ul>
-   <article class="result" id="result" hidden><div class="result-art" id="result-art"></div><span class="result-kicker">THE FINAL MATCH WILL BE PLAYED ON</span><strong id="result-name"></strong></article>
-  </aside>
+  <div class="reveal" id="reveal" hidden>
+   <div class="reveal-card">
+    <button type="button" class="reveal-close" id="reveal-close" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6 18 18M18 6 6 18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
+    <span class="eyebrow" id="eyebrow">FFK WAR · FINAL MATCH</span>
+    <h1>FINAL <span>MAP</span></h1>
+    <p class="status" id="status">The final match map is decided</p>
+    <article class="result" id="result"><div class="result-art" id="result-art"></div><span class="result-kicker">THE FINAL MATCH WILL BE PLAYED ON</span><strong id="result-name"></strong></article>
+    <ul class="pool" id="pool" aria-label="Maps in the draw"></ul>
+   </div>
+  </div>
   <canvas id="confetti" width="1920" height="1080" aria-hidden="true"></canvas>
  </div>
 </div>
