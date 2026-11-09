@@ -37,8 +37,8 @@ html, body { margin: 0; height: 100%; background: var(--ink); color: var(--text)
 .hub { position: absolute; left: 50%; top: 50%; width: 214px; height: 214px; margin: -107px 0 0 -107px; border-radius: 50%; overflow: hidden; z-index: 3;
   background: radial-gradient(circle at 50% 40%, #5a0505, #120202 70%); border: 7px solid #f5f5f5;
   box-shadow: 0 0 0 5px #0a0a0a, 0 0 0 10px var(--red-hot), 0 0 46px 10px rgba(229, 9, 20, .8), inset 0 0 30px rgba(0, 0, 0, .9); }
-/* The mascot's head (assets/ffk-mascot-head.webp, cut from the brand mascot), centred in the hub. */
-.hub-face { position: absolute; inset: 0; background: url("assets/ffk-mascot-head.webp") center 30% / 112% auto no-repeat; }
+/* The FFK Prasanth logo (assets/ffk-avatar.jpg), filling the hub. */
+.hub-face { position: absolute; inset: 0; background: url("assets/ffk-avatar.jpg") center / cover no-repeat; }
 .pointer { position: absolute; left: 50%; top: -58px; width: 120px; height: 170px; margin-left: -60px; z-index: 6; transform-origin: 50% 40%;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, .7)) drop-shadow(0 0 18px rgba(255, 40, 30, .8)); transition: transform .12s cubic-bezier(.3, 1.8, .5, 1); }
 .pointer svg { width: 100%; height: 100%; display: block; }

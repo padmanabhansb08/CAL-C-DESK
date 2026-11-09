@@ -19,20 +19,13 @@
       <canvas id="bc-bolts" width="1920" height="1080" aria-hidden="true"></canvas><canvas id="bc-embers" width="1920" height="1080" aria-hidden="true"></canvas>
       <section class="bc-left"><div class="bc-title"><span class="bc-chip" id="bc-chip"></span><h1 id="bc-h1"></h1><p class="bc-context" id="bc-context"></p></div><div id="bc-body"></div></section>
       <aside class="bc-right"><header class="bc-brand">${BRAND('LIVE STANDINGS')}</header><div id="bc-cards"></div></aside>
-      <div class="bc-banner" id="bc-banner" hidden><span>STANDINGS UPDATED</span><b id="bc-banner-text"></b></div>
-      <footer class="ffk-footer"><canvas width="1920" height="70" aria-hidden="true"></canvas><span class="ffk-foot-l">ONE TEAM · ONE DREAM</span><span class="ffk-emblem"><i class="ffk-crown">${CROWN}</i>FFK</span><span class="ffk-foot-r">STRONGER TOGETHER</span></footer></div>`;
+      <div class="bc-banner" id="bc-banner" hidden><span>STANDINGS UPDATED</span><b id="bc-banner-text"></b></div></div>`;
     document.body.prepend(vp);stage=vp.querySelector('#bc-stage');
     const fit=()=>{const s=Math.min(innerWidth/1920,innerHeight/1080);stage.style.transform=`translate(-50%,-50%) scale(${s})`;};
     addEventListener('resize',fit);fit();embers();
-    if(window.BrandFX){BrandFX.lightning(stage.querySelector('#bc-bolts'));BrandFX.wave(stage.querySelector('.ffk-footer canvas'));}
+    if(window.BrandFX){BrandFX.lightning(stage.querySelector('#bc-bolts'));}
   }
-  function embers(){
-    const ctx=stage.querySelector('#bc-embers').getContext('2d'),dots=Array.from({length:55},()=>({x:Math.random()*1920,y:Math.random()*1080,r:1+Math.random()*2.6,v:.3+Math.random()*1,d:Math.random()*6}));
-    const still=matchMedia('(prefers-reduced-motion: reduce)').matches;
-    (function tick(){ctx.clearRect(0,0,1920,1080);for(const e of dots){if(!still){e.y-=e.v;e.x+=Math.sin(e.d+=.02)*.5;if(e.y<-10){e.y=1090;e.x=Math.random()*1920;}}
-      ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,7);ctx.fillStyle=`rgba(255,${60+e.r*25|0},40,${.25+e.r*.1})`;ctx.shadowColor='#ff3b1a';ctx.shadowBlur=8;ctx.fill();}
-      if(!still)requestAnimationFrame(tick);})();
-  }
+  function embers(){BrandFX.fire(stage.querySelector('#bc-embers'));}
 
   // ---------- Numbers that count up ----------
   function countUp(root){

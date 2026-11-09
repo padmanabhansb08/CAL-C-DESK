@@ -1,6 +1,6 @@
 /* FFK brand effects for the live screens (map wheel and broadcast standings), drawn on canvases so they move on stream:
    - lightning(canvas): crimson lightning that strikes along the outer edges, keeping the centre dark and readable;
-   - wave(canvas): the footer's red energy waveform, flat under the centre emblem and alive at the sides. */
+   - fire(canvas): a few drifting fire embers rising from the bottom corners. */
 (function(root){
   const still=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -36,22 +36,63 @@
     })(performance.now());
   }
 
-  // Footer energy wave: two layered lines; the amplitude is shaped so the centre (behind the emblem) stays calm.
-  function wave(canvas){
-    const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,mid=h/2;
-    const draw=t=>{
-      ctx.clearRect(0,0,w,h);
-      for(const [amp,alpha,width,speed,blur] of [[1,.95,2.4,1,16],[.55,.5,1.2,-1.6,6]]){
-        ctx.beginPath();
-        for(let x=0;x<=w;x+=4){const u=x/w,env=Math.pow(Math.abs(u-.5)*2,1.6)*Math.min(1,(1-Math.abs(u-.5)*2)*6+.2);
-          const y=mid+env*amp*(Math.sin(u*48+t*.004*speed)*h*.22+Math.sin(u*131-t*.009*speed)*h*.12+(Math.sin(u*400+t*.03)>.96?h*.3:0));x?ctx.lineTo(x,y):ctx.moveTo(x,y);}
-        ctx.strokeStyle=`rgba(255,40,30,${alpha})`;ctx.lineWidth=width;ctx.shadowColor='#ff1a0a';ctx.shadowBlur=blur;ctx.stroke();
-      }
-      // A pulse of light runs outward from the emblem on each side.
-      const p=(t*.00035)%1;for(const x of [w/2+p*w/2,w/2-p*w/2]){const g=ctx.createRadialGradient(x,mid,0,x,mid,22);g.addColorStop(0,`rgba(255,235,230,${.85*(1-p)})`);g.addColorStop(.4,`rgba(255,60,40,${.5*(1-p)})`);g.addColorStop(1,'rgba(255,40,30,0)');ctx.fillStyle=g;ctx.fillRect(x-22,mid-22,44,44);}
-    };
-    if(still()){draw(0);return;}
-    (function tick(now){draw(now);requestAnimationFrame(tick);})(performance.now());
+  // Fire embers: a few glowing sparks drifting up from the bottom edge, mostly near the two corners so the centre stays
+  // clear. Made to read like real embers on camera:
+  //  - depth: most are small, far and slow; a few are near, larger and faster, and a rare one is so close it is out of
+  //    focus (a soft blurred disc with no trail);
+  //  - motion: a quick pop upward that slows as the ember cools, carried by swirling hot air, with the odd gust;
+  //  - look: a hot white-yellow core in an orange halo, a tapered motion-blur streak behind it, a tumbling twinkle,
+  //    cooling to deep red before a last flare and winking out;
+  //  - time-based, so the speed is the same on 60 Hz and 144 Hz screens.
+  function fire(canvas,{reach=.38,rate=.035}={}){
+    const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
+    const sprite=(stops)=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),gr=x.createRadialGradient(32,32,0,32,32,32);
+      stops.forEach(([o,col])=>gr.addColorStop(o,col));x.fillStyle=gr;x.fillRect(0,0,64,64);return c;};
+    const halo=sprite([[0,'rgba(255,150,50,.9)'],[.25,'rgba(255,90,20,.45)'],[1,'rgba(200,30,0,0)']]);
+    const bokeh=sprite([[0,'rgba(255,120,40,.5)'],[.6,'rgba(255,90,25,.35)'],[.8,'rgba(255,70,20,.12)'],[1,'rgba(255,60,10,0)']]);
+    let sparks=[],t=0;
+    const spot=()=>{const right=Math.random()<.5,d=Math.pow(Math.random(),1.4)*w*reach;return right?w-d:d;};
+    // Swirling air: layered slow sine fields, so neighbouring embers drift together like real convection.
+    const airX=(x,y)=>Math.sin(y*.009+t*.016)+.6*Math.sin(y*.023-t*.027+x*.004)+.35*Math.sin(x*.017+t*.041);
+    const airY=(x,y)=>.5*Math.sin(x*.011-t*.019)+.3*Math.sin(y*.018+t*.031);
+    function add(x){const z=Math.pow(Math.random(),2.2),near=z>.9;
+      sparks.push({x,y:h+8,z,near,vx:(Math.random()-.5)*1.4,vy:-(2+Math.random()*2.8)*(.5+z*.9),age:0,life:150+Math.random()*200,
+        size:.55+z*2.4,spin:.15+Math.random()*.5,seed:Math.random()*99,flare:.8+Math.random()*.15,trail:[]});}
+    function spawn(dt){
+      // Embers leave now and then, sometimes a little cluster together, never a steady stream.
+      if(Math.random()>rate*dt*16.7)return;const x=spot(),n=Math.random()<.22?2+Math.floor(Math.random()*3):1;
+      for(let i=0;i<n;i++)add(x+(Math.random()-.5)*40);
+    }
+    function step(dt){
+      t+=dt;spawn(dt);
+      for(const s of sparks){s.age+=dt;const sp=.45+s.z*.9;
+        s.vx+=airX(s.x,s.y)*.045*dt;s.vy+=(airY(s.x,s.y)*.03-.01)*dt;   // swirl, plus a little lift from the hot air
+        const drag=Math.pow(.978,dt);s.vx*=drag;s.vy*=Math.pow(.985,dt); // the first pop slows into a drift
+        if(Math.random()<.003*dt)s.vx+=(Math.random()-.5)*2.2;           // an occasional gust flicks it sideways
+        s.trail.push(s.x,s.y);if(s.trail.length>16)s.trail.splice(0,2);
+        s.x+=s.vx*sp*dt;s.y+=s.vy*sp*dt;}
+      sparks=sparks.filter(s=>s.age<s.life&&s.y>-30&&s.x>-30&&s.x<w+30);
+    }
+    function draw(){
+      ctx.clearRect(0,0,w,h);ctx.globalCompositeOperation='lighter';ctx.lineCap='round';
+      for(const s of sparks){const k=s.age/s.life;
+        // Tumbling twinkle, a fade in at birth, cooling dim-down, and a last flare just before it dies.
+        const twinkle=.7+.3*Math.sin(s.age*s.spin+s.seed)*Math.sin(s.age*s.spin*2.7+s.seed*2);
+        const flare=k>s.flare?1+1.2*Math.sin(Math.min(1,(k-s.flare)/(1-s.flare))*Math.PI):1;
+        const a=Math.max(0,Math.min(1,s.age/10)*(1-k*.75)*twinkle*flare*(k>.97?(1-k)/.03:1)*(.45+s.z*.55));
+        if(s.near){const r=s.size*9;ctx.globalAlpha=a*.55;ctx.drawImage(bokeh,s.x-r,s.y-r,r*2,r*2);continue;}
+        const g=Math.round(235-175*k),bl=Math.round(180*(1-k)*(1-k));
+        // Motion-blur streak: thin and faint at the tail, full width at the ember.
+        const tr=s.trail,n=tr.length/2;
+        for(let i=1;i<n;i++){const f=i/n;ctx.globalAlpha=a*f*.55;ctx.strokeStyle=`rgb(255,${g},${bl})`;ctx.lineWidth=s.size*(.25+.75*f);
+          ctx.beginPath();ctx.moveTo(tr[i*2-2],tr[i*2-1]);ctx.lineTo(i===n-1?s.x:tr[i*2],i===n-1?s.y:tr[i*2+1]);ctx.stroke();}
+        const r=s.size*6;ctx.globalAlpha=a*.6;ctx.drawImage(halo,s.x-r,s.y-r,r*2,r*2);
+        ctx.globalAlpha=a;ctx.fillStyle=`rgb(255,${Math.min(255,g+20)},${Math.min(255,bl+60)})`;ctx.beginPath();ctx.arc(s.x,s.y,s.size*.7,0,7);ctx.fill();}
+      ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+    }
+    if(still()){for(let i=0;i<500;i++)step(1);draw();return;}
+    let last=performance.now();
+    (function tick(now){const dt=Math.min(3,Math.max(.2,(now-last)/16.7));last=now;step(dt);draw();requestAnimationFrame(tick);})(last);
   }
-  root.BrandFX={lightning,wave};
+  root.BrandFX={lightning,fire};
 })(window);

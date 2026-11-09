@@ -70,7 +70,7 @@
   function fanfare(){const a=ac();if(!a)return;[523.25,659.25,783.99,1046.5].forEach((f,i)=>{const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+i*.12;o.type='sawtooth';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+(i===3?1.2:.35));o.connect(g).connect(a.destination);o.start(t);o.stop(t+1.3);});}
 
   // ---------- Embers and confetti.
-  const ember=$('#embers').getContext('2d'),embers=Array.from({length:70},()=>({x:Math.random()*1920,y:Math.random()*1080,r:1+Math.random()*3,v:.4+Math.random()*1.2,d:Math.random()*Math.PI*2}));
+  BrandFX.fire($('#embers'));
   const conf=$('#confetti').getContext('2d');let pieces=[];
   function burst(){const colors=['#ff3b3b','#ffffff','#e10600','#cfcfcf','#8b0e0e'];
     for(let i=0;i<260;i++){const a=-Math.PI/2+(Math.random()-.5)*2.2,s=8+Math.random()*16;pieces.push({x:740,y:150,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.4,w:8+Math.random()*10,h:4+Math.random()*6,c:colors[i%colors.length],life:1});}
@@ -109,8 +109,7 @@
     else chase+=dt*.003;
     if(flash>0)flash--;
     wheel.style.transform=`rotate(${angle}deg)`;drawRim();
-    // Embers drift up; confetti falls.
-    ember.clearRect(0,0,1920,1080);embers.forEach(e=>{e.y-=e.v;e.x+=Math.sin(e.d+=.02)*.6;if(e.y<-10){e.y=1090;e.x=Math.random()*1920;}ember.beginPath();ember.arc(e.x,e.y,e.r,0,Math.PI*2);ember.fillStyle=`rgba(255,${80+Math.floor(e.r*30)},40,${.35+e.r*.12})`;ember.shadowColor='#ff3b1a';ember.shadowBlur=8;ember.fill();});
+    // Confetti falls.
     if(pieces.length){conf.clearRect(0,0,1920,1080);pieces.forEach(p=>{p.vy+=.35;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.life-=.004;conf.save();conf.translate(p.x,p.y);conf.rotate(p.r);conf.globalAlpha=Math.max(0,p.life);conf.fillStyle=p.c;conf.fillRect(-p.w/2,-p.h/2,p.w,p.h);conf.restore();});pieces=pieces.filter(p=>p.y<1150&&p.life>0);if(!pieces.length)conf.clearRect(0,0,1920,1080);}
     requestAnimationFrame(frame);
   }
@@ -165,7 +164,7 @@
   if(!screen&&!embed){try{localStorage.setItem('ffk-last-page-v1','wheel');}catch{}location.replace('/');return;}
   document.body.classList.toggle('screen',screen);
   fit();drawRim();requestAnimationFrame(frame);
-  if(window.BrandFX){BrandFX.lightning($('#bolts'));BrandFX.wave($('.ffk-footer canvas'));}
+  if(window.BrandFX){BrandFX.lightning($('#bolts'));}
   if(screen){soundOn=params.get('sound')!=='0';}
   (screen?Promise.resolve():setupEmbed()).finally(()=>{if(!shown.length)setShown(screen?(maps.length?maps:Object.keys(ART)):selected());poll();});
   window.__wheel={state:()=>({angle,won,shown,currentId,spinning:!!spinning})};

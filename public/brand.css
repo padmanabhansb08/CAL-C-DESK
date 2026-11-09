@@ -34,15 +34,4 @@
 .ffk-tag::before { content: ""; display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: #fff; vertical-align: 1px; animation: ffk-live 1.2s ease-in-out infinite; }
 @keyframes ffk-live { 50% { opacity: .2; } }
 
-/* Footer: the energy wave across the width, the crowned FFK emblem in the middle, the motto on both sides. */
-.ffk-footer { position: absolute; left: 0; right: 0; bottom: 0; height: 70px; z-index: 6; display: flex; align-items: center; justify-content: space-between; padding: 0 70px;
-  background: linear-gradient(180deg, rgba(10, 10, 10, 0), rgba(10, 10, 10, .92) 40%); border-top: 1px solid rgba(255, 40, 30, .35); }
-.ffk-footer canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-.ffk-footer span { position: relative; font: 800 24px var(--display, "Barlow Condensed", sans-serif); letter-spacing: .22em; color: var(--ffk-white); transform: skewX(-10deg); }
-.ffk-foot-l, .ffk-foot-r { padding: 2px 14px; background: rgba(10, 10, 10, .85); }
-.ffk-emblem { position: absolute !important; left: 50%; top: -14px; translate: -50% 0; display: grid; place-items: center; width: 150px; height: 74px; padding-top: 14px;
-  font: 800 40px/1 var(--display, "Barlow Condensed", sans-serif) !important; letter-spacing: .04em !important; background: #0a0a0a;
-  clip-path: polygon(14% 0, 86% 0, 100% 50%, 86% 100%, 14% 100%, 0 50%); box-shadow: inset 0 0 0 2px var(--ffk-red); }
-.ffk-emblem::before { content: ""; position: absolute; inset: 0; clip-path: inherit; border: 3px solid var(--ffk-red-hot); box-shadow: inset 0 0 18px rgba(255, 40, 30, .6); }
-.ffk-emblem .ffk-crown { position: absolute; top: 4px; width: 30px; height: 19px; }
 @media (prefers-reduced-motion: reduce) { .ffk-ring, .ffk-ring img, .ffk-tag::before { animation: none; } }
