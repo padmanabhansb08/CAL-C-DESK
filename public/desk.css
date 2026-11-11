@@ -1,0 +1,330 @@
+/* FFK War Desk · redesign layer (loads after app.css).
+   Direction: a broadcast control room. Near-black graphite surfaces with real depth, the channel red
+   for the one action that matters, and the scoreboard face (Barlow Condensed) for titles and numbers.
+   Rules (see docs/DESIGN-PLAN.md):
+     1. One primary action per screen, always red, always in the same place.
+     2. Numbers that decide the tournament are big, condensed and tabular.
+     3. Surfaces are cards: 16px radius, hairline border. Controls are 10px.
+     4. Colour means something: red = act, green = confirmed, amber = needs you, gold = winner. */
+
+:root {
+  --c-black: #07070a;        --c-black-rgb: 7 7 10;
+  --c-bg: #0c0c10;           --c-bg-rgb: 12 12 16;
+  --c-surface: #14141a;      --c-surface-rgb: 20 20 26;
+  --c-surface-2: #1c1c24;    --c-surface-2-rgb: 28 28 36;
+  --c-surface-3: #272731;    --c-surface-3-rgb: 39 39 49;
+  --c-line: #2b2b36;         --c-line-rgb: 43 43 54;
+  --c-line-strong: #474755;  --c-line-strong-rgb: 71 71 85;
+  --c-text-3: #9696a4;       --c-text-3-rgb: 150 150 164;
+  --c-text-2: #c2c2cc;       --c-text-2-rgb: 194 194 204;
+  --c-silver: #cfd4dc;
+  --c-bronze: #d9925f;
+  --r-xs: 6px; --r-sm: 10px; --r-md: 10px; --r-lg: 16px; --r-xl: 16px;
+  --sidebar-w: 248px;
+  --topbar-h: 60px;
+  --content-max: 1280px;
+  --num: "Barlow Condensed", "DM Sans", sans-serif;
+}
+
+body {
+  font-size: 15px;
+  background:
+    radial-gradient(1100px 520px at 88% -160px, rgb(var(--c-red-rgb) / 0.13), transparent 62%),
+    var(--c-bg);
+  background-attachment: fixed;
+}
+::selection { background: rgb(var(--c-red-rgb) / 0.45); color: #fff; }
+* { scrollbar-color: var(--c-line-strong) transparent; }
+
+/* ── Controls ─────────────────────────────────────────────────────────────── */
+button { border-radius: var(--r-sm); min-height: 42px; font-size: 14px; }
+button:hover { transform: none; }
+button:active { transform: scale(0.98); }
+.shell.comfort-shell button.primary,
+.shell.comfort-shell .brand-main-action,
+.confirmation-accept {
+  border-radius: var(--r-sm) !important;
+  background: var(--c-red) !important;
+  border-color: var(--c-red) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 6px 18px rgb(var(--c-red-rgb) / 0.28) !important;
+}
+.shell.comfort-shell button.primary:hover,
+.shell.comfort-shell .brand-main-action:hover,
+.confirmation-accept:hover { background: var(--c-red-hover) !important; border-color: var(--c-red-hover) !important; }
+.shell.comfort-shell button.primary:disabled,
+.shell.comfort-shell .brand-main-action:disabled { box-shadow: none !important; }
+input, select, textarea { border-radius: var(--r-sm); font-size: 15px; }
+.shell.comfort-shell input:not([type=checkbox]):not([type=radio]):not([type=file]),
+.shell.comfort-shell select,
+.shell.comfort-shell textarea { border-radius: var(--r-sm) !important; }
+dialog { border-radius: 18px !important; border: 1px solid var(--c-line-strong) !important; box-shadow: 0 30px 80px rgb(0 0 0 / 0.6) !important; }
+dialog::backdrop { background: rgb(4 4 6 / 0.72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+dialog button { border-radius: var(--r-sm) !important; }
+
+/* ── Shell ────────────────────────────────────────────────────────────────── */
+.shell.comfort-shell .sidebar {
+  background: var(--c-black);
+  border-right: 1px solid var(--c-line);
+}
+.shell.comfort-shell .channel-profile {
+  width: 44px; height: 44px; flex: none; object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--c-black), 0 0 0 2px rgb(var(--c-red-rgb) / 0.75);
+  background: var(--c-surface-2);
+}
+.shell.comfort-shell .channel-wordmark { font-size: 21px; line-height: 0.95; letter-spacing: 0.01em; }
+.shell.comfort-shell .channel-wordmark small { margin-top: 5px; color: var(--c-text-3); letter-spacing: 0.22em; font-size: 12px; }
+.shell.comfort-shell .sidebar-group { display: none; }
+
+.shell.comfort-shell .topbar {
+  background: rgb(var(--c-bg-rgb) / 0.78) !important;
+  backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  border-bottom: 1px solid var(--c-line) !important;
+}
+.shell.comfort-shell .sync-button {
+  border-radius: 999px !important; border: 1px solid var(--c-line) !important;
+  background: var(--c-surface) !important; padding: 6px 14px !important; min-height: 34px !important;
+  color: var(--c-text-2) !important; font-size: 13px !important; font-weight: 500 !important;
+}
+.shell.comfort-shell .sync-button:hover { border-color: var(--c-line-strong) !important; color: var(--c-text) !important; }
+.shell.comfort-shell .content { max-width: var(--content-max); margin-inline: auto; width: 100%; }
+
+@media (min-width: 761px) {
+  .shell.comfort-shell .sidebar { padding: 22px 16px 18px !important; position: sticky !important; top: 0; height: 100vh; height: 100dvh; align-self: start; overflow-y: auto; }
+  .shell.comfort-shell .channel-brand { padding: 0 4px 22px !important; margin: 0 !important; gap: 12px !important; border: 0 !important; }
+  .shell.comfort-shell .nav { display: flex !important; flex-direction: column; gap: 4px !important; margin: 0 !important; }
+  .shell.comfort-shell .nav button {
+    min-height: 44px !important; padding: 0 12px !important; gap: 12px !important;
+    border-radius: var(--r-sm) !important; border: 0 !important; background: transparent !important;
+    justify-content: flex-start !important; color: var(--c-text-2) !important; font-size: 14.5px !important; font-weight: 500 !important;
+  }
+  .shell.comfort-shell .nav button:hover { background: var(--c-surface) !important; color: var(--c-text) !important; }
+  .shell.comfort-shell .nav button.active {
+    background: var(--c-surface-2) !important; color: #fff !important; font-weight: 600 !important;
+    box-shadow: inset 3px 0 0 var(--c-red) !important;
+  }
+  .shell.comfort-shell .nav button.active .nav-icon { color: var(--c-red-text); }
+  .shell.comfort-shell .sidebar-group {
+    display: block; margin: 22px 12px 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--c-text-3); line-height: 1.2;
+  }
+  .shell.comfort-shell .sidebar .host-access-button {
+    min-height: 40px !important; margin: 0 0 2px !important; padding: 0 12px !important; gap: 12px !important;
+    width: 100%; font-size: 14px !important; border-radius: var(--r-sm) !important;
+  }
+  .shell.comfort-shell .sidebar .host-access-button:hover { background: var(--c-surface) !important; }
+}
+
+/* Phone: four-slot tab bar. */
+@media (max-width: 760px) {
+  .shell.comfort-shell .sidebar { background: rgb(var(--c-black-rgb) / 0.94) !important; border-right: 0; border-top: 1px solid var(--c-line) !important; }
+  .shell.comfort-shell .nav { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .shell.comfort-shell .nav button { font-size: 12px !important; padding: 5px 0 !important; border-radius: 0 !important; min-width: 0; }
+  .shell.comfort-shell .nav button.active { border-top-color: var(--c-red) !important; background: transparent !important; color: #fff !important; }
+  .shell.comfort-shell .nav .comfort-nav-label { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+}
+
+/* ── Page titles ──────────────────────────────────────────────────────────── */
+.shell.comfort-shell .content h1,
+.shell.comfort-shell .page-head h1 {
+  font-family: var(--font-display) !important; font-weight: 700 !important; text-transform: uppercase !important;
+  letter-spacing: 0.012em !important; font-size: clamp(34px, 4.4vw, 52px) !important; line-height: 0.98 !important;
+}
+.shell.comfort-shell .heading { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 22px; }
+.shell.comfort-shell .heading h1 { margin-right: auto !important; }
+.shell.comfort-shell .heading .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; }
+.shell.comfort-shell .heading .caption {
+  order: 0; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--c-line); background: var(--c-surface);
+  color: var(--c-text-2); font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+
+/* ── Tournament ───────────────────────────────────────────────────────────── */
+.shell.comfort-shell .war-workspace > .page-head {
+  position: relative; overflow: hidden; align-items: center !important;
+  padding: 26px 28px !important; margin: 0 !important;
+  border: 1px solid var(--c-line) !important; border-radius: 20px;
+  background:
+    linear-gradient(115deg, rgb(var(--c-red-rgb) / 0.2), rgb(var(--c-red-rgb) / 0.04) 42%, transparent 62%),
+    var(--c-surface);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+}
+.shell.comfort-shell .war-workspace > .page-head::after {
+  content: ""; position: absolute; right: -40px; top: -60px; width: 300px; height: 300px; pointer-events: none;
+  background: url("assets/claws.svg") center / contain no-repeat; opacity: 0.07;
+}
+.shell.comfort-shell .war-workspace > .page-head > div:first-child::before {
+  content: "Now playing"; display: block; margin-bottom: 8px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--c-red-text);
+}
+.shell.comfort-shell .war-workspace > .page-head h1 { font-size: clamp(44px, 6vw, 68px) !important; }
+.shell.comfort-shell .war-workspace > .page-head .page-meta { font-size: 16px !important; margin-top: 10px !important; }
+.shell.comfort-shell .war-workspace > .page-head .page-actions { position: relative; z-index: 1; gap: 10px; }
+.shell.comfort-shell .war-workspace > .page-head .page-actions button { min-height: 48px; padding-inline: 22px; font-size: 15px; }
+
+.shell.comfort-shell .war-facts, .shell.comfort-shell .war-workspace > .war-facts { gap: 12px !important; margin: 16px 0 0 !important; }
+.shell.comfort-shell .war-facts > div,
+.shell.comfort-shell .war-facts > div:nth-child(2) {
+  display: flex; flex-direction: column; min-width: 0;
+  padding: 16px 18px !important; border: 1px solid var(--c-line) !important; border-radius: 14px;
+  background: var(--c-surface) !important;
+}
+.shell.comfort-shell .war-facts dt { font-size: 12px !important; font-weight: 600; letter-spacing: 0.1em !important; text-transform: uppercase !important; }
+.shell.comfort-shell .war-facts dd {
+  font-family: var(--num); font-size: 40px !important; font-weight: 700 !important; line-height: 1 !important;
+  margin: 8px 0 4px !important; font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+}
+.shell.comfort-shell .war-facts small { font-size: 13px; }
+.fact-bar { display: block; height: 4px; margin-top: 12px; border-radius: 2px; background: var(--c-surface-3); overflow: hidden; }
+.fact-bar i { display: block; height: 100%; min-width: 4px; border-radius: 2px; background: var(--c-red); transition: width 350ms var(--ease); }
+.fact-bar i[style="width:100%"] { background: var(--c-green); }
+.fact-bar i[style="width:0%"] { min-width: 0; }
+
+.shell.comfort-shell .war-attention {
+  margin: 16px 0 0 !important; padding: 14px 18px !important; border: 1px solid rgb(var(--c-amber-rgb) / 0.35) !important;
+  border-left: 3px solid var(--c-amber) !important; border-radius: 14px !important; background: rgb(var(--c-amber-rgb) / 0.06) !important;
+}
+.shell.comfort-shell .war-attention h2 { letter-spacing: 0.1em; text-transform: uppercase; font-size: 12px !important; }
+.shell.comfort-shell .war-attention li { font-size: 15px; }
+
+/* Stage tracker: four numbered steps. */
+.shell.comfort-shell .stage-strip { counter-reset: stage; gap: 8px; border: 0; background: transparent; overflow: visible; margin: 16px 0 26px !important; }
+.shell.comfort-shell .stage { counter-increment: stage; border: 1px solid var(--c-line) !important; border-radius: 14px; background: var(--c-surface); overflow: hidden; }
+.shell.comfort-shell .stage > button, .shell.comfort-shell .stage-item { border-radius: 0; min-height: 70px; }
+.shell.comfort-shell .stage-marker { flex-basis: 30px; width: 30px; height: 30px; font: 700 15px/1 var(--num); }
+.shell.comfort-shell .stage-marker:empty::before { content: counter(stage); }
+.shell.comfort-shell .stage-text strong { font-size: 15.5px; }
+.shell.comfort-shell .stage.is-current { border-color: rgb(var(--c-red-rgb) / 0.55) !important; background: linear-gradient(180deg, rgb(var(--c-red-rgb) / 0.1), transparent), var(--c-surface); }
+.shell.comfort-shell .stage.is-done { border-color: rgb(var(--c-green-rgb) / 0.3) !important; }
+
+.shell.comfort-shell .war-section, .shell.comfort-shell .war-setting { font-size: 15px; }
+.shell.comfort-shell .war-tools { border: 1px solid var(--c-line); border-radius: 14px; background: var(--c-surface); padding: 4px 18px; }
+.shell.comfort-shell .war-tools > summary { min-height: 48px; display: flex; align-items: center; }
+
+/* ── Teams ────────────────────────────────────────────────────────────────── */
+.shell.comfort-shell .search-bar.topbar-search { max-width: 460px !important; width: 100%; }
+.shell.comfort-shell .team-list { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)) !important; gap: 12px !important; }
+.shell.comfort-shell .team-row {
+  display: grid !important; grid-template-columns: 46px minmax(0, 1fr) auto !important;
+  grid-template-areas: "badge id actions" "badge players players" !important;
+  align-items: center; gap: 8px 14px !important;
+  padding: 16px !important; border: 1px solid var(--c-line) !important; border-radius: 14px !important;
+  background: var(--c-surface) !important; transition: border-color var(--dur-fast), background var(--dur-fast);
+}
+.shell.comfort-shell .team-row:hover { border-color: var(--c-line-strong) !important; background: var(--c-surface-2) !important; }
+.team-badge {
+  grid-area: badge; align-self: start; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 12px;
+  background: linear-gradient(160deg, var(--c-surface-3), var(--c-surface-2)); border: 1px solid var(--c-line-strong);
+  font: 700 26px/1 var(--num); color: var(--c-text);
+}
+.shell.comfort-shell .team-row-id { grid-area: id; min-width: 0; }
+.shell.comfort-shell .team-row-id h2 { font-size: 17px !important; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shell.comfort-shell .team-row-players { grid-area: players; display: flex !important; flex-wrap: wrap; gap: 6px !important; margin: 0; padding: 0; list-style: none; }
+.shell.comfort-shell .team-row-players li {
+  padding: 3px 9px !important; border-radius: 6px; background: var(--c-surface-2) !important;
+  border: 1px solid var(--c-line) !important; font-size: 13px !important; line-height: 1.4;
+}
+.shell.comfort-shell .team-row:hover .team-row-players li { background: var(--c-surface-3) !important; }
+.shell.comfort-shell .team-row-players li.team-row-sub { border-style: dashed !important; color: var(--c-text-3) !important; }
+.shell.comfort-shell .team-row .actions { grid-area: actions; display: flex; gap: 2px; margin: 0; }
+.shell.comfort-shell .team-set {
+  display: inline-block; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--c-line-strong);
+  font-size: 12px; font-weight: 600; color: var(--c-text) !important;
+}
+
+/* ── Standings ────────────────────────────────────────────────────────────── */
+.shell.comfort-shell .tabs { padding: 4px; border: 1px solid var(--c-line); border-radius: 12px; background: var(--c-surface); gap: 2px; }
+.shell.comfort-shell .tabs button { border-radius: 8px !important; border: 0 !important; background: transparent; min-height: 36px; box-shadow: none !important; }
+.shell.comfort-shell .tabs button.active { background: var(--c-surface-3) !important; color: #fff !important; }
+.shell.comfort-shell .results-podium .podium-team {
+  border-radius: 18px !important; background: var(--c-surface) !important; border: 1px solid var(--c-line) !important;
+  position: relative; overflow: hidden;
+}
+.shell.comfort-shell .results-podium .podium-team::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--podium, var(--c-line-strong)); }
+.shell.comfort-shell .results-podium .podium-place-1 { --podium: var(--c-gold); border-color: rgb(var(--c-gold-rgb) / 0.45) !important; background: linear-gradient(180deg, rgb(var(--c-gold-rgb) / 0.1), transparent 60%), var(--c-surface) !important; }
+.shell.comfort-shell .results-podium .podium-place-2 { --podium: var(--c-silver); }
+.shell.comfort-shell .results-podium .podium-place-3 { --podium: var(--c-bronze); }
+.shell.comfort-shell .podium-medal { font-family: var(--num); font-weight: 700; color: var(--podium); }
+.shell.comfort-shell .podium-name { font-family: var(--num); font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; font-size: clamp(20px, 2.4vw, 30px); line-height: 1.05; }
+.shell.comfort-shell .podium-points { font-family: var(--num); font-size: clamp(34px, 4vw, 52px); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.shell.comfort-shell .podium-points small { font-family: var(--font-sans); font-size: 13px; font-weight: 500; }
+
+.shell.comfort-shell .table-wrap:not(.war-table-wrap) { border-radius: 16px !important; border: 1px solid var(--c-line) !important; background: var(--c-surface) !important; }
+.shell.comfort-shell .standings-table th { text-transform: uppercase !important; letter-spacing: 0.1em !important; font-size: 12px !important; }
+.shell.comfort-shell .standings-table td.rank { font-family: var(--num); font-size: 20px !important; font-weight: 700 !important; }
+.shell.comfort-shell .standings-table tbody tr:nth-child(1) td.rank { color: var(--c-gold) !important; }
+.shell.comfort-shell .standings-table tbody tr:nth-child(2) td.rank { color: var(--c-silver) !important; }
+.shell.comfort-shell .standings-table tbody tr:nth-child(3) td.rank { color: var(--c-bronze) !important; }
+.shell.comfort-shell .standings-table td.total { font-family: var(--num); font-size: 24px !important; line-height: 1; }
+.shell.comfort-shell .standings-table .team-cell strong { font-size: 14.5px; }
+
+/* ── Sign-in ──────────────────────────────────────────────────────────────── */
+.login .login-submit { border-radius: var(--r-sm) !important; min-height: 50px; }
+.login .login-password-field, .login .login-password-field input { border-radius: var(--r-sm) !important; }
+
+@media (max-width: 760px) {
+  body { font-size: 15px; }
+  .shell.comfort-shell .war-workspace > .page-head { padding: 20px 18px !important; border-radius: 16px; }
+  .shell.comfort-shell .war-workspace > .page-head .page-meta { font-size: 15px !important; }
+  .shell.comfort-shell .war-facts > div, .shell.comfort-shell .war-facts > div:nth-child(2) { padding: 12px !important; }
+  .shell.comfort-shell .war-facts dd { font-size: 30px !important; }
+  .shell.comfort-shell .war-facts dt { letter-spacing: 0.04em !important; font-size: 12px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .shell.comfort-shell .stage-strip { gap: 6px; }
+  .shell.comfort-shell .stage + .stage { border-left: 1px solid var(--c-line) !important; }
+  .shell.comfort-shell[data-page="war"] .war-workspace > .page-head .page-actions {
+    position: fixed !important; left: 0; right: 0; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 30;
+    padding: 10px 16px; background: rgb(var(--c-black-rgb) / 0.94); border-top: 1px solid var(--c-line);
+  }
+  .shell.comfort-shell .war-workspace > .page-head { overflow: visible; }
+  .shell.comfort-shell .war-workspace > .page-head::after { display: none; }
+  .shell.comfort-shell[data-page="war"] .content { padding-bottom: 150px !important; }
+  /* Page headers: title on its own line, then the actions side by side at equal width. */
+  .shell.comfort-shell .heading { gap: 10px; flex-direction: row !important; flex-wrap: wrap !important; align-items: stretch !important; }
+  .shell.comfort-shell .heading h1 { flex-basis: 100%; }
+  .shell.comfort-shell .heading > button { flex: 1 1 0 !important; width: auto !important; min-width: 0; margin: 0 !important; white-space: nowrap; }
+  .shell.comfort-shell .heading .caption { display: none; }
+  .shell.comfort-shell .team-row { grid-template-columns: 42px minmax(0, 1fr) auto !important; padding: 14px !important; }
+  .team-badge { width: 42px; height: 42px; font-size: 23px; }
+}
+@media (prefers-reduced-motion: reduce) { .fact-bar i { transition: none; } button:active { transform: none; } }
+
+/* ── Tournament, lower half: every block is a card; settings sit on one line ── */
+.shell.comfort-shell .war-workspace > .war-section,
+.shell.comfort-shell .war-workspace > .war-count {
+  margin: 12px 0 0 !important; padding: 18px 20px !important;
+  border: 1px solid var(--c-line) !important; border-radius: 14px; background: var(--c-surface);
+}
+.shell.comfort-shell .war-workspace > .war-section.war-empty { border-style: dashed !important; background: transparent; color: var(--c-text-2); }
+.shell.comfort-shell .war-workspace > .war-section.war-empty p { margin: 0; }
+.shell.comfort-shell .war-section .section-head { margin: 0 0 12px !important; padding: 0 0 12px !important; border-bottom: 1px solid var(--c-line); align-items: baseline; }
+.shell.comfort-shell .war-section .section-head h2 { font: 700 22px/1.1 var(--num) !important; letter-spacing: 0.02em; text-transform: uppercase; margin: 0 !important; }
+.shell.comfort-shell .war-section .section-head p { font-size: 13.5px; color: var(--c-text-3); margin: 0; }
+.shell.comfort-shell .war-count { border-top: 1px solid var(--c-line) !important; align-items: flex-end !important; justify-content: flex-start !important; gap: 12px !important; }
+.shell.comfort-shell .war-section > .war-count { border: 0 !important; padding: 0 !important; margin: 0 !important; background: transparent; }
+.shell.comfort-shell .war-count > label { font-size: 13.5px; font-weight: 600; color: var(--c-text-2); }
+.shell.comfort-shell .war-count input { width: 92px !important; }
+.shell.comfort-shell .war-match-assign { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(140px, 220px) auto; align-items: center; gap: 12px !important; padding: 10px 0 !important; }
+.shell.comfort-shell .war-match-assign:last-child { border-bottom: 0 !important; padding-bottom: 0 !important; }
+.shell.comfort-shell .war-match-assign select { width: 100% !important; min-height: 42px !important; }
+.shell.comfort-shell .war-matches li button { border-radius: 10px !important; }
+.shell.comfort-shell .war-tools { margin-top: 12px; }
+.shell.comfort-shell .war-progress { height: 6px; border-radius: 3px; background: var(--c-surface-3); overflow: hidden; }
+.shell.comfort-shell .war-progress > span { display: block; height: 100%; border-radius: 3px; background: var(--c-red); }
+@media (max-width: 760px) {
+  .shell.comfort-shell .war-match-assign { grid-template-columns: minmax(0, 1fr) auto; }
+  .shell.comfort-shell .war-match-assign > span { grid-column: 1 / -1; }
+}
+
+/* ── Dialogs: breathing room between text, labels and fields ───────────────── */
+#modal { padding: 26px 28px !important; }
+#modal h2 { font: 700 28px/1.05 var(--num); letter-spacing: 0.015em; text-transform: uppercase; margin: 0 0 12px; }
+#modal h3 { font-size: 16px; margin: 22px 0 6px; }
+#modal p { margin: 0 0 14px; line-height: 1.55; color: var(--c-text-2); }
+#modal p.error:empty, #modal [role=status]:empty { display: none; }
+#modal label { margin-top: 12px; font-size: 13.5px; font-weight: 600; color: var(--c-text-2); }
+#modal label > input, #modal label > select, #modal label > textarea { margin-top: 6px; }
+#modal .actions { margin-top: 20px; gap: 10px; }
+#modal input[type=file] { padding: 10px; border: 1px dashed var(--c-line-strong); border-radius: var(--r-sm); background: var(--c-bg); width: 100%; box-sizing: border-box; }
+#modal input[type=file]::file-selector-button { margin-right: 12px; padding: 7px 12px; border: 1px solid var(--c-line-strong); border-radius: 8px; background: var(--c-surface-3); color: var(--c-text); font: 600 13px var(--font-sans); cursor: pointer; }
+@media (max-width: 760px) { #modal { padding: 20px 18px !important; } #modal h2 { font-size: 24px; } }
